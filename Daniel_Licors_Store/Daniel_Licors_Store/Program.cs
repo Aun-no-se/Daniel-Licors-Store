@@ -1,10 +1,15 @@
 using Daniel_Licors_Store.Components;
+using Microsoft.EntityFrameworkCore;
+using Daniel_Licors_Store.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
+
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 var app = builder.Build();
 
