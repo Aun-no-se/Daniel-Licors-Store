@@ -1,23 +1,36 @@
-﻿@inherits LayoutComponentBase
+﻿@using MudBlazor
+@inherits LayoutComponentBase
 
-<div class="page">
-    <div class="sidebar">
-        <NavMenu />
-    </div>
+<MudThemeProvider Theme="@Theme" />
+<MudBreakpointProvider />
+<MudPopoverProvider />
 
-    <main>
-        <div class="top-row px-4">
-            <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
-        </div>
+<MudLayout>
 
-        <article class="content px-4">
+    <TopBar />
+
+    <MudMainContent Class="main-content">
+        <MudContainer MaxWidth="MaxWidth.False">
             @Body
-        </article>
-    </main>
-</div>
+        </MudContainer>
+    </MudMainContent>
 
-<div id="blazor-error-ui">
-    An unhandled error has occurred.
-    <a href="" class="reload">Reload</a>
-    <a class="dismiss">🗙</a>
-</div>
+</MudLayout>
+
+@code {
+    private MudTheme Theme = new MudTheme()
+    {
+        PaletteLight = new PaletteLight()
+        {
+            Primary = "#F44336",
+            PrimaryLighten = "#EF5350",
+            PrimaryDarken = "#D32F2F",
+
+            Background = "#FAFAFA",
+            Surface = "#FFFFFF",
+
+            TextPrimary = "#212121",
+            TextSecondary = "#616161"
+        }
+    };
+}

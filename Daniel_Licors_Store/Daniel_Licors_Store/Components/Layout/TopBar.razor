@@ -1,0 +1,90 @@
+﻿@using MudBlazor
+
+<MudAppBar Fixed="true"
+           Elevation="0"
+           Class="topbar">
+
+    <div class="topbar-grid">
+
+        <!-- IZQUIERDA -->
+        <div class="topbar-left">
+
+            <MudHidden Breakpoint="Breakpoint.SmAndDown">
+                <MudIcon Icon="@Icons.Material.Filled.AccountCircle"
+                         Size="Size.Medium"
+                         Style="color: white"
+                         Class="desktop-icon" />
+            </MudHidden>
+
+        </div>
+
+        <!-- CENTRO -->
+        <div class="topbar-center">
+            DANIEL LICORS
+        </div>
+
+        <!-- DERECHA -->
+        <div class="topbar-right">
+
+            <!-- ===== MOBILE: menú hamburguesa ===== -->
+            <MudHidden Breakpoint="Breakpoint.MdAndUp">
+
+                <MudMenu AnchorOrigin="Origin.BottomRight"
+                         TransformOrigin="Origin.TopRight">
+
+                    <ActivatorContent>
+                        <MudIconButton Icon="@Icons.Material.Filled.Menu"
+                                       Color="Color.Inherit"
+                                       Size="Size.Medium" />
+                    </ActivatorContent>
+
+                    <ChildContent>
+                        <MudMenuItem>Login</MudMenuItem>
+                        <MudMenuItem>Registrarse</MudMenuItem>
+                        <MudDivider />
+                        <MudMenuItem>Servicios</MudMenuItem>
+                        <MudMenuItem>Contacto</MudMenuItem>
+                    </ChildContent>
+
+                </MudMenu>
+
+            </MudHidden>
+
+            <!-- ===== DESKTOP: botones visibles ===== -->
+            <MudHidden Breakpoint="Breakpoint.SmAndDown">
+
+                <!-- Servicios (dropdown) -->
+                <MudMenu Dense="true">
+                    <ActivatorContent>
+                        <MudButton Color="Color.Inherit"
+                                   Variant="Variant.Text">
+                            Servicios
+                        </MudButton>
+                    </ActivatorContent>
+
+                    <ChildContent>
+                        <MudMenuItem>Servicio 1</MudMenuItem>
+                        <MudMenuItem>Servicio 2</MudMenuItem>
+                        <MudMenuItem>Contacto</MudMenuItem>
+                    </ChildContent>
+                </MudMenu>
+
+                <!-- Login -->
+                <MudButton Color="Color.Inherit"
+                           Variant="Variant.Text">
+                    Login
+                </MudButton>
+
+                <!-- Registrarse -->
+                <MudButton Color="Color.Inherit"
+                           Variant="Variant.Outlined">
+                    Registrarse
+                </MudButton>
+
+            </MudHidden>
+
+        </div>
+
+    </div>
+
+</MudAppBar>
