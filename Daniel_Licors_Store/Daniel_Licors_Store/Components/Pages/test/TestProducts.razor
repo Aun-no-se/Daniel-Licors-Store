@@ -1,0 +1,35 @@
+﻿@page "/test-products"
+
+@using Daniel_Licors_Store.Data.Entities
+@using Daniel_Licors_Store.Data.Repositories.Interfaces
+
+@inject IRepository<Product> ProductRepository
+
+<h3>Test Productos</h3>
+
+@if (products == null)
+{
+    <p>Cargando...</p>
+}
+else if (!products.Any())
+{
+    <p>No hay productos en la base de datos</p>
+}
+else
+{
+    <ul>
+        @foreach (var product in products)
+        {
+            <li>@product.Name</li>
+        }
+    </ul>
+}
+
+@code {
+    private IEnumerable<Product>? products;
+
+    protected override async Task OnInitializedAsync()
+    {
+        products = await ProductRepository.GetAllAsync();
+    }
+}

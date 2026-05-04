@@ -1,6 +1,9 @@
 using Daniel_Licors_Store.Components;
-using Microsoft.EntityFrameworkCore;
 using Daniel_Licors_Store.Data;
+using Daniel_Licors_Store.Data.Repositories.Generic;
+using Daniel_Licors_Store.Data.Repositories.Interfaces;
+using Microsoft.EntityFrameworkCore;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -10,6 +13,9 @@ builder.Services.AddRazorComponents()
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+
+builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 
 var app = builder.Build();
 
