@@ -115,7 +115,7 @@ public class ApplicationDbContext : DbContext
                    .IsRequired(false)
                    .OnDelete(DeleteBehavior.Restrict);
 
-            // 🔴 IGNORAR relaciones que aún no usas
+            //  IGNORAR relaciones que aún no usas
             entity.Ignore(p => p.PromotionProducts);
             entity.Ignore(p => p.ComboProducts);
         });
