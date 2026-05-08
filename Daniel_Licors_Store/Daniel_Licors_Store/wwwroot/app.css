@@ -4,12 +4,16 @@ html, body {
     padding: 0;
     min-height: 100%;
     font-family: 'Times New Roman', Times, serif !important;
+    background-color: #B71C1C !important;
+    overscroll-behavior: none;
 }
 
 /* ===== BODY ===== */
 body {
-    
-    overflow-x: hidden;
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+    /* Mantenemos tu gradiente, pero el html de fondo ya es rojo */
     background: linear-gradient(180deg, #B71C1C 0%, #4A0D0D 60%, #0A0A0A 100%) !important;
 }
 
@@ -18,3 +22,14 @@ a, .btn-link {
     color: #006bb7;
 }
 
+/* Sobreescribir los gutters de MudContainer de forma global */
+.mud-container--gutters {
+    padding-left: 0px !important;
+    padding-right: 0px !important;
+}
+
+/* Asegurar que el contenedor principal ocupe todo el ancho */
+.mud-container {
+    max-width: 100% !important;
+    width: 100% !important;
+}
