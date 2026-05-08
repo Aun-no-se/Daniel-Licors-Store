@@ -1,0 +1,254 @@
+﻿/* ===============================
+   SECCIÓN DE CATEGORÍA
+   =============================== */
+
+.category-section {
+    position: relative;
+    padding: 2rem 0;
+    background: linear-gradient(180deg, #0a0a0a 0%, #111 100%);
+    color: white;
+    overflow: visible; /* IMPORTANTE: no cortar el carrusel */
+}
+
+.category-title {
+    font-size: 1.6rem;
+    font-weight: bold;
+    margin-bottom: 1rem;
+    margin-left: 1rem;
+    padding-left: 0.5rem;
+    border-left: 4px solid #f44336;
+}
+
+/* Glow decorativo de fondo */
+.category-section::before {
+    content: "";
+    position: absolute;
+    width: 300px;
+    height: 300px;
+    background: radial-gradient(circle, rgba(244,67,54,0.2), transparent);
+    top: -50px;
+    right: -50px;
+    filter: blur(80px);
+    z-index: 1;
+}
+
+/* ===============================
+   SWIPER
+   =============================== */
+
+.product-swiper {
+    width: 100%;
+    padding: 50px 0;
+    overflow: visible;
+    position: relative;
+    z-index: 2; /* Por encima del glow */
+}
+
+.swiper-wrapper {
+    display: flex;
+    align-items: center;
+}
+
+/* ===============================
+   SLIDES
+   =============================== */
+
+.swiper-slide {
+    display: flex;
+    justify-content: center;
+    width: 280px; /* Importante para slidesPerView:auto */
+    opacity: 0.4;
+    transform: scale(0.75);
+    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    filter: blur(1px) grayscale(40%);
+    /*will-change: transform, opacity;*/
+    backface-visibility: hidden;
+}
+
+/* Slide activo */
+.swiper-slide-active {
+    opacity: 1;
+    transform: scale(1.1);
+    filter: none;
+    z-index: 10;
+}
+
+/* Slides vecinos */
+.swiper-slide-next,
+.swiper-slide-prev {
+    opacity: 0.75;
+    transform: scale(0.9);
+    filter: blur(0.5px);
+    z-index: 5;
+}
+
+/* ===============================
+   TARJETA DE PRODUCTO
+   =============================== */
+
+.product-card {
+    width: 260px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 18px;
+    overflow: hidden;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+    transition: box-shadow 0.4s ease;
+}
+
+.swiper-slide-active .product-card {
+    box-shadow: 0 20px 60px rgba(244, 67, 54, 0.35);
+}
+
+.product-image {
+    width: 100%;
+    height: 180px;
+    object-fit: cover;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+.product-info {
+    padding: 1rem;
+    text-align: center;
+}
+
+    .product-info h3 {
+        font-size: 1.1rem;
+        margin-bottom: 0.3rem;
+    }
+
+.product-category {
+    font-size: 0.85rem;
+    color: #bbb;
+    margin-bottom: 1rem;
+}
+
+/* ===============================
+   ACCIONES
+   =============================== */
+
+.actions {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.5rem;
+}
+
+    .actions .mud-button-root {
+        flex: 1;
+        border-radius: 12px;
+    }
+
+/* ===============================
+   FLECHAS
+   =============================== */
+
+.custom-swiper-btn {
+    color: white;
+    background: rgba(0,0,0,0.5);
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    backdrop-filter: blur(5px);
+    transition: all 0.3s ease;
+}
+
+    .custom-swiper-btn:hover {
+        background: #b71c1c;
+        transform: scale(1.1);
+    }
+
+    .custom-swiper-btn::after {
+        font-size: 16px;
+        font-weight: bold;
+    }
+
+/* ===============================
+   ESTADO: POCOS PRODUCTOS
+   =============================== */
+
+.product-swiper.low-items {
+    display: flex;
+    justify-content: center;
+}
+
+    .product-swiper.low-items .swiper-wrapper {
+        justify-content: center;
+        gap: 20px;
+    }
+
+    .product-swiper.low-items .swiper-slide {
+        opacity: 1;
+        transform: scale(1);
+        filter: none;
+        width: auto;
+    }
+
+    .product-swiper.low-items .custom-swiper-btn {
+        display: none;
+    }
+
+/* ===============================
+   EMPTY STATE
+   =============================== */
+
+.empty-state {
+    text-align: center;
+    color: #777;
+    padding: 2rem;
+}
+
+
+@media (max-width: 768px) {
+    .product-card {
+        width: 70%;
+    }
+
+    .swiper-slide {
+        width: 100%;
+        transform: scale(1);
+        filter: none;
+        opacity: 1;
+    }
+
+    .swiper-slide-active {
+        transform: scale(1);
+    }
+}
+
+@media (max-width: 768px) {
+
+    .category-section {
+        opacity: 1;
+        transform: none;
+    }
+
+    .category-title {
+        opacity: 0;
+        transform: translateY(25px);
+        transition: opacity 0.9s cubic-bezier(0.2, 0.8, 0.2, 1), transform 0.9s cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+
+    .swiper-slide {
+        opacity: 0;
+        transform: translateY(30px);
+        transition: opacity 1s cubic-bezier(0.2, 0.8, 0.2, 1), transform 1s cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+
+    .category-section.reveal .category-title {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    .category-section.reveal .swiper-slide {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    .category-title {
+        transition-delay: 0.1s;
+    }
+
+    .swiper-slide {
+        transition-delay: 0.2s;
+    }
+}

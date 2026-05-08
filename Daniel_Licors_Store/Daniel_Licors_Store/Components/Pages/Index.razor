@@ -1,15 +1,76 @@
 ﻿@page "/"
+@using MudBlazor
+@using Daniel_Licors_Store.Models.Product
+@using Daniel_Licors_Store.Components.Shared
 
 <div class="index-page">
-    <h3>Index</h3>
+
+    <MudCarousel Class="mud-width-full promo-carousel"
+                 Style="height:75vh;"
+                 ShowArrows="@arrows"
+                 ShowBullets="@bullets"
+                 EnableSwipeGesture="@enableSwipeGesture"
+                 AutoCycle="@autocycle"
+                 TData="object"
+                 Transition="@transition">
+
+        <MudCarouselItem Color="@Color.Primary">
+            <div class="carousel-content appear">
+
+                <MudIcon Icon="@Icons.Custom.Brands.MudBlazor"
+                         Size="@Size.Large"
+                         Class="icon-animate" />
+
+                <div class="actions">
+                    <MudButton Class="btn-pedir"
+                               Color="Color.Error"
+                               Variant="Variant.Filled"
+                               OnClick="@PedirDemo">
+                        Pedir
+                    </MudButton>
+
+                    <MudButton Class="btn-ver"
+                               Variant="Variant.Outlined"
+                               OnClick="@VerMasDemo">
+                        Ver más
+                    </MudButton>
+                </div>
+
+            </div>
+        </MudCarouselItem>
+
+        <MudCarouselItem Color="@Color.Secondary">
+            <div class="carousel-content">
+
+                <MudIcon Icon="@Icons.Custom.Brands.MudBlazor"
+                         Size="@Size.Large"
+                         Class="icon-animate" />
+
+                <div class="actions">
+                    <MudButton Class="btn-pedir"
+                               Color="Color.Error"
+                               Variant="Variant.Filled">
+                        Pedir
+                    </MudButton>
+
+                    <MudButton Class="btn-ver"
+                               Variant="Variant.Outlined">
+                        Ver más
+                    </MudButton>
+                </div>
+
+            </div>
+        </MudCarouselItem>
+
+    </MudCarousel>
+
+    <!-- 🔥 CATEGORÍAS -->
+    <CategoryProductCarousel Title="Cervezas"
+                             CategoryId="1"
+                             Products="@cervezas" />
+
+    <CategoryProductCarousel Title="Rones"
+                             CategoryId="2"
+                             Products="@rones" />
+
 </div>
-
-@code {
-
-}
-  <style>
-    .index-page {
-        min-height: 100vh;
-        background-color: black;
-    }
-  </style>

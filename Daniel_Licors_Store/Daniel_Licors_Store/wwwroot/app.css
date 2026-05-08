@@ -1,4 +1,4 @@
-/* ===== RESET ===== */
+﻿/* ===== RESET ===== */
 html, body {
     margin: 0;
     padding: 0;
@@ -32,4 +32,9 @@ a, .btn-link {
 .mud-container {
     max-width: 100% !important;
     width: 100% !important;
+}
+
+
+.index-page {
+    overflow-x: hidden;
 }

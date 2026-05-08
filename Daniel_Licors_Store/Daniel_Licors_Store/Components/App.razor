@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="utf-8" />
-    <meta name="viewport"content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#B71C1C">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
@@ -15,6 +15,7 @@
     <link rel="stylesheet" href="Daniel_Licors_Store.styles.css" />
     <link rel="stylesheet" href="css/layout.css" />
     <link href="_content/MudBlazor/MudBlazor.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
 
 
     <link rel="icon" type="image/png" href="favicon.png" />
@@ -23,11 +24,103 @@
     <HeadOutlet @rendermode="InteractiveServer" />
 
     <script src="_content/MudBlazor/MudBlazor.min.js"></script>
+
+
 </head>
 
 <body>
     <Routes @rendermode="InteractiveServer" />
     <script src="_framework/blazor.web.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+    <script>
+        window.initProductSwiper = () => {
+
+            document.querySelectorAll('.js-product-swiper').forEach((el) => {
+
+                if (el.swiper) {
+                    el.swiper.destroy(true, true);
+                }
+
+                const slidesCount = el.querySelectorAll('.swiper-slide').length;
+
+                const nextBtn = el.parentElement.querySelector('.swiper-button-next');
+                const prevBtn = el.parentElement.querySelector('.swiper-button-prev');
+
+                el.swiper = new Swiper(el, {
+
+                    direction: 'horizontal',
+
+                    slidesPerView: 3,
+                    spaceBetween: 20,
+
+                    loop: false,
+                    centeredSlides: true,
+
+                    initialSlide: Math.floor(slidesCount / 2),
+
+                    grabCursor: true,
+
+                    navigation: {
+                        nextEl: nextBtn,
+                        prevEl: prevBtn,
+                    },
+
+                    breakpoints: {
+                        0: {
+                            slidesPerView: 1,
+                            centeredSlides: true,
+                            spaceBetween: 10
+                        },
+                        768: {
+                            slidesPerView: 2,
+                            centeredSlides: true,
+                            spaceBetween: 15
+                        },
+                        1024: {
+                            slidesPerView: 3,
+                            centeredSlides: true,
+                            spaceBetween: 20
+                        }
+                    },
+
+                    on: {
+                        click: function (swiper) {
+                            swiper.slideTo(swiper.clickedIndex);
+                        }
+                    }
+                });
+
+            });
+
+        };
+    </script>
+
+    <script>
+        window.initScrollReveal = () => {
+
+            const sections = document.querySelectorAll('.category-section');
+
+            const observer = new IntersectionObserver((entries) => {
+
+                entries.forEach(entry => {
+
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('reveal');
+                    }
+                    else {
+                        // 🔥 opcional: quitar animación si sale de pantalla
+                        // entry.target.classList.remove('reveal');
+                    }
+
+                });
+
+            }, {
+                threshold: 0.2 // 👈 se activa cuando 20% es visible
+            });
+
+            sections.forEach(section => observer.observe(section));
+        };
+    </script>
 </body>
 
 </html>

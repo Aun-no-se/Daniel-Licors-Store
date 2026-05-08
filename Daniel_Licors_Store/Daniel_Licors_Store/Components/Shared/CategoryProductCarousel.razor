@@ -1,0 +1,59 @@
+﻿@using MudBlazor
+@using Daniel_Licors_Store.Models.Product
+@inject IJSRuntime JS
+
+<div class="category-section">
+    <h2 class="category-title">@Title</h2>
+
+    @if (Products != null && Products.Any())
+    {
+        <div class="swiper-container-wrapper">
+
+            <div class="swiper product-swiper js-product-swiper">
+                <div class="swiper-wrapper">
+
+                    @foreach (var product in Products)
+                    {
+                        <div class="swiper-slide">
+                            <div class="product-card">
+                                <img src="@product.ImageUrl" class="product-image" />
+
+                                <div class="product-info">
+                                    <h3>@product.Name</h3>
+                                    <p class="product-category">@product.Category</p>
+
+                                    <div class="actions">
+                                        <MudButton Color="Color.Primary"
+                                                   Variant="Variant.Filled"
+                                                   Size="Size.Small"
+                                                   OnClick="@(() => VerProducto(product.ProductId))">
+                                            Ver
+                                        </MudButton>
+
+                                        <MudButton Color="Color.Success"
+                                                   Variant="Variant.Outlined"
+                                                   Size="Size.Small"
+                                                   OnClick="@(() => AgregarAlCarrito(product.ProductId))">
+                                            Añadir
+                                        </MudButton>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+
+                </div>
+
+                <!-- 🔥 BOTONES FUERA DEL SWIPER LOGICAMENTE (CLAVE PARA QUE NO FALLEN) -->
+                <div class="swiper-button-prev custom-swiper-btn"></div>
+                <div class="swiper-button-next custom-swiper-btn"></div>
+
+            </div>
+
+        </div>
+    }
+    else
+    {
+        <p class="empty-state">No hay productos disponibles</p>
+    }
+</div>
