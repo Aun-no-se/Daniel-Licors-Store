@@ -1,0 +1,236 @@
+﻿@using Daniel_Licors_Store.Data
+@using Daniel_Licors_Store.Data.Entities
+@using Daniel_Licors_Store.Data.Repositories.Interfaces
+@using Daniel_Licors_Store.Models.Product
+@using MudBlazor
+
+@inject ICatalogService CatalogService
+@inject IWebHostEnvironment Env
+
+<MudDialog MaxWidth="MaxWidth.Large" FullWidth="true">
+
+    <DialogContent>
+
+        @if (isLoading)
+        {
+            <div class="d-flex justify-center align-center pa-6">
+                <MudProgressCircular Indeterminate="true" />
+            </div>
+        }
+        else
+        {
+            <MudText Typo="Typo.h6" Class="mb-4">
+                @(ProductId == null ? "Agregar Bebida" : "Editar Bebida")
+            </MudText>
+
+            <MudGrid Spacing="3">
+
+                <!-- ================= LEFT SIDE ================= -->
+                <MudItem xs="12" md="4">
+
+                    <!-- FORMULARIO -->
+                    <MudGrid Spacing="2">
+
+                        <MudItem xs="12">
+                            <MudTextField @bind-Value="Model.Name"
+                                          Label="Nombre"
+                                          FullWidth />
+                        </MudItem>
+
+                        <MudItem xs="12">
+                            <MudTextField T="decimal"
+                                          @bind-Value="Model.Price"
+                                          Label="Precio"
+                                          Adornment="Adornment.Start"
+                                          AdornmentText="$"
+                                          FullWidth />
+                        </MudItem>
+
+                        <MudItem xs="12">
+                            <MudSelect T="int"
+                                       Label="Categoría"
+                                       @bind-Value="Model.CategoryId"
+                                       FullWidth>
+                                @foreach (var c in categories)
+                                {
+                                    <MudSelectItem Value="@c.CategoryId">@c.Name</MudSelectItem>
+                                }
+                            </MudSelect>
+                        </MudItem>
+
+                        <MudItem xs="12">
+                            <MudSwitch T="bool"
+                                       @bind-Checked="Model.IsPremium"
+                                       Color="Color.Warning">
+                                Premium
+                            </MudSwitch>
+                        </MudItem>
+
+                        <MudItem xs="12">
+                            <MudTextField T="int?"
+                                          @bind-Value="Model.AgingYears"
+                                          Label="Año de añejamiento"
+                                          FullWidth />
+                        </MudItem>
+
+                        <MudItem xs="12">
+                            <MudTextField T="int"
+                                          @bind-Value="Model.Stock"
+                                          Label="Stock"
+                                          FullWidth />
+                        </MudItem>
+
+                        <MudItem xs="12">
+                            <MudSelect T="int?"
+                                       Label="Marca"
+                                       @bind-Value="Model.BrandId"
+                                       FullWidth>
+
+                                <MudSelectItem T="int?" Value="@(null)">
+                                    Sin marca
+                                </MudSelectItem>
+
+                                @foreach (var b in brands)
+                                {
+                                    <MudSelectItem T="int?" Value="@b.BrandId">
+                                        @b.Name
+                                    </MudSelectItem>
+                                }
+
+                            </MudSelect>
+                        </MudItem>
+
+                        <MudItem xs="12">
+                            <MudSwitch T="bool"
+                                       @bind-Checked="Model.IsActive"
+                                       Color="Color.Success">
+                                Activo
+                            </MudSwitch>
+                        </MudItem>
+
+                    </MudGrid>
+
+                </MudItem>
+
+                <!-- ================= IMAGE (DOBLE ESPACIO) ================= -->
+                <MudItem xs="12" md="8">
+
+                    <MudPaper Class="pa-3 d-flex flex-column align-center justify-center"
+                              Style="min-height: 450px;">
+
+                        <MudText Typo="Typo.subtitle2" Class="mb-2">
+                            Imagen del producto
+                        </MudText>
+
+                        @if (!string.IsNullOrEmpty(imagePreviewUrl))
+                        {
+                            <img src="@imagePreviewUrl"
+                                 style="max-width:100%; max-height:380px; object-fit:contain;" />
+                        }
+
+                        <div class="mt-3">
+                            <InputFile OnChange="OnImageSelected" accept="image/*" />
+                        </div>
+
+                    </MudPaper>
+
+                </MudItem>
+            </MudGrid>
+        }
+
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton OnClick="Cancelar">Cancelar</MudButton>
+
+        <MudButton Color="Color.Primary"
+                   Disabled="@(!CanSave)"
+                   OnClick="Guardar">
+            Guardar
+        </MudButton>
+    </DialogActions>
+
+</MudDialog>
+
+@code {
+
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; }
+    [Parameter] public int? ProductId { get; set; }
+
+    ProductCreateModel Model = new();
+
+    List<Category> categories = new();
+    List<Brand> brands = new();
+
+    bool isLoading = true;
+    bool _loaded = false;
+
+    IBrowserFile? selectedImage;
+    string? imagePreviewUrl;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (_loaded) return;
+
+        _loaded = true;
+        isLoading = true;
+
+        categories = await CatalogService.GetCategoriesAsync();
+        brands = await CatalogService.GetBrandsAsync();
+
+        isLoading = false;
+    }
+
+    bool CanSave =>
+        !string.IsNullOrWhiteSpace(Model.Name)
+        && Model.CategoryId > 0
+        && Model.Price > 0;
+
+    void Cancelar() => MudDialog.Cancel();
+
+    async Task Guardar()
+    {
+        if (selectedImage is not null)
+        {
+            Model.ImageFileName = await SaveImageAsync(selectedImage);
+        }
+
+        MudDialog.Close(DialogResult.Ok(Model));
+    }
+
+    async Task OnImageSelected(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+        if (file is null) return;
+
+        selectedImage = file;
+
+        using var stream = file.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024);
+        using var ms = new MemoryStream();
+
+        await stream.CopyToAsync(ms);
+
+        imagePreviewUrl =
+            $"data:{file.ContentType};base64,{Convert.ToBase64String(ms.ToArray())}";
+    }
+
+    private async Task<string?> SaveImageAsync(IBrowserFile file)
+    {
+        if (file is null) return null;
+
+        var uploadsFolder = Path.Combine(Env.WebRootPath, "images", "products");
+
+        if (!Directory.Exists(uploadsFolder))
+            Directory.CreateDirectory(uploadsFolder);
+
+        var fileName = $"{Guid.NewGuid()}{Path.GetExtension(file.Name)}";
+        var filePath = Path.Combine(uploadsFolder, fileName);
+
+        using var stream = file.OpenReadStream(10 * 1024 * 1024);
+        using var fileStream = new FileStream(filePath, FileMode.Create);
+
+        await stream.CopyToAsync(fileStream);
+
+        return $"/images/products/{fileName}";
+    }
+}

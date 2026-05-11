@@ -18,6 +18,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<ProductStore> ProductStores => Set<ProductStore>();
     public DbSet<Store> Stores => Set<Store>();
     public DbSet<Brand> Brands => Set<Brand>();
+    public DbSet<StockMovement> StockMovements => Set<StockMovement>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -78,6 +79,22 @@ public class ApplicationDbContext : DbContext
             entity.Property(e => e.Address)
                   .HasMaxLength(250)
                   .IsRequired();
+
+            // 🔥 IMPORTANTE: relaciones explícitas
+            entity.HasMany(s => s.ProductStores)
+                  .WithOne(ps => ps.Store)
+                  .HasForeignKey(ps => ps.StoreId)
+                  .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasMany(s => s.Carts)
+                  .WithOne(c => c.Store)
+                  .HasForeignKey(c => c.StoreId)
+                  .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasMany(s => s.Orders)
+                  .WithOne(o => o.Store)
+                  .HasForeignKey(o => o.StoreId)
+                  .OnDelete(DeleteBehavior.Restrict);
         });
 
         // ============================
@@ -96,32 +113,26 @@ public class ApplicationDbContext : DbContext
             entity.Property(e => e.Description)
                   .HasMaxLength(500);
 
+            entity.Property(e => e.AgingYears);
+
             entity.Property(e => e.ImageUrl)
                   .HasMaxLength(500);
 
-            entity.Property(e => e.IsPremium)
-                  .IsRequired();
-
-            entity.Property(e => e.IsActive)
-                  .IsRequired();
+            entity.Property(e => e.IsPremium).IsRequired();
+            entity.Property(e => e.IsActive).IsRequired();
 
             entity.Property(e => e.CreatedAt)
                   .HasColumnType("datetime")
                   .HasDefaultValueSql("GETDATE()");
 
             entity.HasOne(p => p.Brand)
-                   .WithMany(b => b.Products)
-                   .HasForeignKey(p => p.BrandId)
-                   .IsRequired(false)
-                   .OnDelete(DeleteBehavior.Restrict);
-
-            //  IGNORAR relaciones que aún no usas
-            entity.Ignore(p => p.PromotionProducts);
-            entity.Ignore(p => p.ComboProducts);
+                  .WithMany(b => b.Products)
+                  .HasForeignKey(p => p.BrandId)
+                  .OnDelete(DeleteBehavior.Restrict);
         });
 
         // ============================
-        // PRODUCT STORE (PRECIO REAL)
+        // PRODUCT STORE
         // ============================
         modelBuilder.Entity<ProductStore>(entity =>
         {
@@ -133,11 +144,8 @@ public class ApplicationDbContext : DbContext
                   .HasColumnType("decimal(10,2)")
                   .IsRequired();
 
-            entity.Property(e => e.Stock)
-                  .IsRequired();
-
-            entity.Property(e => e.IsAvailable)
-                  .IsRequired();
+            entity.Property(e => e.Stock).IsRequired();
+            entity.Property(e => e.IsAvailable).IsRequired();
 
             entity.HasIndex(e => new { e.ProductId, e.StoreId })
                   .IsUnique();
@@ -148,7 +156,7 @@ public class ApplicationDbContext : DbContext
                   .OnDelete(DeleteBehavior.Restrict);
 
             entity.HasOne(ps => ps.Store)
-                  .WithMany()
+                  .WithMany(s => s.ProductStores)
                   .HasForeignKey(ps => ps.StoreId)
                   .OnDelete(DeleteBehavior.Restrict);
         });

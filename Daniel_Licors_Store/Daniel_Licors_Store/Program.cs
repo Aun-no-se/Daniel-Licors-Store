@@ -2,6 +2,7 @@ using Daniel_Licors_Store.Components;
 using Daniel_Licors_Store.Data;
 using Daniel_Licors_Store.Data.Repositories.Generic;
 using Daniel_Licors_Store.Data.Repositories.Interfaces;
+using Daniel_Licors_Store.Data.Services;
 using Microsoft.EntityFrameworkCore;
 using MudBlazor.Services;
 
@@ -19,6 +20,10 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 
 builder.Services.AddMudServices();
+
+builder.Services.AddScoped<IProductService, ProductService>();
+
+builder.Services.AddScoped<ICatalogService, CatalogService>();
 
 var app = builder.Build();
 

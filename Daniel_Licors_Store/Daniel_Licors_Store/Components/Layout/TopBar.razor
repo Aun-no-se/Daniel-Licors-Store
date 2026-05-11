@@ -1,4 +1,9 @@
-﻿﻿@using MudBlazor
+﻿@using Daniel_Licors_Store.Components.Product
+@using Daniel_Licors_Store.Data.Repositories.Interfaces
+@using Daniel_Licors_Store.Models.Product
+@using MudBlazor
+@inject IDialogService DialogService
+@inject IProductService ProductService
 
 <MudAppBar Fixed="true"
            Elevation="0"
@@ -39,11 +44,25 @@
                     </ActivatorContent>
 
                     <ChildContent>
-                        <MudMenuItem>Login</MudMenuItem>
-                        <MudMenuItem>Registrarse</MudMenuItem>
+
+                        <MudMenuItem>
+                            Login
+                        </MudMenuItem>
+
+                        <MudMenuItem>
+                            Registrarse
+                        </MudMenuItem>
+
                         <MudDivider />
-                        <MudMenuItem>Servicios</MudMenuItem>
-                        <MudMenuItem>Contacto</MudMenuItem>
+
+                        <MudMenuItem OnClick="AbrirAgregarBebida">
+                            Agregar una bebida
+                        </MudMenuItem>
+
+                        <MudMenuItem>
+                            Servicios
+                        </MudMenuItem>
+
                     </ChildContent>
 
                 </MudMenu>
@@ -69,6 +88,14 @@
                     </ChildContent>
                 </MudMenu>
 
+                <!-- Agregar Bebidas -->
+                <MudButton Color="Color.Secondary"
+                           Variant="Variant.Filled"
+                           StartIcon="@Icons.Material.Filled.Add"
+                           OnClick="AbrirAgregarBebida">
+                    Agregar Bebida
+                </MudButton>
+
                 <!-- Login -->
                 <MudButton Color="Color.Inherit"
                            Variant="Variant.Text">
@@ -88,3 +115,20 @@
     </div>
 
 </MudAppBar>
+
+@code
+{
+    async Task AbrirAgregarBebida()
+    {
+        var dialog = DialogService.Show<ProductDialog>("Agregar Bebida");
+
+        var result = await dialog.Result;
+
+        if (!result.Canceled)
+        {
+            var model = (ProductCreateModel)result.Data;
+
+            await ProductService.CreateProductAsync(model);
+        }
+    }
+}

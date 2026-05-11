@@ -23,19 +23,35 @@
                                     <p class="product-category">@product.Category</p>
 
                                     <div class="actions">
-                                        <MudButton Color="Color.Primary"
+
+                                        <MudButton Size="Size.Small"
                                                    Variant="Variant.Filled"
-                                                   Size="Size.Small"
+                                                   Color="Color.Primary"
                                                    OnClick="@(() => VerProducto(product.ProductId))">
                                             Ver
                                         </MudButton>
 
-                                        <MudButton Color="Color.Success"
+                                        <MudButton Size="Size.Small"
                                                    Variant="Variant.Outlined"
-                                                   Size="Size.Small"
+                                                   Color="Color.Info"
+                                                   OnClick="@(() => EditarProducto(product.ProductId))">
+                                            Editar
+                                        </MudButton>
+
+                                        <MudButton Size="Size.Small"
+                                                   Variant="Variant.Outlined"
+                                                   Color="Color.Error"
+                                                   OnClick="@(() => BorrarProducto(product.ProductId))">
+                                            Borrar
+                                        </MudButton>
+
+                                        <MudButton Size="Size.Small"
+                                                   Variant="Variant.Text"
+                                                   Color="Color.Success"
                                                    OnClick="@(() => AgregarAlCarrito(product.ProductId))">
                                             Añadir
                                         </MudButton>
+
                                     </div>
                                 </div>
                             </div>
