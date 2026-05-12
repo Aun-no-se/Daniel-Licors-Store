@@ -17,16 +17,7 @@ public class Repository<T> : IRepository<T> where T : class
     private ApplicationDbContext CreateContext()
         => _factory.CreateDbContext();
 
-    // =========================
-    // QUERY (IMPORTANTE PARA INCLUDE)
-    // =========================
-    public IQueryable<T> Query()
-    {
-        var context = CreateContext();
-        return context.Set<T>().AsNoTracking();
-    }
-
-    public async Task<IEnumerable<T>> GetAllAsync()
+    public async Task<List<T>> GetAllAsync()
     {
         await using var context = CreateContext();
         return await context.Set<T>()
@@ -40,7 +31,7 @@ public class Repository<T> : IRepository<T> where T : class
         return await context.Set<T>().FindAsync(id);
     }
 
-    public async Task<IEnumerable<T>> FindAsync(Expression<Func<T, bool>> predicate)
+    public async Task<List<T>> FindAsync(Expression<Func<T, bool>> predicate)
     {
         await using var context = CreateContext();
         return await context.Set<T>()
@@ -74,5 +65,11 @@ public class Repository<T> : IRepository<T> where T : class
     {
         await using var context = CreateContext();
         await context.SaveChangesAsync();
+    }
+
+    public IQueryable<T> Query()
+    {
+        var context = CreateContext();
+        return context.Set<T>().AsNoTracking();
     }
 }

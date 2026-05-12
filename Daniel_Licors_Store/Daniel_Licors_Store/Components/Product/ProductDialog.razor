@@ -8,6 +8,7 @@
 @inject ICatalogService CatalogService
 @inject IWebHostEnvironment Env
 @inject ProductStateService ProductState
+@inject IJSRuntime JS
 
 <MudDialog MaxWidth="MaxWidth.Large" FullWidth="true">
 
@@ -144,9 +145,9 @@
 
     <DialogActions>
         <MudButton OnClick="Cancelar">Cancelar</MudButton>
-
-        <MudButton Color="Color.Primary"
-                   Disabled="@(!CanSave)"
+        <MudButton ButtonType="ButtonType.Button"
+                   Color="Color.Primary"
+                   Disabled="@isSaving"
                    OnClick="Guardar">
             Guardar
         </MudButton>
@@ -166,6 +167,7 @@
 
     bool isLoading = true;
     bool _loaded = false;
+    bool isSaving = false;
 
     IBrowserFile? selectedImage;
     string? imagePreviewUrl;
@@ -183,6 +185,14 @@
         isLoading = false;
     }
 
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await JS.InvokeVoidAsync("initProductSwiper");
+        }
+    }
+
     bool CanSave =>
         !string.IsNullOrWhiteSpace(Model.Name)
         && Model.CategoryId > 0
@@ -192,15 +202,27 @@
 
     async Task Guardar()
     {
-        if (selectedImage is not null)
+        if (isSaving)
+            return;
+
+        isSaving = true;
+
+        try
         {
-            Model.ImageFileName = await SaveImageAsync(selectedImage);
+            Console.WriteLine("👉 EJECUTANDO GUARDADO");
+
+            if (selectedImage != null)
+            {
+                Model.ImageFileName = await SaveImageAsync(selectedImage);
+            }
+
+            MudDialog.Close(DialogResult.Ok(Model));
+            ProductState.NotifyChange();
         }
-
-        MudDialog.Close(DialogResult.Ok(Model));
-
-        // 🔥 NOTIFICAR CAMBIO GLOBAL
-        ProductState.NotifyChange();
+        finally
+        {
+            isSaving = false;
+        }
     }
 
     async Task OnImageSelected(InputFileChangeEventArgs e)

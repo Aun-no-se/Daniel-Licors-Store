@@ -1,4 +1,4 @@
-﻿@page "/test-products"
+﻿@* @page "/test-products"
 
 @using Daniel_Licors_Store.Data.Entities
 @using Daniel_Licors_Store.Data.Repositories.Interfaces
@@ -32,4 +32,4 @@ else
     {
         products = await ProductRepository.GetAllAsync();
     }
-}
+} *@

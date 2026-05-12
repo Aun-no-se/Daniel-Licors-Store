@@ -51,6 +51,7 @@ namespace Daniel_Licors_Store.Data.Services
                 .Include(p => p.Category)
                 .Include(p => p.Brand)
                 .Where(p => p.IsActive && p.CategoryId == categoryId)
+                .OrderByDescending(p => p.CreatedAt)
                 .ToListAsync();
 
             return products.Select(Map).ToList();
@@ -72,6 +73,46 @@ namespace Daniel_Licors_Store.Data.Services
                 IsPremium = p.IsPremium,
                 IsActive = p.IsActive
             };
+        }
+
+        public async Task<bool> CreateProductAsync(ProductCreateModel model)
+        {
+
+            Console.WriteLine("🔥 CREATE PRODUCT CALLED: " + DateTime.Now.ToString("HH:mm:ss.fff"));
+            try
+            {
+                var newProduct = new Product
+                {
+                    Name = model.Name,
+                    Description = model.Description,
+                    CategoryId = model.CategoryId,
+                    BrandId = model.BrandId,
+                    IsPremium = model.IsPremium,
+                    IsActive = model.IsActive,
+                    AgingYears = model.AgingYears,
+                    ImageUrl = model.ImageFileName,
+                    CreatedAt = DateTime.Now,
+                    ProductStores = new List<ProductStore>
+            {
+                new ProductStore
+                {
+                    StoreId = 1,
+                    Price = model.Price,
+                    Stock = model.Stock,
+                    IsAvailable = true
+                }
+            }
+                };
+
+                await _productRepo.AddAsync(newProduct); // 🔥 UNA SOLA VEZ
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                // si quieres, log aquí
+                return false;
+            }
         }
     }
 }
