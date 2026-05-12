@@ -1,54 +1,78 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
 using Daniel_Licors_Store.Data.Repositories.Interfaces;
+using Daniel_Licors_Store.Data;
 
 namespace Daniel_Licors_Store.Data.Repositories.Generic;
 
 public class Repository<T> : IRepository<T> where T : class
 {
-    protected readonly ApplicationDbContext _context;
-    protected readonly DbSet<T> _dbSet;
+    private readonly IDbContextFactory<ApplicationDbContext> _factory;
 
-    public Repository(ApplicationDbContext context)
+    public Repository(IDbContextFactory<ApplicationDbContext> factory)
     {
-        _context = context;
-        _dbSet = context.Set<T>();
+        _factory = factory;
+    }
+
+    private ApplicationDbContext CreateContext()
+        => _factory.CreateDbContext();
+
+    // =========================
+    // QUERY (IMPORTANTE PARA INCLUDE)
+    // =========================
+    public IQueryable<T> Query()
+    {
+        var context = CreateContext();
+        return context.Set<T>().AsNoTracking();
     }
 
     public async Task<IEnumerable<T>> GetAllAsync()
     {
-        return await _dbSet.AsNoTracking().ToListAsync();
+        await using var context = CreateContext();
+        return await context.Set<T>()
+            .AsNoTracking()
+            .ToListAsync();
     }
 
     public async Task<T?> GetByIdAsync(object id)
     {
-        return await _dbSet.FindAsync(id);
+        await using var context = CreateContext();
+        return await context.Set<T>().FindAsync(id);
     }
 
     public async Task<IEnumerable<T>> FindAsync(Expression<Func<T, bool>> predicate)
     {
-        return await _dbSet.AsNoTracking()
-                           .Where(predicate)
-                           .ToListAsync();
+        await using var context = CreateContext();
+        return await context.Set<T>()
+            .AsNoTracking()
+            .Where(predicate)
+            .ToListAsync();
     }
 
     public async Task AddAsync(T entity)
     {
-        await _dbSet.AddAsync(entity);
+        await using var context = CreateContext();
+        await context.Set<T>().AddAsync(entity);
+        await context.SaveChangesAsync();
     }
 
-    public void Update(T entity)
+    public async Task UpdateAsync(T entity)
     {
-        _dbSet.Update(entity);
+        await using var context = CreateContext();
+        context.Set<T>().Update(entity);
+        await context.SaveChangesAsync();
     }
 
-    public void Remove(T entity)
+    public async Task RemoveAsync(T entity)
     {
-        _dbSet.Remove(entity);
+        await using var context = CreateContext();
+        context.Set<T>().Remove(entity);
+        await context.SaveChangesAsync();
     }
 
     public async Task SaveChangesAsync()
     {
-        await _context.SaveChangesAsync();
+        await using var context = CreateContext();
+        await context.SaveChangesAsync();
     }
 }
