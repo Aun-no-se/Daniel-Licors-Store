@@ -123,13 +123,5 @@
         Console.WriteLine("OPEN DIALOG");
 
         var dialog = DialogService.Show<ProductDialog>("Agregar Bebida");
-
-        var result = await dialog.Result;
-
-        if (!result.Canceled)
-        {
-            var model = (ProductCreateModel)result.Data;
-            await ProductService.CreateProductAsync(model);
-        }
     }
 }

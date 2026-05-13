@@ -1,4 +1,5 @@
 ﻿using Daniel_Licors_Store.Components.Product;
+using Daniel_Licors_Store.Data.Repositories.Interfaces;
 using Daniel_Licors_Store.Models.Product;
 using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
@@ -17,6 +18,7 @@ namespace Daniel_Licors_Store.Components.Shared
 
         [Inject] private NavigationManager Nav { get; set; } = default!;
         [Inject] private IDialogService DialogService { get; set; } = default!;
+        [Inject] private IProductService ProductService { get; set; } = default!;
 
         protected void VerProducto(int productId)
         {

@@ -9,6 +9,7 @@
 @inject IWebHostEnvironment Env
 @inject ProductStateService ProductState
 @inject IJSRuntime JS
+@inject IProductService ProductService
 
 <MudDialog MaxWidth="MaxWidth.Large" FullWidth="true">
 
@@ -28,10 +29,9 @@
 
             <MudGrid Spacing="3">
 
-                <!-- ================= LEFT SIDE ================= -->
+                <!-- LEFT -->
                 <MudItem xs="12" md="4">
 
-                    <!-- FORMULARIO -->
                     <MudGrid Spacing="2">
 
                         <MudItem xs="12">
@@ -115,7 +115,7 @@
 
                 </MudItem>
 
-                <!-- ================= IMAGE (DOBLE ESPACIO) ================= -->
+                <!-- IMAGE -->
                 <MudItem xs="12" md="8">
 
                     <MudPaper Class="pa-3 d-flex flex-column align-center justify-center"
@@ -125,9 +125,9 @@
                             Imagen del producto
                         </MudText>
 
-                        @if (!string.IsNullOrEmpty(imagePreviewUrl))
+                        @if (!string.IsNullOrEmpty(previewImage ?? Model.ImageUrl))
                         {
-                            <img src="@imagePreviewUrl"
+                            <img src="@(previewImage ?? Model.ImageUrl)"
                                  style="max-width:100%; max-height:380px; object-fit:contain;" />
                         }
 
@@ -138,6 +138,7 @@
                     </MudPaper>
 
                 </MudItem>
+
             </MudGrid>
         }
 
@@ -160,7 +161,7 @@
     [CascadingParameter] IMudDialogInstance MudDialog { get; set; }
     [Parameter] public int? ProductId { get; set; }
 
-    ProductCreateModel Model = new();
+    ProductEditModel Model = new();
 
     List<Category> categories = new();
     List<Brand> brands = new();
@@ -170,7 +171,7 @@
     bool isSaving = false;
 
     IBrowserFile? selectedImage;
-    string? imagePreviewUrl;
+    string? previewImage;
 
     protected override async Task OnInitializedAsync()
     {
@@ -182,41 +183,70 @@
         categories = await CatalogService.GetCategoriesAsync();
         brands = await CatalogService.GetBrandsAsync();
 
+        if (ProductId.HasValue)
+        {
+            var product = await ProductService.GetProductForEditAsync(ProductId.Value);
+
+            Model = new ProductEditModel
+            {
+                ProductId = product.ProductId,
+                Name = product.Name,
+                Description = product.Description,
+                CategoryId = product.CategoryId,
+                BrandId = product.BrandId,
+                AgingYears = product.AgingYears,
+                Price = product.Price,
+                Stock = product.Stock,
+                IsPremium = product.IsPremium,
+                IsActive = product.IsActive,
+                ImageUrl = product.ImageUrl
+            };
+
+            previewImage = null;
+        }
+
         isLoading = false;
     }
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender)
-        {
-            await JS.InvokeVoidAsync("initProductSwiper");
-        }
-    }
-
-    bool CanSave =>
-        !string.IsNullOrWhiteSpace(Model.Name)
-        && Model.CategoryId > 0
-        && Model.Price > 0;
 
     void Cancelar() => MudDialog.Cancel();
 
     async Task Guardar()
     {
-        if (isSaving)
-            return;
+        if (isSaving) return;
 
         isSaving = true;
 
         try
         {
-            Console.WriteLine("👉 EJECUTANDO GUARDADO");
-
             if (selectedImage != null)
             {
-                Model.ImageFileName = await SaveImageAsync(selectedImage);
+                Model.ImageUrl = await SaveImageAsync(selectedImage);
             }
 
-            MudDialog.Close(DialogResult.Ok(Model));
+            if (ProductId.HasValue)
+            {
+                await ProductService.UpdateProductAsync(Model);
+            }
+            else
+            {
+                var createModel = new ProductCreateModel
+                {
+                    Name = Model.Name,
+                    Description = Model.Description,
+                    CategoryId = Model.CategoryId,
+                    BrandId = Model.BrandId,
+                    AgingYears = Model.AgingYears,
+                    Price = Model.Price,
+                    Stock = Model.Stock,
+                    IsPremium = Model.IsPremium,
+                    IsActive = Model.IsActive,
+                    ImageFileName = Model.ImageUrl
+                };
+
+                await ProductService.CreateProductAsync(createModel);
+            }
+
+            MudDialog.Close(DialogResult.Ok(true));
             ProductState.NotifyChange();
         }
         finally
@@ -237,7 +267,7 @@
 
         await stream.CopyToAsync(ms);
 
-        imagePreviewUrl =
+        previewImage =
             $"data:{file.ContentType};base64,{Convert.ToBase64String(ms.ToArray())}";
     }
 
