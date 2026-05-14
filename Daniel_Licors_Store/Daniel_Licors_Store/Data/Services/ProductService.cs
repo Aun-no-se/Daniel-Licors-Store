@@ -80,7 +80,8 @@ public class ProductService : IProductService
         catch (Exception ex)
         {
             await transaction.RollbackAsync();
-            throw new Exception("Error creando producto: " + ex.Message);
+            var message = ex.InnerException?.Message ?? ex.Message;
+            throw new Exception("Error creando producto: " + message);
         }
     }
 

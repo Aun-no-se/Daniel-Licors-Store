@@ -10,6 +10,5 @@ namespace Daniel_Licors_Store.Data.Repositories.Interfaces
 
         Task<List<ProductResponseModel>> GetProductsAsync();
         Task<List<ProductResponseModel>> GetProductsByCategoryAsync(int categoryId);
-        Task<bool> CreateProductAsync(ProductCreateModel model);
     }
 }

@@ -45,8 +45,8 @@ namespace Daniel_Licors_Store.Components.Pages
 
         private async Task LoadData()
         {
-            cervezas = await CatalogService.GetProductsByCategoryAsync(5);
-            rones = await CatalogService.GetProductsByCategoryAsync(1);
+            cervezas = await CatalogService.GetProductsByCategoryAsync(14);
+            rones = await CatalogService.GetProductsByCategoryAsync(15);
 
             await InvokeAsync(StateHasChanged);
         }
