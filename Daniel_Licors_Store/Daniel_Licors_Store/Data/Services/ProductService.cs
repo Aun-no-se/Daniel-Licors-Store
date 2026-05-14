@@ -180,13 +180,38 @@ public class ProductService : IProductService
 
     public async Task DeleteProductAsync(int productId)
     {
-        var product = await _context.Products
-            .FirstOrDefaultAsync(p => p.ProductId == productId);
+        using var transaction = await _context.Database.BeginTransactionAsync();
 
-        if (product == null)
-            return;
+        try
+        {
+            // 1. Eliminar relaciones ProductStores
+            var productStores = _context.ProductStores
+                .Where(ps => ps.ProductId == productId);
 
-        product.IsActive = false;
-        await _context.SaveChangesAsync();
+            _context.ProductStores.RemoveRange(productStores);
+
+            // 2. Eliminar movimientos de stock
+            var stockMovements = _context.StockMovements
+                .Where(sm => sm.ProductId == productId);
+
+            _context.StockMovements.RemoveRange(stockMovements);
+
+            // 3. Eliminar el producto
+            var product = await _context.Products
+                .FirstOrDefaultAsync(p => p.ProductId == productId);
+
+            if (product != null)
+            {
+                _context.Products.Remove(product);
+            }
+
+            await _context.SaveChangesAsync();
+            await transaction.CommitAsync();
+        }
+        catch
+        {
+            await transaction.RollbackAsync();
+            throw;
+        }
     }
 }

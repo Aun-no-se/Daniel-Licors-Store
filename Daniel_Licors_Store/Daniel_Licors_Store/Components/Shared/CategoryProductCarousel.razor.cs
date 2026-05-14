@@ -1,9 +1,12 @@
 ﻿using Daniel_Licors_Store.Components.Product;
+using Daniel_Licors_Store.Data.Entities;
 using Daniel_Licors_Store.Data.Repositories.Interfaces;
 using Daniel_Licors_Store.Models.Product;
+using Daniel_Licors_Store.Services;
 using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
 using MudBlazor;
+using Daniel_Licors_Store.Components.Shared;
 
 
 namespace Daniel_Licors_Store.Components.Shared
@@ -19,6 +22,8 @@ namespace Daniel_Licors_Store.Components.Shared
         [Inject] private NavigationManager Nav { get; set; } = default!;
         [Inject] private IDialogService DialogService { get; set; } = default!;
         [Inject] private IProductService ProductService { get; set; } = default!;
+        [Inject] private ProductStateService ProductState { get; set; } = default!;
+
 
         protected void VerProducto(int productId)
         {
@@ -35,7 +40,7 @@ namespace Daniel_Licors_Store.Components.Shared
             if (firstRender)
             {
                 await JS.InvokeVoidAsync("initProductSwiper");
-                await JS.InvokeVoidAsync("initScrollReveal"); // 🔥 FALTABA ESTO
+                await JS.InvokeVoidAsync("initScrollReveal"); 
             }
         }
 
@@ -49,10 +54,25 @@ namespace Daniel_Licors_Store.Components.Shared
             DialogService.Show<ProductDialog>("Editar Bebida", parameters);
         }
 
-        void BorrarProducto(int productId)
+        async Task DeleteProduct(int productId)
         {
-            // luego lo conectamos al repo
-            Console.WriteLine($"Borrar producto {productId}");
+            var parameters = new DialogParameters
+    {
+        { "ContentText", "¿Estás seguro de que deseas eliminar este producto? Esta acción no se puede deshacer." }
+    };
+
+            var dialog = DialogService.Show<ConfirmDialog>(
+                "Confirmar eliminación",
+                parameters
+            );
+
+            var result = await dialog.Result;
+
+            if (!result.Canceled)
+            {
+                await ProductService.DeleteProductAsync(productId);
+                ProductState.NotifyChange();
+            }
         }
     }
 }

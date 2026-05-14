@@ -149,7 +149,7 @@
         <MudButton ButtonType="ButtonType.Button"
                    Color="Color.Primary"
                    Disabled="@isSaving"
-                   OnClick="Guardar">
+                   OnClick="saveProduct">
             Guardar
         </MudButton>
     </DialogActions>
@@ -210,7 +210,7 @@
 
     void Cancelar() => MudDialog.Cancel();
 
-    async Task Guardar()
+    async Task saveProduct()
     {
         if (isSaving) return;
 
