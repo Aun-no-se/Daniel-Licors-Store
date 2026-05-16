@@ -9,7 +9,7 @@
     {
         <div class="swiper-container-wrapper">
 
-            <div class="swiper product-swiper js-product-swiper">
+            <div @ref="swiperElement" class="swiper product-swiper js-product-swiper">
                 <div class="swiper-wrapper">
 
                     @foreach (var product in Products)

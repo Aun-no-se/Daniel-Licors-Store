@@ -34,65 +34,53 @@
     <script src="_framework/blazor.web.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
     <script>
-        window.initProductSwiper = () => {
+        window.initProductSwiper = (element) => {
+            if (!element) return;
 
-            document.querySelectorAll('.js-product-swiper').forEach((el) => {
+            // Si ya existe una instancia de Swiper en este elemento, la destruimos para evitar duplicados
+            if (element.swiper) {
+                element.swiper.destroy(true, true);
+            }
 
-                if (el.swiper) {
-                    el.swiper.destroy(true, true);
-                }
+            const slidesCount = element.querySelectorAll('.swiper-slide').length;
+            const nextBtn = element.parentElement.querySelector('.swiper-button-next');
+            const prevBtn = element.parentElement.querySelector('.swiper-button-prev');
 
-                const slidesCount = el.querySelectorAll('.swiper-slide').length;
-
-                const nextBtn = el.parentElement.querySelector('.swiper-button-next');
-                const prevBtn = el.parentElement.querySelector('.swiper-button-prev');
-
-                el.swiper = new Swiper(el, {
-
-                    direction: 'horizontal',
-
-                    slidesPerView: 3,
-                    spaceBetween: 20,
-
-                    loop: false,
-                    centeredSlides: true,
-
-                    initialSlide: Math.floor(slidesCount / 2),
-
-                    grabCursor: true,
-
-                    navigation: {
-                        nextEl: nextBtn,
-                        prevEl: prevBtn,
+            element.swiper = new Swiper(element, {
+                direction: 'horizontal',
+                slidesPerView: 3,
+                spaceBetween: 20,
+                loop: false,
+                centeredSlides: true,
+                initialSlide: Math.floor(slidesCount / 2),
+                grabCursor: true,
+                navigation: {
+                    nextEl: nextBtn,
+                    prevEl: prevBtn,
+                },
+                breakpoints: {
+                    0: {
+                        slidesPerView: 1,
+                        centeredSlides: true,
+                        spaceBetween: 10
                     },
-
-                    breakpoints: {
-                        0: {
-                            slidesPerView: 1,
-                            centeredSlides: true,
-                            spaceBetween: 10
-                        },
-                        768: {
-                            slidesPerView: 2,
-                            centeredSlides: true,
-                            spaceBetween: 15
-                        },
-                        1024: {
-                            slidesPerView: 3,
-                            centeredSlides: true,
-                            spaceBetween: 20
-                        }
+                    768: {
+                        slidesPerView: 2,
+                        centeredSlides: true,
+                        spaceBetween: 15
                     },
-
-                    on: {
-                        click: function (swiper) {
-                            swiper.slideTo(swiper.clickedIndex);
-                        }
+                    1024: {
+                        slidesPerView: 3,
+                        centeredSlides: true,
+                        spaceBetween: 20
                     }
-                });
-
+                },
+                on: {
+                    click: function (swiper) {
+                        swiper.slideTo(swiper.clickedIndex);
+                    }
+                }
             });
-
         };
     </script>
 
