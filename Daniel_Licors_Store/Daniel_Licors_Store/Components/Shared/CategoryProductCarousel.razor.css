@@ -122,21 +122,104 @@
     color: #bbb;
     margin-bottom: 1rem;
 }
-
-/* ===============================
-   ACCIONES
+/ /* ===============================
+   ACCIONES (INTEGRACIÓN PREMIUM CON AIRE)
    =============================== */
-
 .actions {
     display: flex;
-    justify-content: space-between;
-    gap: 0.5rem;
+    justify-content: center; /* Centra los botones simétricamente */
+    align-items: center;
+    gap: 0.75rem; /* Aumentado para separar más los botones entre sí */
+    width: 100%;
+    margin-top: 0.9rem;
+    background: rgba(0, 0, 0, 0.35); /* Fondo oscuro translúcido */
+    padding: 7px 12px; /* Más espacio a los lados para enmarcar bien */
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.03);
+    box-sizing: border-box;
 }
 
-    .actions .mud-button-root {
-        flex: 1;
-        border-radius: 12px;
+/* Botones con tamaño fijo y cuadrado óptimo */
+::deep .action-btn.mud-button-root {
+    flex: 0 0 35px; /* Ajustado de 38px a 35px para dejar más aire */
+    width: 35px !important;
+    height: 35px !important;
+    min-width: 35px !important;
+    border-radius: 9px;
+    background: rgba(255, 255, 255, 0.04) !important;
+    border: 1px solid rgba(255, 255, 255, 0.05) !important;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    padding: 0 !important; /* Mantiene el icono perfectamente centrado */
+}
+
+    /* Color e intensidad del icono por defecto */
+    ::deep .action-btn.mud-button-root .mud-icon-root {
+        color: rgba(255, 255, 255, 0.55) !important;
+        font-size: 1.15rem;
     }
+
+/* --- COMPORTAMIENTO HOVER INDIVIDUAL --- */
+
+/* Ver (Ojo) */
+::deep .btn-ver:hover {
+    background: rgba(33, 150, 243, 0.15) !important;
+    border-color: rgba(33, 150, 243, 0.4) !important;
+}
+
+    ::deep .btn-ver:hover .mud-icon-root {
+        color: #64B5F6 !important;
+    }
+
+/* Editar (Lápiz) */
+::deep .btn-editar:hover {
+    background: rgba(255, 179, 0, 0.12) !important;
+    border-color: rgba(255, 179, 0, 0.4) !important;
+}
+
+    ::deep .btn-editar:hover .mud-icon-root {
+        color: #FFB300 !important;
+    }
+
+/* Borrar (Zafacón) */
+::deep .btn-borrar:hover {
+    background: rgba(244, 67, 54, 0.15) !important;
+    border-color: rgba(244, 67, 54, 0.5) !important;
+    box-shadow: 0 0 8px rgba(244, 67, 54, 0.2);
+}
+
+    ::deep .btn-borrar:hover .mud-icon-root {
+        color: #FF5252 !important;
+    }
+
+/* Añadir (+) */
+::deep .btn-anadir:hover {
+    background: rgba(76, 175, 80, 0.15) !important;
+    border-color: rgba(76, 175, 80, 0.4) !important;
+}
+
+    ::deep .btn-anadir:hover .mud-icon-root {
+        color: #81C784 !important;
+    }
+
+/* --- RESPONSIVE --- */
+@media (max-width: 480px) {
+    .actions {
+        gap: 0.5rem;
+        padding: 5px 8px;
+    }
+
+    ::deep .action-btn.mud-button-root {
+        flex: 0 0 30px;
+        width: 30px !important;
+        height: 30px !important;
+        min-width: 30px !important;
+        border-radius: 7px;
+    }
+
+        ::deep .action-btn.mud-button-root .mud-icon-root {
+            font-size: 1rem;
+        }
+}
 
 /* ===============================
    FLECHAS

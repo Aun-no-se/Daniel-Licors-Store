@@ -9,14 +9,14 @@
 <MudAppBar Fixed="true" Elevation="0" Class="topbar">
     <div class="topbar-grid">
 
-        <div class="topbar-left" style="display: flex; align-items: center; gap: 8px;">
-
-            <MudIcon Icon="@Icons.Material.Filled.LocalBar"
-                     Size="Size.Medium"
-                     Style="color: #FF1744; filter: drop-shadow(0 0 5px rgba(255,23,68,0.5));" />
-
-            DANIEL LIQUOR STORE
-        </div>
+        <NavLink Href="/" Style="text-decoration: none; color: inherit;">
+            <div class="topbar-left" style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                <MudIcon Icon="@Icons.Material.Filled.LocalBar"
+                         Size="Size.Medium"
+                         Style="color: #FF1744; filter: drop-shadow(0 0 5px rgba(255,23,68,0.5));" />
+                DANIEL LIQUOR STORE
+            </div>
+        </NavLink>
 
         <div class="topbar-center">
         </div>

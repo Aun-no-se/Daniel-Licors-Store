@@ -1,5 +1,6 @@
 ﻿@using MudBlazor
 @using Daniel_Licors_Store.Models.Product
+@using Microsoft.AspNetCore.Components.Authorization
 @inject IJSRuntime JS
 
 <div class="category-section">
@@ -23,36 +24,43 @@
                                     <p class="product-category">@product.Category</p>
 
                                     <div class="actions">
+                                        <MudIconButton Icon="@Icons.Material.Filled.Visibility"
+                                                       Size="Size.Small"
+                                                       Variant="Variant.Text"
+                                                       Class="action-btn btn-ver"
+                                                       Title="Ver detalle"
+                                                       OnClick="@(() => VerProducto(product.ProductId))" />
 
-                                        <MudButton Size="Size.Small"
-                                                   Variant="Variant.Filled"
-                                                   Color="Color.Primary"
-                                                   OnClick="@(() => VerProducto(product.ProductId))">
-                                            Ver
-                                        </MudButton>
+                                        <AuthorizeView Roles="Admin, Empleado">
+                                            <Authorized>
+                                                <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                                               Size="Size.Small"
+                                                               Variant="Variant.Text"
+                                                               Class="action-btn btn-editar"
+                                                               Title="Editar"
+                                                               OnClick="@(() => EditarProducto(product.ProductId))" />
 
-                                        <MudButton Size="Size.Small"
-                                                   Variant="Variant.Outlined"
-                                                   Color="Color.Info"
-                                                   OnClick="@(() => EditarProducto(product.ProductId))">
-                                            Editar
-                                        </MudButton>
+                                                <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                                               Size="Size.Small"
+                                                               Variant="Variant.Text"
+                                                               Class="action-btn btn-borrar"
+                                                               Title="Eliminar"
+                                                               OnClick="@(() => DeleteProduct(product.ProductId))" />
+                                            </Authorized>
+                                        </AuthorizeView>
 
-                                        <MudButton Size="Size.Small"
-                                                   Variant="Variant.Outlined"
-                                                   Color="Color.Error"
-                                                   OnClick="@(() => DeleteProduct(product.ProductId))">
-                                            Borrar
-                                        </MudButton>
-
-                                        <MudButton Size="Size.Small"
-                                                   Variant="Variant.Text"
-                                                   Color="Color.Success"
-                                                   OnClick="@(() => AgregarAlCarrito(product.ProductId))">
-                                            Añadir
-                                        </MudButton>
-
+                                        <AuthorizeView Roles="Admin, Empleado, Cliente">
+                                            <Authorized>
+                                                <MudIconButton Icon="@Icons.Material.Filled.Add"
+                                                               Size="Size.Small"
+                                                               Variant="Variant.Text"
+                                                               Class="action-btn btn-anadir"
+                                                               Title="Añadir al carrito"
+                                                               OnClick="@(() => AgregarAlCarrito(product.ProductId))" />
+                                            </Authorized>
+                                        </AuthorizeView>
                                     </div>
+
                                 </div>
                             </div>
                         </div>
@@ -60,7 +68,6 @@
 
                 </div>
 
-                <!-- 🔥 BOTONES FUERA DEL SWIPER LOGICAMENTE (CLAVE PARA QUE NO FALLEN) -->
                 <div class="swiper-button-prev custom-swiper-btn"></div>
                 <div class="swiper-button-next custom-swiper-btn"></div>
 
@@ -73,4 +80,3 @@
         <p class="empty-state">No hay productos disponibles</p>
     }
 </div>
-
