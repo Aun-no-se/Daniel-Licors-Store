@@ -7,11 +7,58 @@
     width: 100%;
 }
 
+/* ===========================
+   HERO VIDEO / IMAGEN
+=========================== */
+
+.hero-container {
+    height: 75vh;
+    width: 100%;
+    overflow: hidden;
+    position: relative;
+}
+
+/* VIDEO DESKTOP */
+.hero-video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+/* IMAGEN MOBILE */
+.hero-container {
+    height: 75vh;
+    width: 100%;
+    overflow: hidden;
+}
+
+.hero-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* MOBILE / TABLET */
+@media (max-width: 768px) {
+    .hero-video {
+        display: none;
+    }
+
+    .hero-image {
+        display: block;
+    }
+}
+
+/* ===========================
+   CONTENIDO SLIDE NORMAL
+=========================== */
+
 .carousel-content {
     height: 100%;
     display: flex;
     flex-direction: column;
-    justify-content: flex-end; /* botones más abajo */
+    justify-content: flex-end;
     align-items: center;
     padding-bottom: 4rem;
     gap: 2rem;
@@ -29,7 +76,6 @@
 }
 
 /* Botón Pedir */
-
 ::deep .btn-pedir {
     padding: 0.9rem 2.2rem;
     font-size: 1rem;
@@ -38,13 +84,12 @@
     box-shadow: 0 8px 20px rgba(244,67,54,0.4);
 }
 
-    .btn-pedir:hover {
-        transform: translateY(-4px) scale(1.05);
-        box-shadow: 0 12px 30px rgba(244,67,54,0.7);
-    }
+.btn-pedir:hover {
+    transform: translateY(-4px) scale(1.05);
+    box-shadow: 0 12px 30px rgba(244,67,54,0.7);
+}
 
 /* Botón Ver más */
-
 ::deep .btn-ver {
     padding: 0.9rem 2.2rem;
     font-size: 1rem;
@@ -52,26 +97,13 @@
     color: white;
     border: 1px solid rgba(255,255,255,0.6);
 }
-    .btn-ver:hover {
-        background-color: rgba(255,255,255,0.1);
-        transform: translateY(-3px);
-    }
 
-/* Aparición general desde abajo */
-.appear {
-    opacity: 0;
-    transform: translateY(40px);
-    animation: appearFromBottom 0.9s ease-out forwards;
-    animation-delay: 0.2s;
+.btn-ver:hover {
+    background-color: rgba(255,255,255,0.1);
+    transform: translateY(-3px);
 }
 
-/* Delay sutil para que no se vea brusco */
-.mud-carousel-item-active .appear {
-    animation-delay: 0.15s;
-}
-
-
-/* Animación entrada */
+/* Animaciones */
 @keyframes floatIn {
     from {
         opacity: 0;
@@ -84,14 +116,38 @@
     }
 }
 
-@keyframes appearFromBottom {
-    from {
-        opacity: 0;
-        transform: translateY(40px);
+
+.hero-container {
+    height: 75vh;
+    width: 100%;
+    overflow: hidden;
+    position: relative;
+}
+
+.hero-video,
+.hero-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* MOBILE = imagen */
+.hero-image {
+    display: none;
+}
+
+/* DESKTOP = video */
+.hero-video {
+    display: block;
+}
+
+/* BREAKPOINT */
+@media (max-width: 768px) {
+    .hero-video {
+        display: none;
     }
 
-    to {
-        opacity: 1;
-        transform: translateY(0);
+    .hero-image {
+        display: block;
     }
 }

@@ -16,9 +16,7 @@
 
         <Authorized Context="auth">
             <MudPaper Class="pa-4 ma-4" Elevation="1">
-                <MudText Typo="Typo.h6">
-                    Estado: Logueado
-                </MudText>
+                <MudText Typo="Typo.h6">Estado: Logueado</MudText>
 
                 <MudText Typo="Typo.subtitle1">
                     Rol:
@@ -33,66 +31,72 @@
         </Authorized>
     </AuthorizeView>
 
-    <MudCarousel Class="mud-width-full promo-carousel"
-                 Style="height:75vh;"
-                 ShowArrows="@arrows"
-                 ShowBullets="@bullets"
-                 EnableSwipeGesture="@enableSwipeGesture"
-                 AutoCycle="@autocycle"
-                 TData="object"
-                 Transition="@transition">
+    @if (!_loading)
+    {
+        <MudCarousel Class="mud-width-full promo-carousel"
+                     Style="height:75vh;"
+                     ShowArrows="@arrows"
+                     ShowBullets="@bullets"
+                     EnableSwipeGesture="@enableSwipeGesture"
+                     AutoCycle="@autocycle"
+                     AutoCycleInterval="16000"
+                     TData="object"
+                     Transition="@transition">
 
-        <MudCarouselItem Color="@Color.Primary">
-            <div class="carousel-content appear">
+            <!-- SLIDE VIDEO DESKTOP / IMAGEN MOBILE -->
+            <MudCarouselItem>
 
-                <MudIcon Icon="@Icons.Custom.Brands.MudBlazor"
-                         Size="@Size.Large"
-                         Class="icon-animate" />
+                <div class="hero-container">
 
-                <div class="actions">
-                    <MudButton Class="btn-pedir"
-                               Color="Color.Error"
-                               Variant="Variant.Filled"
-                               OnClick="@PedirDemo">
-                        Pedir
-                    </MudButton>
+                    <!-- VIDEO SOLO DESKTOP -->
+                    <video class="hero-video"
+                           autoplay
+                           muted
+                           loop
+                           playsinline
+                           preload="auto">
+                        <source src="/videos/video1.mp4" type="video/mp4" />
+                    </video>
 
-                    <MudButton Class="btn-ver"
-                               Variant="Variant.Outlined"
-                               OnClick="@VerMasDemo">
-                        Ver más
-                    </MudButton>
+                    <!-- IMAGEN SOLO MOBILE -->
+                    <img src="/images/Carrusel/NOTICIA-5-portada-cerveza-1210x642-1.jpg"
+                         class="hero-image"
+                         alt="Promoción Daniel Licors" />
+
                 </div>
 
-            </div>
-        </MudCarouselItem>
+            </MudCarouselItem>
 
-        <MudCarouselItem Color="@Color.Secondary">
-            <div class="carousel-content">
+            <!-- SLIDE NORMAL -->
+            <MudCarouselItem Color="@Color.Secondary">
+                <div class="carousel-content">
 
-                <MudIcon Icon="@Icons.Custom.Brands.MudBlazor"
-                         Size="@Size.Large"
-                         Class="icon-animate" />
+                    <MudIcon Icon="@Icons.Custom.Brands.MudBlazor"
+                             Size="@Size.Large"
+                             Class="icon-animate" />
 
-                <div class="actions">
-                    <MudButton Class="btn-pedir"
-                               Color="Color.Error"
-                               Variant="Variant.Filled">
-                        Pedir
-                    </MudButton>
+                    <div class="actions">
+                        <MudButton Class="btn-pedir"
+                                   Color="Color.Error"
+                                   Variant="Variant.Filled"
+                                   OnClick="PedirDemo">
+                            Pedir
+                        </MudButton>
 
-                    <MudButton Class="btn-ver"
-                               Variant="Variant.Outlined">
-                        Ver más
-                    </MudButton>
+                        <MudButton Class="btn-ver"
+                                   Variant="Variant.Outlined"
+                                   OnClick="VerMasDemo">
+                            Ver más
+                        </MudButton>
+                    </div>
+
                 </div>
+            </MudCarouselItem>
 
-            </div>
-        </MudCarouselItem>
+        </MudCarousel>
+    }
 
-    </MudCarousel>
-
-    <!--CATEGORÍAS-->
+    <!-- CATEGORÍAS -->
     <CategoryProductCarousel Title="Cervezas"
                              Products="@cervezas" />
 

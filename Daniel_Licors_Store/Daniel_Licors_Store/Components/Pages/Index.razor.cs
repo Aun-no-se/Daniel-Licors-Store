@@ -2,7 +2,6 @@
 using Daniel_Licors_Store.Models.Product;
 using Daniel_Licors_Store.Services;
 using Microsoft.AspNetCore.Components;
-using Microsoft.JSInterop; 
 using MudBlazor;
 
 namespace Daniel_Licors_Store.Components.Pages
@@ -11,7 +10,6 @@ namespace Daniel_Licors_Store.Components.Pages
     {
         [Inject] private ICatalogService CatalogService { get; set; } = default!;
         [Inject] private ProductStateService State { get; set; } = default!;
-        [Inject] private IJSRuntime JS { get; set; } = default!;
 
         private List<ProductResponseModel> cervezas = new();
         private List<ProductResponseModel> rones = new();
@@ -22,20 +20,25 @@ namespace Daniel_Licors_Store.Components.Pages
         private bool autocycle = true;
         private Transition transition = Transition.Fade;
 
+        private bool _loading = true;
+
         protected override async Task OnInitializedAsync()
         {
-            State.OnChange += ReloadData;
+            State.OnChange += OnStateChanged;
             await LoadData();
+            _loading = false;
         }
 
-        private async void ReloadData()
+        private async void OnStateChanged()
         {
+            await ReloadData();
+        }
+
+        private async Task ReloadData()
+        {
+            _loading = true;
             await LoadData();
-
-            // Esperamos un momento a que el DOM se actualice con los nuevos items
-            await Task.Delay(200);
-
-            await JS.InvokeVoidAsync("initProductSwiper");
+            _loading = false;
 
             await InvokeAsync(StateHasChanged);
         }
@@ -44,8 +47,6 @@ namespace Daniel_Licors_Store.Components.Pages
         {
             cervezas = await CatalogService.GetProductsByCategoryAsync(14);
             rones = await CatalogService.GetProductsByCategoryAsync(15);
-
-            await InvokeAsync(StateHasChanged);
         }
 
         private void PedirDemo() { }
@@ -54,7 +55,7 @@ namespace Daniel_Licors_Store.Components.Pages
 
         public void Dispose()
         {
-            State.OnChange -= ReloadData;
+            State.OnChange -= OnStateChanged;
         }
     }
 }
