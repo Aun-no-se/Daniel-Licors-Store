@@ -1,40 +1,136 @@
-﻿/* ===== RESET ===== */
+﻿/* ===== IMPORTAR FUENTE MODERNA ===== */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap');
+
+/* ===== RESET GENERAL ===== */
 html, body {
     margin: 0;
     padding: 0;
-    min-height: 100%;
-    font-family: 'Times New Roman', Times, serif !important;
-    background-color: #B71C1C !important;
-    overscroll-behavior: none;
-}
-
-/* ===== BODY ===== */
-body {
-    margin: 0;
-    padding: 0;
     min-height: 100vh;
-    /* Mantenemos tu gradiente, pero el html de fondo ya es rojo */
-    background: linear-gradient(180deg, #B71C1C 0%, #4A0D0D 60%, #0A0A0A 100%) !important;
-}
-
-/* ===== LINKS / BUTTONS ===== */
-a, .btn-link {
-    color: #006bb7;
-}
-
-/* Sobreescribir los gutters de MudContainer de forma global */
-.mud-container--gutters {
-    padding-left: 0px !important;
-    padding-right: 0px !important;
-}
-
-/* Asegurar que el contenedor principal ocupe todo el ancho */
-.mud-container {
-    max-width: 100% !important;
-    width: 100% !important;
-}
-
-
-.index-page {
+    font-family: 'Poppins', sans-serif !important;
+    background-color: #050505 !important;
+    color: #ffffff;
     overflow-x: hidden;
 }
+
+/* ===== FONDO GRADIENTE PREMIUM ===== */
+body {
+    /* Un degradado elegante que simula iluminación desde el fondo */
+    background: radial-gradient(circle at 50% 100%, #3A0707 0%, #0D0D0D 60%, #050505 100%) !important;
+    background-attachment: fixed !important;
+}
+
+/* ===== REGLAS DE LA TOPBAR (GLASSMORPHISM) ===== */
+.topbar {
+    background: rgba(13, 13, 13, 0.7) !important;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(255, 23, 68, 0.15) !important;
+    transition: all 0.3s ease;
+    padding: 0 16px;
+}
+
+.topbar-grid {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    width: 100%;
+    align-items: center;
+}
+
+.topbar-left {
+    justify-self: start;
+    display: flex;
+    align-items: center;
+}
+
+.topbar-center {
+    justify-self: center;
+    font-weight: 700;
+    letter-spacing: 2px;
+    font-size: 1.2rem;
+    background: linear-gradient(90deg, #FFFFFF 0%, #FF8A80 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.topbar-right {
+    justify-self: end;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+/* ===== BOTONES CON FLOW Y ANIMACIÓN ===== */
+/* Botón Primario / Gradiente Resaltado */
+.btn-licol-gradient {
+    background: linear-gradient(135deg, #FF1744 0%, #B71C1C 100%) !important;
+    color: white !important;
+    font-weight: 600 !important;
+    border-radius: 8px !important;
+    box-shadow: 0 4px 15px rgba(213, 0, 0, 0.2) !important;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
+}
+
+    .btn-licol-gradient:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(255, 23, 68, 0.4) !important;
+        filter: brightness(1.1);
+    }
+
+/* Botones de Texto / Menús */
+.mud-button-root {
+    text-transform: none !important; /* Quita las mayúsculas forzadas de MudBlazor */
+    font-weight: 500;
+}
+
+/* Efecto Hover sutil para botones planos */
+.topbar-right .mud-button-text:hover {
+    background: rgba(255, 23, 68, 0.1) !important;
+    color: #FF5252 !important;
+}
+
+/* ===== RESPONSIVE MÓVIL (DE LOCOS) ===== */
+@media (max-width: 600px) {
+    .topbar-center {
+        font-size: 1rem;
+        letter-spacing: 1px;
+    }
+
+    /* El menú desplegable en móvil adaptado al modo oscuro con bordes rojos */
+    .mud-popover-provider .mud-popover-open {
+        background: #141414 !important;
+        border: 1px solid rgba(255, 23, 68, 0.2) !important;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.5) !important;
+        border-radius: 12px !important;
+    }
+
+    .mud-menu-item {
+        color: #FFFFFF !important;
+    }
+
+        .mud-menu-item:hover {
+            background-color: rgba(255, 23, 68, 0.1) !important;
+        }
+}
+
+/* ===== CONTENIDO PRINCIPAL LAYOUT ===== */
+.main-content {
+    padding-top: 80px !important; /* Previene que la barra fija tape el contenido */
+}
+
+/* Scrollbar personalizada para que combine con el flow */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #0D0D0D;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #424242;
+    border-radius: 4px;
+}
+
+    ::-webkit-scrollbar-thumb:hover {
+        background: #FF1744;
+    }

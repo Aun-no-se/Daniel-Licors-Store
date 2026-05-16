@@ -1,0 +1,105 @@
+﻿@page "/register"
+@inject IAuthService AuthService
+@inject NavigationManager Nav
+@using Daniel_Licors_Store.Models.Users.Auth
+@using Daniel_Licors_Store.Services
+@using Daniel_Licors_Store.Services.Auth
+@using MudBlazor
+
+<MudContainer MaxWidth="MaxWidth.Small" Class="mt-10">
+
+    <MudPaper Class="pa-6">
+
+        <MudText Typo="Typo.h5" Class="mb-4">
+            Crear cuenta
+        </MudText>
+
+        <MudTextField @bind-Value="model.Name"
+                      Label="Nombre"
+                      FullWidth />
+
+        <MudTextField @bind-Value="model.LastName"
+                      Label="Apellido"
+                      FullWidth
+                      Class="mt-2" />
+
+        <MudTextField @bind-Value="model.Age"
+                      Label="Edad"
+                      FullWidth
+                      Class="mt-2"
+                      InputType="InputType.Number" />
+
+        <MudTextField @bind-Value="model.Email"
+                      Label="Correo"
+                      FullWidth
+                      Class="mt-2" />
+
+        <MudTextField @bind-Value="model.Password"
+                      Label="Contraseña"
+                      InputType="InputType.Password"
+                      FullWidth
+                      Class="mt-2" />
+
+        <MudTextField @bind-Value="model.ConfirmPassword"
+                      Label="Confirmar contraseña"
+                      InputType="InputType.Password"
+                      FullWidth
+                      Class="mt-2" />
+
+        @if (!string.IsNullOrEmpty(errorMessage))
+        {
+            <MudAlert Severity="Severity.Error" Class="mt-3">
+                @errorMessage
+            </MudAlert>
+        }
+
+        <MudButton OnClick="HandleRegister"
+                   Color="Color.Primary"
+                   Variant="Variant.Filled"
+                   Class="mt-4"
+                   FullWidth
+                   Disabled="@isLoading">
+
+            @if (isLoading)
+            {
+                <MudProgressCircular Size="Size.Small" Indeterminate="true" />
+                <span class="ml-2">Registrando...</span>
+            }
+            else
+            {
+                <span>Registrarse</span>
+            }
+
+        </MudButton>
+
+    </MudPaper>
+
+</MudContainer>
+
+@code {
+
+    private RegisterModel model = new();
+    private string? errorMessage;
+    private bool isLoading;
+
+    private async Task HandleRegister()
+    {
+        try
+        {
+            errorMessage = null;
+            isLoading = true;
+
+            await AuthService.RegisterAsync(model);
+
+            Nav.NavigateTo("/login");
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+}

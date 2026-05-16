@@ -1,127 +1,119 @@
 ﻿@using Daniel_Licors_Store.Components.Product
-@using Daniel_Licors_Store.Data.Repositories.Interfaces
-@using Daniel_Licors_Store.Models.Product
+@using Daniel_Licors_Store.Data.Services
+@using Microsoft.AspNetCore.Components.Authorization
 @using MudBlazor
+@inject NavigationManager Nav
 @inject IDialogService DialogService
-@inject IProductService ProductService
+@inject AuthenticationStateProvider AuthStateProvider
 
-<MudAppBar Fixed="true"
-           Elevation="0"
-           Class="topbar">
-
+<MudAppBar Fixed="true" Elevation="0" Class="topbar">
     <div class="topbar-grid">
 
-        <!-- IZQUIERDA -->
-        <div class="topbar-left">
+        <div class="topbar-left" style="display: flex; align-items: center; gap: 8px;">
 
-            <MudHidden Breakpoint="Breakpoint.SmAndDown">
-                <MudIcon Icon="@Icons.Material.Filled.AccountCircle"
-                         Size="Size.Medium"
-                         Style="color: white"
-                         Class="desktop-icon" />
-            </MudHidden>
+            <MudIcon Icon="@Icons.Material.Filled.LocalBar"
+                     Size="Size.Medium"
+                     Style="color: #FF1744; filter: drop-shadow(0 0 5px rgba(255,23,68,0.5));" />
 
+            DANIEL LIQUOR STORE
         </div>
 
-        <!-- CENTRO -->
         <div class="topbar-center">
-            DANIEL LICORS
         </div>
 
-        <!-- DERECHA -->
         <div class="topbar-right">
 
-            <!-- ===== MOBILE: menú hamburguesa ===== -->
             <MudHidden Breakpoint="Breakpoint.MdAndUp">
-
-                <MudMenu AnchorOrigin="Origin.BottomRight"
-                         TransformOrigin="Origin.TopRight">
-
+                <MudMenu AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
                     <ActivatorContent>
-                        <MudIconButton Icon="@Icons.Material.Filled.Menu"
-                                       Color="Color.Inherit"
-                                       Size="Size.Medium" />
+                        <MudIconButton Icon="@Icons.Material.Filled.Menu" Style="color: white;" />
                     </ActivatorContent>
-
                     <ChildContent>
+                        <AuthorizeView>
+                            <NotAuthorized>
+                                <MudMenuItem OnClick="@(() => Nav.NavigateTo("/login"))">Login</MudMenuItem>
+                                <MudMenuItem OnClick="@(() => Nav.NavigateTo("/register"))">Registrarse</MudMenuItem>
+                                <MudDivider Dense="true" Style="background: rgba(255,255,255,0.1);" />
+                                <MudMenuItem>Servicios</MudMenuItem>
+                            </NotAuthorized>
+                        </AuthorizeView>
 
-                        <MudMenuItem>
-                            Login
-                        </MudMenuItem>
+                        <AuthorizeView Roles="Cliente">
+                            <MudMenuItem>Servicios</MudMenuItem>
+                            <MudMenuItem>Carrito</MudMenuItem>
+                            <MudDivider Dense="true" Style="background: rgba(255,255,255,0.1);" />
+                            <MudMenuItem OnClick="Logout" Style="color: #FF5252;">Logout</MudMenuItem>
+                        </AuthorizeView>
 
-                        <MudMenuItem>
-                            Registrarse
-                        </MudMenuItem>
-
-                        <MudDivider />
-
-                        <MudMenuItem OnClick="AbrirAgregarBebida">
-                            Agregar una bebida
-                        </MudMenuItem>
-
-                        <MudMenuItem>
-                            Servicios
-                        </MudMenuItem>
-
+                        <AuthorizeView Roles="Empleado, Admin">
+                            @if (context.User.IsInRole("Admin"))
+                            {
+                                <MudMenuItem OnClick="@(() => Nav.NavigateTo("/admin"))">Panel de Control</MudMenuItem>
+                            }
+                            <MudMenuItem OnClick="AbrirAgregarBebida">Agregar Bebida</MudMenuItem>
+                            <MudMenuItem>Servicios</MudMenuItem>
+                            <MudMenuItem>Carrito</MudMenuItem>
+                            <MudDivider Dense="true" Style="background: rgba(255,255,255,0.1);" />
+                            <MudMenuItem OnClick="Logout" Style="color: #FF5252;">Logout</MudMenuItem>
+                        </AuthorizeView>
                     </ChildContent>
-
                 </MudMenu>
-
             </MudHidden>
 
-            <!-- ===== DESKTOP: botones visibles ===== -->
+
             <MudHidden Breakpoint="Breakpoint.SmAndDown">
 
-                <!-- Servicios (dropdown) -->
-                <MudMenu Dense="true">
-                    <ActivatorContent>
-                        <MudButton Color="Color.Inherit"
-                                   Variant="Variant.Text">
-                            Servicios
-                        </MudButton>
-                    </ActivatorContent>
+                <AuthorizeView>
+                    <NotAuthorized>
+                        <MudButton Variant="Variant.Text" Class="btn-licol-text">Servicios</MudButton>
+                        <MudButton Variant="Variant.Text" Class="btn-licol-text" OnClick="@(() => Nav.NavigateTo("/login"))">Login</MudButton>
+                        <MudButton Variant="Variant.Filled" Class="btn-licol-highlight" OnClick="@(() => Nav.NavigateTo("/register"))">Registrarse</MudButton>
+                    </NotAuthorized>
+                </AuthorizeView>
 
-                    <ChildContent>
-                        <MudMenuItem>Servicio 1</MudMenuItem>
-                        <MudMenuItem>Servicio 2</MudMenuItem>
-                        <MudMenuItem>Contacto</MudMenuItem>
-                    </ChildContent>
-                </MudMenu>
+                <AuthorizeView Roles="Cliente">
+                    <MudButton Variant="Variant.Text" Class="btn-licol-text">Servicios</MudButton>
+                    <MudButton Variant="Variant.Text" Class="btn-licol-text" StartIcon="@Icons.Material.Filled.ShoppingCart">Carrito</MudButton>
+                    <MudButton Variant="Variant.Text" Class="btn-licol-logout-text" OnClick="Logout">Cierre de Sesión</MudButton>
+                </AuthorizeView>
 
-                <!-- Agregar Bebidas -->
-                <MudButton Color="Color.Secondary"
-                           Variant="Variant.Filled"
-                           StartIcon="@Icons.Material.Filled.Add"
-                           OnClick="AbrirAgregarBebida">
-                    Agregar Bebida
-                </MudButton>
+                <AuthorizeView Roles="Empleado">
+                    <MudButton Variant="Variant.Filled" Class="btn-licol-highlight" StartIcon="@Icons.Material.Filled.Add" OnClick="AbrirAgregarBebida">Agregar Bebida</MudButton>
+                    <MudButton Variant="Variant.Text" Class="btn-licol-text">Servicios</MudButton>
+                    <MudButton Variant="Variant.Text" Class="btn-licol-text" StartIcon="@Icons.Material.Filled.ShoppingCart">Carrito</MudButton>
+                    <MudButton Variant="Variant.Text" Class="btn-licol-logout-text" OnClick="Logout">Cierre de Sesión</MudButton>
+                </AuthorizeView>
 
-                <!-- Login -->
-                <MudButton Color="Color.Inherit"
-                           Variant="Variant.Text">
-                    Login
-                </MudButton>
+                <AuthorizeView Roles="Admin">
+                    <MudButton Variant="Variant.Filled" Class="btn-licol-highlight" StartIcon="@Icons.Material.Filled.Add" OnClick="AbrirAgregarBebida">Agregar Bebida</MudButton>
 
-                <!-- Registrarse -->
-                <MudButton Color="Color.Inherit"
-                           Variant="Variant.Outlined">
-                    Registrarse
-                </MudButton>
+                    <MudButton Variant="Variant.Text" Class="btn-licol-text" StartIcon="@Icons.Material.Filled.Settings" OnClick="@(() => Nav.NavigateTo("/admin"))">Panel</MudButton>
+
+                    <MudButton Variant="Variant.Text" Class="btn-licol-text">Servicios</MudButton>
+
+                    <MudButton Variant="Variant.Text" Class="btn-licol-text" StartIcon="@Icons.Material.Filled.ShoppingCart">Carrito</MudButton>
+
+                    <MudButton Variant="Variant.Text" Class="btn-licol-logout-text" OnClick="Logout">Cierre de Sesión</MudButton>
+                </AuthorizeView>
 
             </MudHidden>
 
         </div>
-
     </div>
-
 </MudAppBar>
 
-@code
-{
-    async Task AbrirAgregarBebida()
+@code {
+    void AbrirAgregarBebida()
     {
-        Console.WriteLine("OPEN DIALOG");
+        DialogService.Show<ProductDialog>("Agregar Bebida");
+    }
 
-        var dialog = DialogService.Show<ProductDialog>("Agregar Bebida");
+    private async Task Logout()
+    {
+        if (AuthStateProvider is CustomAuthStateProvider custom)
+        {
+            await custom.Logout();
+        }
+        Nav.NavigateTo("/", forceLoad: true);
     }
 }

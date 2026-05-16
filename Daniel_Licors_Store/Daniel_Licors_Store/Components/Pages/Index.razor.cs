@@ -2,7 +2,7 @@
 using Daniel_Licors_Store.Models.Product;
 using Daniel_Licors_Store.Services;
 using Microsoft.AspNetCore.Components;
-using Microsoft.JSInterop; // 👈 Asegúrate de que esta línea esté presente
+using Microsoft.JSInterop; 
 using MudBlazor;
 
 namespace Daniel_Licors_Store.Components.Pages
@@ -11,8 +11,6 @@ namespace Daniel_Licors_Store.Components.Pages
     {
         [Inject] private ICatalogService CatalogService { get; set; } = default!;
         [Inject] private ProductStateService State { get; set; } = default!;
-
-        // 🔥 ESTO ES LO QUE FALTABA:
         [Inject] private IJSRuntime JS { get; set; } = default!;
 
         private List<ProductResponseModel> cervezas = new();
@@ -37,7 +35,6 @@ namespace Daniel_Licors_Store.Components.Pages
             // Esperamos un momento a que el DOM se actualice con los nuevos items
             await Task.Delay(200);
 
-            // Ahora 'JS' ya existe en el contexto gracias al [Inject] arriba
             await JS.InvokeVoidAsync("initProductSwiper");
 
             await InvokeAsync(StateHasChanged);

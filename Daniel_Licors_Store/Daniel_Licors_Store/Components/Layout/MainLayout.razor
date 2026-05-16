@@ -1,7 +1,7 @@
 ﻿@using MudBlazor
 @inherits LayoutComponentBase
 
-<MudThemeProvider Theme="@Theme" />
+<MudThemeProvider Theme="@Theme" IsDarkMode="true" />
 <MudBreakpointProvider />
 <MudPopoverProvider />
 <MudDialogProvider />
@@ -10,8 +10,8 @@
 
     <TopBar />
 
-    <MudMainContent Class="main-content">
-        <MudContainer MaxWidth="MaxWidth.False">
+    <MudMainContent Class="mud-main-content-reset">
+        <MudContainer MaxWidth="MaxWidth.False" Class="pa-0">
             @Body
         </MudContainer>
     </MudMainContent>
@@ -21,16 +21,16 @@
 @code {
     private MudTheme Theme = new MudTheme()
     {
-        PaletteLight = new PaletteLight()
+        PaletteDark = new PaletteDark()
         {
-            Primary = "#F44336",
-            AppbarBackground = "#B71C1C",
-            AppbarText = "#FFFFFF",
-            // Cambiamos Background para que coincida con tu inicio de gradiente
-            Background = "#B71C1C",
-            Surface = "#B71C1C", // Cambia Surface también si ves bordes blancos en AbrirAgregarBebida
-            TextPrimary = "#FFFFFF", // Probablemente quieras texto blanco sobre fondo rojo
-  
+            Primary = "#FF1744",
+            Secondary = "#E53935",
+            Background = "#0D0D0D",
+            Surface = "#1A1A1A",
+            AppbarBackground = "#0D0D0D00",
+            TextPrimary = "#FFFFFF",
+            TextSecondary = "#BDBDBD",
+            DrawerBackground = "#121212"
         }
     };
 }

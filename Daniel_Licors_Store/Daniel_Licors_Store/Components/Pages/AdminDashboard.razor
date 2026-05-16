@@ -1,0 +1,91 @@
+﻿@page "/admin"
+@using Daniel_Licors_Store.Data.Services
+@using Daniel_Licors_Store.Models.Admin
+@using MudBlazor
+@inject AdminDashboardService DashboardService
+
+<MudContainer MaxWidth="MaxWidth.False" Class="pa-4">
+
+    <MudText Typo="Typo.h4" Class="mb-4">
+        Panel de Control
+    </MudText>
+
+    <MudButton Color="Color.Primary"
+               Variant="Variant.Filled"
+               Href="/admin/create-user">
+        Crear Usuario
+    </MudButton>
+
+    <!-- KPIs -->
+    <MudGrid GutterSize="3">
+
+        <MudItem xs="12" sm="6" md="3">
+            <MudPaper Class="pa-4">
+                <MudText Typo="Typo.subtitle2">Ventas del Mes</MudText>
+                <MudText Typo="Typo.h5">@data.TotalSales.ToString("C")</MudText>
+            </MudPaper>
+        </MudItem>
+
+        <MudItem xs="12" sm="6" md="3">
+            <MudPaper Class="pa-4">
+                <MudText Typo="Typo.subtitle2">Pedidos</MudText>
+                <MudText Typo="Typo.h5">@data.TotalOrders</MudText>
+            </MudPaper>
+        </MudItem>
+
+        <MudItem xs="12" sm="6" md="3">
+            <MudPaper Class="pa-4">
+                <MudText Typo="Typo.subtitle2">Clientes</MudText>
+                <MudText Typo="Typo.h5">@data.TotalCustomers</MudText>
+            </MudPaper>
+        </MudItem>
+
+        <MudItem xs="12" sm="6" md="3">
+            <MudPaper Class="pa-4">
+                <MudText Typo="Typo.subtitle2">Productos</MudText>
+                <MudText Typo="Typo.h5">@data.TotalProducts</MudText>
+            </MudPaper>
+        </MudItem>
+
+    </MudGrid>
+
+    <!-- GRÁFICOS -->
+    <MudGrid Class="mt-6">
+
+        <MudItem xs="12" md="8">
+            <MudPaper Class="pa-4">
+                <MudText Typo="Typo.h6">Ventas por Día</MudText>
+
+                <MudChart ChartType="ChartType.Line"
+                          Labels="@salesChart.Labels"
+                          Data="@salesChart.Data" />
+            </MudPaper>
+        </MudItem>
+
+        <MudItem xs="12" md="4">
+            <MudPaper Class="pa-4">
+                <MudText Typo="Typo.h6">Ventas por Categoría</MudText>
+
+                <MudChart ChartType="ChartType.Donut"
+                          Labels="@categoryChart.Labels"
+                          Data="@categoryChart.Data" />
+            </MudPaper>
+        </MudItem>
+
+    </MudGrid>
+
+</MudContainer>
+
+@code {
+    DashboardSummary data = new();
+    ChartData salesChart = new();
+    ChartData categoryChart = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        data = await DashboardService.GetSummaryAsync();
+        salesChart = await DashboardService.GetSalesChartAsync();
+        categoryChart = await DashboardService.GetCategoryChartAsync();
+    }
+
+}

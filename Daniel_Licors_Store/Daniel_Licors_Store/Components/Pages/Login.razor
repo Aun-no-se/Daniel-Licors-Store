@@ -1,0 +1,123 @@
+﻿@page "/login"
+@using Daniel_Licors_Store.Models.Users.Auth
+@inject IHttpClientFactory HttpClientFactory
+@inject NavigationManager Nav
+@inject AuthenticationStateProvider AuthStateProvider
+@using Microsoft.AspNetCore.Components.Authorization
+@using MudBlazor
+@using Daniel_Licors_Store.Data.Services
+
+<MudContainer MaxWidth="MaxWidth.Small" Class="mt-10">
+
+    <MudPaper Class="pa-6">
+
+        <MudText Typo="Typo.h5" Class="mb-4">
+            Iniciar sesión
+        </MudText>
+
+        <MudTextField @bind-Value="model.Email"
+                      Label="Correo"
+                      FullWidth />
+
+        <MudTextField @bind-Value="model.Password"
+                      Label="Contraseña"
+                      InputType="InputType.Password"
+                      FullWidth
+                      Class="mt-2" />
+
+        <MudButton OnClick="LoginUsers"
+                   Color="Color.Primary"
+                   Variant="Variant.Filled"
+                   Class="mt-4"
+                   FullWidth
+                   Disabled="@isLoading">
+
+            @(isLoading ? "Ingresando..." : "Entrar")
+
+        </MudButton>
+
+        @if (!string.IsNullOrEmpty(error))
+        {
+            <MudText Color="Color.Error" Class="mt-2">
+                @error
+            </MudText>
+        }
+
+    </MudPaper>
+
+</MudContainer>
+
+@code {
+
+    private LoginModel model = new();
+    private string? error;
+    private bool isLoading;
+
+    private async Task LoginUsers()
+    {
+        error = null;
+        isLoading = true;
+
+        try
+        {
+            var http = HttpClientFactory.CreateClient("LocalApi");
+
+            var response = await http.PostAsJsonAsync("/api/login", model);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var result = await response.Content.ReadFromJsonAsync<LoginResponse>();
+
+                var roles = result?.roles ?? new List<string>();
+
+                // 🔥 AQUÍ ESTA EL CAMBIO IMPORTANTE
+                var customAuth = (CustomAuthStateProvider)AuthStateProvider;
+
+                var session = new UserSession
+                {
+                    UserId = "", // opcional (puedes traerlo del backend si lo devuelves)
+                    Email = model.Email,
+                    Roles = roles,
+                    LastActivity = DateTime.Now
+                };
+
+                await customAuth.MarkUserAsAuthenticated(session);
+
+                // 🔀 navegación por rol
+                if (roles.Contains("Admin"))
+                {
+                    Nav.NavigateTo("/admin", forceLoad: true);
+                }
+                else if (roles.Contains("Empleado"))
+                {
+                    Nav.NavigateTo("/dashboard", forceLoad: true);
+                }
+                else
+                {
+                    Nav.NavigateTo("/", forceLoad: true);
+                }
+            }
+            else if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            {
+                error = "Credenciales incorrectas";
+            }
+            else
+            {
+                error = "Error inesperado en el servidor";
+            }
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    public class LoginResponse
+    {
+        public List<string> roles { get; set; } = new();
+    }
+}

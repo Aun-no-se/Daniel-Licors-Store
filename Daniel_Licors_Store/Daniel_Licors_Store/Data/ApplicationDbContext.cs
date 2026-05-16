@@ -19,6 +19,11 @@ public class ApplicationDbContext : DbContext
     public DbSet<Store> Stores => Set<Store>();
     public DbSet<Brand> Brands => Set<Brand>();
     public DbSet<StockMovement> StockMovements => Set<StockMovement>();
+    public DbSet<User> Users => Set<User>();
+    public DbSet<Order> Orders => Set<Order>();
+    public DbSet<OrderItem> OrderItems => Set<OrderItem>();
+    public DbSet<Role> Roles => Set<Role>();
+    public DbSet<UserRole> UserRoles => Set<UserRole>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -80,7 +85,7 @@ public class ApplicationDbContext : DbContext
                   .HasMaxLength(250)
                   .IsRequired();
 
-            // 🔥 IMPORTANTE: relaciones explícitas
+            //relaciones explícitas
             entity.HasMany(s => s.ProductStores)
                   .WithOne(ps => ps.Store)
                   .HasForeignKey(ps => ps.StoreId)
@@ -159,6 +164,55 @@ public class ApplicationDbContext : DbContext
                   .WithMany(s => s.ProductStores)
                   .HasForeignKey(ps => ps.StoreId)
                   .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // ============================
+        // USER REGISTERS
+        // ============================
+        modelBuilder.Entity<User>(entity =>
+        {
+            entity.ToTable("Users"); 
+
+            entity.HasKey(e => e.UserId);
+
+            entity.Property(e => e.Email).HasMaxLength(150);
+            entity.Property(e => e.PasswordHash).HasMaxLength(500);
+        });
+
+        modelBuilder.Entity<UserRole>()
+            .HasOne(ur => ur.User)
+            .WithMany(u => u.UserRoles)
+            .HasForeignKey(ur => ur.UserId);
+
+        modelBuilder.Entity<UserRole>(entity =>
+        {
+            entity.ToTable("UserRoles");
+
+            entity.HasKey(ur => ur.UserRoleId);
+
+            entity.HasOne(ur => ur.User)
+                  .WithMany(u => u.UserRoles)
+                  .HasForeignKey(ur => ur.UserId)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(ur => ur.Role)
+                  .WithMany(r => r.UserRoles)
+                  .HasForeignKey(ur => ur.RoleId)
+                  .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<Role>(entity =>
+        {
+            entity.ToTable("Roles");
+
+            entity.HasKey(r => r.RoleId);
+
+            entity.Property(r => r.Name)
+                  .HasMaxLength(50)
+                  .IsRequired();
+
+            entity.Property(r => r.IsActive)
+                  .IsRequired();
         });
     }
 }
