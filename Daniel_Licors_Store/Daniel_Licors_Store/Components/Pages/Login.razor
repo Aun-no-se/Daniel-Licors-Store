@@ -1,57 +1,134 @@
 ﻿@page "/login"
 @using Daniel_Licors_Store.Models.Users.Auth
-@inject IHttpClientFactory HttpClientFactory
-@inject NavigationManager Nav
-@inject AuthenticationStateProvider AuthStateProvider
 @using Microsoft.AspNetCore.Components.Authorization
 @using MudBlazor
 @using Daniel_Licors_Store.Data.Services
+@inject IHttpClientFactory HttpClientFactory
+@inject NavigationManager Nav
+@inject AuthenticationStateProvider AuthStateProvider
 
-<MudContainer MaxWidth="MaxWidth.Small" Class="mt-10">
+<div class="d-flex align-center justify-center signup-login-wrapper" style="min-height: 100vh; width: 100%;">
+    <MudContainer MaxWidth="MaxWidth.Small" Class="my-auto">
 
-    <MudPaper Class="pa-6">
+        @* Contenedor Principal *@
+        <MudPaper Elevation="4" Class="overflow-hidden rounded-xl backend-card-custom">
 
-        <MudText Typo="Typo.h5" Class="mb-4">
-            Iniciar sesión
-        </MudText>
+            @* Banner Superior *@
+            <div class="login-banner-premium d-flex flex-column align-center justify-center py-6 text-center">
+                <MudIcon Icon="@Icons.Material.Filled.LocalBar" Size="Size.Large" Color="Color.Surface" Class="mb-2 logo-animate" />
+                <MudText Typo="Typo.h5" Class="font-weight-black text-white uppercase tracking-wider">
+                    Daniel Liquor Store
+                </MudText>
+                <MudText Typo="Typo.caption" Class="text-white-50 px-4">
+                    Introduce tus credenciales para acceder al sistema de gestión
+                </MudText>
+            </div>
 
-        <MudTextField @bind-Value="model.Email"
-                      Label="Correo"
-                      FullWidth />
+            @* Animación de Carga Lineal Superior Premium *@
+            <div class="loader-container-fixed">
+                @if (isLoading)
+                {
+                    <MudProgressLinear Color="Color.Error" Indeterminate="true" />
+                }
+            </div>
 
-        <MudTextField @bind-Value="model.Password"
-                      Label="Contraseña"
-                      InputType="InputType.Password"
-                      FullWidth
-                      Class="mt-2" />
+            @* Cuerpo del Formulario *@
+            <div class="pa-8 pt-4">
 
-        <MudButton OnClick="LoginUsers"
-                   Color="Color.Primary"
-                   Variant="Variant.Filled"
-                   Class="mt-4"
-                   FullWidth
-                   Disabled="@isLoading">
+                <MudText Typo="Typo.h5" Class="font-weight-bold mb-6 text-center dark-text-highlight">
+                    Iniciar Sesión
+                </MudText>
 
-            @(isLoading ? "Ingresando..." : "Entrar")
+                @* Campo de Correo *@
+                <MudTextField @bind-Value="model.Email"
+                              Label="Correo Electrónico"
+                              Variant="Variant.Outlined"
+                              Adornment="Adornment.End"
+                              AdornmentIcon="@Icons.Material.Filled.Email"
+                              AdornmentColor="Color.Primary"
+                              FullWidth
+                              Disabled="@isLoading"
+                              Class="mb-4" />
 
-        </MudButton>
+                @* Campo de Contraseña *@
+                <MudTextField @bind-Value="model.Password"
+                              Label="Contraseña"
+                              Variant="Variant.Outlined"
+                              InputType="@_passwordInput"
+                              Adornment="Adornment.End"
+                              AdornmentIcon="@_passwordInputIcon"
+                              AdornmentColor="Color.Primary"
+                              OnAdornmentClick="TogglePasswordVisibility"
+                              FullWidth
+                              Disabled="@isLoading"
+                              Class="mb-6" />
 
-        @if (!string.IsNullOrEmpty(error))
-        {
-            <MudText Color="Color.Error" Class="mt-2">
-                @error
-            </MudText>
-        }
+                @* Botón de Acción con Carga Interna Circular *@
+                <MudButton OnClick="LoginUsers"
+                           Color="Color.Error"
+                           Variant="Variant.Filled"
+                           Size="Size.Large"
+                           FullWidth
+                           Disabled="@isLoading"
+                           Class="py-3 btn-login-submit font-weight-bold text-transform-none">
+                    @if (isLoading)
+                    {
+                        <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                        <span>Validando credenciales...</span>
+                    }
+                    else
+                    {
+                        <span>Entrar al Sistema</span>
+                    }
+                </MudButton>
 
-    </MudPaper>
+                @* Alerta de Error *@
+                @if (!string.IsNullOrEmpty(error))
+                {
+                    <MudAlert Severity="Severity.Error"
+                              Variant="Variant.Outlined"
+                              Dense="true"
+                              Class="mt-4 rounded-lg animate__animated animate__fadeIn">
+                        @error
+                    </MudAlert>
+                }
 
-</MudContainer>
+                @* Enlace para ir al Registro *@
+                <div class="text-center mt-4">
+                    <MudLink Href="/register" Color="Color.Primary" Underline="Underline.Hover" Class="text-sm">
+                        ¿No tienes cuenta? Regístrate aquí
+                    </MudLink>
+                </div>
+
+            </div>
+        </MudPaper>
+    </MudContainer>
+</div>
 
 @code {
-
     private LoginModel model = new();
     private string? error;
     private bool isLoading;
+
+    private bool _passwordVisibility;
+    private InputType _passwordInput = InputType.Password;
+    private string _passwordInputIcon = Icons.Material.Filled.VisibilityOff;
+
+    private void TogglePasswordVisibility()
+    {
+        if (_passwordVisibility)
+        {
+            _passwordVisibility = false;
+            _passwordInputIcon = Icons.Material.Filled.VisibilityOff;
+            _passwordInput = InputType.Password;
+        }
+        else
+        {
+            _passwordVisibility = true;
+            _passwordInputIcon = Icons.Material.Filled.Visibility;
+            _passwordInput = InputType.Text;
+        }
+    }
 
     private async Task LoginUsers()
     {
@@ -61,21 +138,17 @@
         try
         {
             var http = HttpClientFactory.CreateClient("LocalApi");
-
             var response = await http.PostAsJsonAsync("/api/login", model);
 
             if (response.IsSuccessStatusCode)
             {
                 var result = await response.Content.ReadFromJsonAsync<LoginResponse>();
-
                 var roles = result?.roles ?? new List<string>();
-
-                // 🔥 AQUÍ ESTA EL CAMBIO IMPORTANTE
                 var customAuth = (CustomAuthStateProvider)AuthStateProvider;
 
                 var session = new UserSession
                 {
-                    UserId = "", // opcional (puedes traerlo del backend si lo devuelves)
+                    UserId = "",
                     Email = model.Email,
                     Roles = roles,
                     LastActivity = DateTime.Now
@@ -83,7 +156,6 @@
 
                 await customAuth.MarkUserAsAuthenticated(session);
 
-                // 🔀 navegación por rol
                 if (roles.Contains("Admin"))
                 {
                     Nav.NavigateTo("/admin", forceLoad: true);
@@ -99,16 +171,16 @@
             }
             else if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
             {
-                error = "Credenciales incorrectas";
+                error = "El correo o la contraseña son incorrectos.";
             }
             else
             {
-                error = "Error inesperado en el servidor";
+                error = "Ocurrió un error inesperado en el servidor.";
             }
         }
         catch (Exception ex)
         {
-            error = ex.Message;
+            error = $"Error de conexión: {ex.Message}";
         }
         finally
         {

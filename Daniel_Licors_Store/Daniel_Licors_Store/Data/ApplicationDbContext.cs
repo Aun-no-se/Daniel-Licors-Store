@@ -24,6 +24,10 @@ public class ApplicationDbContext : DbContext
     public DbSet<OrderItem> OrderItems => Set<OrderItem>();
     public DbSet<Role> Roles => Set<Role>();
     public DbSet<UserRole> UserRoles => Set<UserRole>();
+    public DbSet<Combo> Combos => Set<Combo>();
+    public DbSet<ComboProduct> ComboProducts => Set<ComboProduct>();
+    public DbSet<Promotion> Promotions => Set<Promotion>();
+    public DbSet<PromotionProduct> PromotionProducts => Set<PromotionProduct>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -171,7 +175,7 @@ public class ApplicationDbContext : DbContext
         // ============================
         modelBuilder.Entity<User>(entity =>
         {
-            entity.ToTable("Users"); 
+            entity.ToTable("Users");
 
             entity.HasKey(e => e.UserId);
 
@@ -213,6 +217,43 @@ public class ApplicationDbContext : DbContext
 
             entity.Property(r => r.IsActive)
                   .IsRequired();
+        });
+
+        modelBuilder.Entity<Combo>(entity =>
+        {
+            entity.ToTable("Combos");
+
+            entity.HasKey(e => e.ComboId);
+
+            entity.Property(e => e.Name)
+                  .HasMaxLength(150)
+                  .IsRequired();
+
+            entity.Property(e => e.ComboPrice)
+                  .HasColumnType("decimal(10,2)");
+
+            entity.HasMany(c => c.ComboProducts)
+                  .WithOne(cp => cp.Combo)
+                  .HasForeignKey(cp => cp.ComboId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<ComboProduct>(entity =>
+        {
+            entity.ToTable("ComboProducts");
+
+            entity.HasKey(e => e.ComboProductId);
+
+            entity.Property(e => e.Quantity)
+                  .IsRequired();
+
+            entity.HasOne(cp => cp.Combo)
+                  .WithMany(c => c.ComboProducts)
+                  .HasForeignKey(cp => cp.ComboId);
+
+            entity.HasOne(cp => cp.Product)
+                  .WithMany()
+                  .HasForeignKey(cp => cp.ProductId);
         });
     }
 }

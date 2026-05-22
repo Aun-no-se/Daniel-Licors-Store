@@ -1,0 +1,125 @@
+﻿/* Cuadrado fijo perfecto y balanceado para el Grid 50/50 */
+.image-container-premium {
+    position: relative;
+    width: 400px; /* Tamaño ideal para destacar en pantallas de PC */
+    height: 400px; /* Simetría total en alto y ancho */
+    background: #ffffff;
+    border-radius: 24px;
+    padding: 0px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4); /* Un toque extra de sombra por el fondo oscuro */
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    overflow: hidden;
+}
+
+/* Contenedor del texto para limitar su ancho en monitores ultra-wide */
+.product-info-container {
+    width: 100%;
+    max-width: 450px; /* Hace que los textos y el botón tengan coherencia visual con la foto */
+}
+
+/* Adaptación absoluta de la imagen */
+.product-image-fluid {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.image-container-premium:hover .product-image-fluid {
+    transform: scale(1.06);
+}
+
+/* Badge flotante premium en la foto */
+.badge-premium-floating {
+    position: absolute;
+    top: 16px;
+    left: 16px;
+    background: linear-gradient(135deg, #b38728, #fbf5b7, #daa520, #aa771c);
+    color: #1a1a1a;
+    font-weight: 800;
+    font-size: 0.75rem;
+    padding: 6px 12px;
+    border-radius: 30px;
+    display: inline-flex;
+    align-items: center;
+    box-shadow: 0 4px 10px rgba(179, 135, 40, 0.3);
+    letter-spacing: 1px;
+    z-index: 2;
+}
+
+/* Tipografías y textos refinados */
+.product-title {
+    color: #ffffff; /* Cambiado a blanco para hacer match con tu tema oscuro */
+    line-height: 1.2;
+}
+
+.muted-text {
+    color: #a1a1aa !important; /* Ajustado para legibilidad en fondo oscuro */
+}
+
+.product-description {
+    color: #d4d4d8; /* Ajustado para legibilidad en fondo oscuro */
+    line-height: 1.6;
+    font-size: 1.05rem;
+}
+
+/* Caja de acciones y botón de agregar */
+.btn-add-cart {
+    font-weight: 700 !important;
+    font-size: 1.1rem !important;
+    letter-spacing: 0.5px;
+    border-radius: 12px !important;
+    text-transform: none !important;
+    box-shadow: 0 6px 20px rgba(244, 67, 54, 0.25) !important;
+    transition: all 0.2s ease !important;
+}
+
+    .btn-add-cart:hover:not(:disabled) {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(244, 67, 54, 0.4) !important;
+    }
+
+/* Cards especiales para combos y promociones */
+.combo-premium-card, .promo-premium-card {
+    border-radius: 12px !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    background-color: rgba(255, 255, 255, 0.03) !important;
+    transition: all 0.3s ease;
+}
+
+    .combo-premium-card:hover, .promo-premium-card:hover {
+        box-shadow: 0 6px 15px rgba(0,0,0,0.2) !important;
+        transform: translateY(-1px);
+    }
+
+.border-left-accent {
+    border-left: 4px solid var(--mud-palette-error) !important;
+}
+
+.text-warning-dark {
+    color: #ff9800;
+}
+
+.empty-state-box {
+    padding: 20px;
+    background-color: rgba(255, 255, 255, 0.02) !important;
+    border-style: dashed !important;
+    border-width: 1.5px !important;
+    border-color: #444446 !important;
+}
+
+.text-transform-none {
+    text-transform: none !important;
+}
+
+.uppercase {
+    text-transform: uppercase;
+}
+
+.tracking-wider {
+    letter-spacing: 1px;
+}

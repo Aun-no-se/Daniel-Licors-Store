@@ -6,81 +6,182 @@
 @using Daniel_Licors_Store.Services.Auth
 @using MudBlazor
 
-<MudContainer MaxWidth="MaxWidth.Small" Class="mt-10">
+<div class="d-flex align-center justify-center signup-login-wrapper" style="min-height: 100vh; width: 100%;">
+    <MudContainer MaxWidth="MaxWidth.Small" Class="my-auto">
 
-    <MudPaper Class="pa-6">
+        @* Contenedor Principal con Bordes Suaves y Sombra Premium *@
+        <MudPaper Elevation="4" Class="overflow-hidden rounded-xl backend-card-custom">
 
-        <MudText Typo="Typo.h5" Class="mb-4">
-            Crear cuenta
-        </MudText>
+            @* Banner Superior Elegante y Pegado (Igual al Login) *@
+            <div class="login-banner-premium d-flex flex-column align-center justify-center py-6 text-center">
+                <MudIcon Icon="@Icons.Material.Filled.LocalBar" Size="Size.Large" Color="Color.Surface" Class="mb-2 logo-animate" />
+                <MudText Typo="Typo.h5" Class="font-weight-black text-white uppercase tracking-wider">
+                    Daniel Liquor Store
+                </MudText>
+                <MudText Typo="Typo.caption" Class="text-white-50 px-4">
+                    Únete a nuestra plataforma de gestión y automatiza tu inventario
+                </MudText>
+            </div>
 
-        <MudTextField @bind-Value="model.Name"
-                      Label="Nombre"
-                      FullWidth />
+            @* Cuerpo del Formulario *@
+            <div class="pa-8">
 
-        <MudTextField @bind-Value="model.LastName"
-                      Label="Apellido"
-                      FullWidth
-                      Class="mt-2" />
+                <MudText Typo="Typo.h5" Class="font-weight-bold mb-6 text-center dark-text-highlight">
+                    Crear Cuenta
+                </MudText>
 
-        <MudTextField @bind-Value="model.Age"
-                      Label="Edad"
-                      FullWidth
-                      Class="mt-2"
-                      InputType="InputType.Number" />
+                @* Campo de Nombre *@
+                <MudTextField @bind-Value="model.Name"
+                              Label="Nombre"
+                              Variant="Variant.Outlined"
+                              Adornment="Adornment.End"
+                              AdornmentIcon="@Icons.Material.Filled.Person"
+                              AdornmentColor="Color.Primary"
+                              FullWidth
+                              Class="mb-4" />
 
-        <MudTextField @bind-Value="model.Email"
-                      Label="Correo"
-                      FullWidth
-                      Class="mt-2" />
+                @* Campo de Apellido *@
+                <MudTextField @bind-Value="model.LastName"
+                              Label="Apellido"
+                              Variant="Variant.Outlined"
+                              Adornment="Adornment.End"
+                              AdornmentIcon="@Icons.Material.Filled.PersonOutline"
+                              AdornmentColor="Color.Primary"
+                              FullWidth
+                              Class="mb-4" />
 
-        <MudTextField @bind-Value="model.Password"
-                      Label="Contraseña"
-                      InputType="InputType.Password"
-                      FullWidth
-                      Class="mt-2" />
+                @* Campo de Edad *@
+                <MudTextField @bind-Value="model.Age"
+                              Label="Edad"
+                              Variant="Variant.Outlined"
+                              InputType="InputType.Number"
+                              Adornment="Adornment.End"
+                              AdornmentIcon="@Icons.Material.Filled.Cake"
+                              AdornmentColor="Color.Primary"
+                              FullWidth
+                              Class="mb-4" />
 
-        <MudTextField @bind-Value="model.ConfirmPassword"
-                      Label="Confirmar contraseña"
-                      InputType="InputType.Password"
-                      FullWidth
-                      Class="mt-2" />
+                @* Campo de Correo *@
+                <MudTextField @bind-Value="model.Email"
+                              Label="Correo Electrónico"
+                              Variant="Variant.Outlined"
+                              Adornment="Adornment.End"
+                              AdornmentIcon="@Icons.Material.Filled.Email"
+                              AdornmentColor="Color.Primary"
+                              FullWidth
+                              Class="mb-4" />
 
-        @if (!string.IsNullOrEmpty(errorMessage))
-        {
-            <MudAlert Severity="Severity.Error" Class="mt-3">
-                @errorMessage
-            </MudAlert>
-        }
+                @* Campo de Contraseña con Ojito Interactivo *@
+                <MudTextField @bind-Value="model.Password"
+                              Label="Contraseña"
+                              Variant="Variant.Outlined"
+                              InputType="@_passwordInput"
+                              Adornment="Adornment.End"
+                              AdornmentIcon="@_passwordInputIcon"
+                              AdornmentColor="Color.Primary"
+                              OnAdornmentClick="TogglePasswordVisibility"
+                              FullWidth
+                              Class="mb-4" />
 
-        <MudButton OnClick="HandleRegister"
-                   Color="Color.Primary"
-                   Variant="Variant.Filled"
-                   Class="mt-4"
-                   FullWidth
-                   Disabled="@isLoading">
+                @* Campo de Confirmar Contraseña con Ojito Interactivo Independiente *@
+                <MudTextField @bind-Value="model.ConfirmPassword"
+                              Label="Confirmar Contraseña"
+                              Variant="Variant.Outlined"
+                              InputType="@_confirmPasswordInput"
+                              Adornment="Adornment.End"
+                              AdornmentIcon="@_confirmPasswordInputIcon"
+                              AdornmentColor="Color.Primary"
+                              OnAdornmentClick="ToggleConfirmPasswordVisibility"
+                              FullWidth
+                              Class="mb-6" />
 
-            @if (isLoading)
-            {
-                <MudProgressCircular Size="Size.Small" Indeterminate="true" />
-                <span class="ml-2">Registrando...</span>
-            }
-            else
-            {
-                <span>Registrarse</span>
-            }
+                @* Botón de Registro con Efectos Premium *@
+                <MudButton OnClick="HandleRegister"
+                           Color="Color.Error"
+                           Variant="Variant.Filled"
+                           Size="Size.Large"
+                           FullWidth
+                           Disabled="@isLoading"
+                           Class="py-3 btn-login-submit font-weight-bold text-transform-none">
+                    @if (isLoading)
+                    {
+                        <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                        <span>Registrando usuario...</span>
+                    }
+                    else
+                    {
+                        <span>Registrarse</span>
+                    }
+                </MudButton>
 
-        </MudButton>
+                @* Alerta de Error Estilizada *@
+                @if (!string.IsNullOrEmpty(errorMessage))
+                {
+                    <MudAlert Severity="Severity.Error"
+                              Variant="Variant.Outlined"
+                              Dense="true"
+                              Class="mt-4 rounded-lg animate__animated animate__fadeIn">
+                        @errorMessage
+                    </MudAlert>
+                }
+                @* Enlace para regresar al Login opcional de cortesía *@
+                <div class="text-center mt-4">
+                    <MudLink Href="/login" Color="Color.Primary" Underline="Underline.Hover" Class="text-sm">
+                        ¿Ya tienes cuenta? Inicia sesión aquí
+                    </MudLink>
+                </div>
 
-    </MudPaper>
-
-</MudContainer>
+            </div>
+        </MudPaper>
+    </MudContainer>
+</div>
 
 @code {
-
     private RegisterModel model = new();
     private string? errorMessage;
     private bool isLoading;
+
+    // Variables de control visual para el primer ojito (Contraseña)
+    private bool _passwordVisibility;
+    private InputType _passwordInput = InputType.Password;
+    private string _passwordInputIcon = Icons.Material.Filled.VisibilityOff;
+
+    // Variables de control visual para el segundo ojito (Confirmar Contraseña)
+    private bool _confirmPasswordVisibility;
+    private InputType _confirmPasswordInput = InputType.Password;
+    private string _confirmPasswordInputIcon = Icons.Material.Filled.VisibilityOff;
+
+    private void TogglePasswordVisibility()
+    {
+        if (_passwordVisibility)
+        {
+            _passwordVisibility = false;
+            _passwordInputIcon = Icons.Material.Filled.VisibilityOff;
+            _passwordInput = InputType.Password;
+        }
+        else
+        {
+            _passwordVisibility = true;
+            _passwordInputIcon = Icons.Material.Filled.Visibility;
+            _passwordInput = InputType.Text;
+        }
+    }
+
+    private void ToggleConfirmPasswordVisibility()
+    {
+        if (_confirmPasswordVisibility)
+        {
+            _confirmPasswordVisibility = false;
+            _confirmPasswordInputIcon = Icons.Material.Filled.VisibilityOff;
+            _confirmPasswordInput = InputType.Password;
+        }
+        else
+        {
+            _confirmPasswordVisibility = true;
+            _confirmPasswordInputIcon = Icons.Material.Filled.Visibility;
+            _confirmPasswordInput = InputType.Text;
+        }
+    }
 
     private async Task HandleRegister()
     {

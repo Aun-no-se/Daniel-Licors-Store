@@ -29,7 +29,7 @@
                                                        Variant="Variant.Text"
                                                        Class="action-btn btn-ver"
                                                        Title="Ver detalle"
-                                                       OnClick="@(() => VerProducto(product.ProductId))" />
+                                                       OnClick="@(() => Nav.NavigateTo($"/producto/{product.ProductId}"))" />
 
                                         <AuthorizeView Roles="Admin, Empleado">
                                             <Authorized>

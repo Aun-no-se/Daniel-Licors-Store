@@ -1,13 +1,173 @@
-﻿@page "/product/{ProductId:int}"
+﻿@page "/producto/{ProductId:int}"
 
-<h2>Detalle del Producto</h2>
+@using Daniel_Licors_Store.Models.Product
+@inject NavigationManager Nav
 
-<p>Aquí irá toda la info:</p>
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-6 mb-12">
 
-<ul>
-    <li>Marca</li>
-    <li>Categoría</li>
-    <li>Si está en combo</li>
-    <li>Si tiene promoción</li>
-    <li>Precio por tienda</li>
-</ul>
+    <MudButton Variant="Variant.Text"
+               StartIcon="@Icons.Material.Filled.ArrowBack"
+               Color="Color.Secondary"
+               OnClick="@(() => Nav.NavigateTo("/"))"
+               Class="mb-4 text-transform-none">
+        Volver al catálogo
+    </MudButton>
+
+    @if (_loading)
+    {
+        <div class="d-flex justify-center align-center flex-column my-12 py-12">
+            <MudProgressCircular Color="Color.Primary" Size="Size.Large" Indeterminate="true" />
+            <MudText Typo="Typo.body1" Class="mt-4 muted-text">Cargando producto premium...</MudText>
+        </div>
+    }
+    else if (Product != null)
+    {
+        <MudGrid Spacing="6" Class="align-center justify-center">
+
+            <MudItem xs="12" md="6" Class="d-flex justify-center justify-md-end">
+                <div class="image-container-premium">
+                    @if (Product.IsPremium)
+                    {
+                        <span class="badge-premium-floating">
+                            <MudIcon Icon="@Icons.Material.Filled.WorkspacePremium" Size="Size.Small" Class="mr-1" /> PREMIUM
+                        </span>
+                    }
+                    <img src="@Product.ImageUrl" alt="@Product.Name" class="product-image-fluid" />
+                </div>
+            </MudItem>
+
+            <MudItem xs="12" md="6" Class="d-flex justify-center justify-md-start">
+                <div class="d-flex flex-column gap-y-4 product-info-container">
+
+                    <div class="d-flex align-center gap-x-2">
+                        <MudChip T="string" Color="Color.Primary" Variant="Variant.Text" Size="Size.Small" Class="font-weight-bold uppercase">@Product.Brand</MudChip>
+                        <MudText Typo="Typo.caption" Class="text-uppercase tracking-wider muted-text">@Product.Category</MudText>
+                    </div>
+
+                    <MudText Typo="Typo.h3" Class="font-weight-black product-title">@Product.Name</MudText>
+
+                    <div class="d-flex align-center mt-1">
+                        @if (Product.Stock <= 0)
+                        {
+                            <MudAlert Severity="Severity.Error" Dense="true" Variant="Variant.Outlined" ContentAlignment="HorizontalAlignment.Left" Class="rounded-lg py-1 px-3">
+                                <strong>Agotado temporalmente</strong>
+                            </MudAlert>
+                        }
+                        else
+                        {
+                            <MudAlert Severity="Severity.Success" Dense="true" Variant="Variant.Outlined" ContentAlignment="HorizontalAlignment.Left" Class="rounded-lg py-1 px-3">
+                                <span class="stock-text">Disponibles: <strong>@Product.Stock uds.</strong></span>
+                            </MudAlert>
+                        }
+                    </div>
+
+                    <MudDivider Class="my-2" />
+
+                    <div class="price-container py-1">
+                        <MudText Typo="Typo.h2" Color="Color.Primary" Class="font-weight-bold mb-0">
+                            $@Product.Price.ToString("N2")
+                        </MudText>
+                        <MudText Typo="Typo.caption" Class="muted-text d-block mt-n1">Precio en tienda (Impuestos incl.)</MudText>
+                    </div>
+
+                    <div class="mt-1">
+                        <MudText Typo="Typo.subtitle1" Class="font-weight-bold grey-text text-darken-3">Descripción</MudText>
+                        <MudText Typo="Typo.body1" Class="mt-1 product-description">@Product.Description</MudText>
+                    </div>
+
+                    <div class="actions-box mt-2">
+                        <MudButton Color="Color.Error"
+                                   Variant="Variant.Filled"
+                                   Size="Size.Large"
+                                   FullWidth="true"
+                                   StartIcon="@Icons.Material.Filled.ShoppingCart"
+                                   Disabled="@(Product.Stock <= 0)"
+                                   Class="py-3 btn-add-cart">
+                            @(Product.Stock <= 0 ? "Sin existencias" : "Agregar al carrito")
+                        </MudButton>
+                    </div>
+
+                </div>
+            </MudItem>
+        </MudGrid>
+
+        <MudGrid Class="mt-12">
+
+            <MudItem xs="12" md="6">
+                <div class="section-header d-flex align-center mb-4">
+                    <MudIcon Icon="@Icons.Material.Filled.LocalFireDepartment" Color="Color.Error" Class="mr-2" />
+                    <MudText Typo="Typo.h5" Class="font-weight-bold">Combos con este producto</MudText>
+                </div>
+
+                @if (Combos.Any())
+                {
+                    <div class="cards-list-container">
+                        @foreach (var combo in Combos)
+                        {
+                            <MudCard Elevation="1" Class="combo-premium-card mb-3 border-left-accent">
+                                <MudCardContent>
+                                    <div class="d-flex justify-space-between align-center mb-1">
+                                        <MudText Typo="Typo.subtitle1" Class="font-weight-bold combo-name">@combo.Name</MudText>
+                                        <MudText Typo="Typo.h6" Color="Color.Success" Class="font-weight-black">$@combo.ComboPrice</MudText>
+                                    </div>
+                                    <MudText Typo="Typo.body2" Class="muted-text">@combo.Description</MudText>
+                                </MudCardContent>
+                            </MudCard>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <MudPaper Variant="Variant.Outlined" Class="d-flex align-center p-4 rounded-lg empty-state-box">
+                        <MudIcon Icon="@Icons.Material.Filled.Inbox" Class="mr-3 muted-text" />
+                        <MudText Typo="Typo.body2" Class="muted-text">No hay combos activos para este producto en este momento.</MudText>
+                    </MudPaper>
+                }
+            </MudItem>
+
+            <MudItem xs="12" md="6">
+                <div class="section-header d-flex align-center mb-4">
+                    <MudIcon Icon="@Icons.Material.Filled.LocalOffer" Color="Color.Warning" Class="mr-2" />
+                    <MudText Typo="Typo.h5" Class="font-weight-bold">Promociones Especiales</MudText>
+                </div>
+
+                @if (Promotions.Any())
+                {
+                    <div class="cards-list-container">
+                        @foreach (var promo in Promotions)
+                        {
+                            <MudCard Elevation="1" Class="promo-premium-card mb-3">
+                                <MudCardContent class="d-flex align-start">
+                                    <MudIcon Icon="@Icons.Material.Filled.Celebration" Color="Color.Warning" Class="mr-3 mt-1" />
+                                    <div>
+                                        <MudText Typo="Typo.subtitle1" Class="font-weight-bold text-warning-dark">@promo.Title</MudText>
+                                        <MudText Typo="Typo.body2" Class="muted-text mt-1">@promo.Description</MudText>
+                                    </div>
+                                </MudCardContent>
+                            </MudCard>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <MudPaper Variant="Variant.Outlined" Class="d-flex align-center p-4 rounded-lg empty-state-box">
+                        <MudIcon Icon="@Icons.Material.Filled.NotificationsOff" Class="mr-3 muted-text" />
+                        <MudText Typo="Typo.body2" Class="muted-text">Sin promociones activas por ahora. ¡Vuelve pronto!</MudText>
+                    </MudPaper>
+                }
+            </MudItem>
+
+        </MudGrid>
+    }
+    else
+    {
+        <div class="d-flex justify-center align-center flex-column my-12 py-12">
+            <MudIcon Icon="@Icons.Material.Filled.HeartBroken" Size="Size.Large" Color="Color.Error" />
+            <MudText Typo="Typo.h5" Class="mt-4 font-weight-bold">El producto no existe</MudText>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" Class="mt-3" OnClick="@(() => Nav.NavigateTo("/"))">
+                Regresar al Inicio
+            </MudButton>
+        </div>
+    }
+
+</MudContainer>

@@ -1,0 +1,41 @@
+﻿/* Gradiente premium para el banner superior */
+.login-banner-premium {
+    background: linear-gradient(135deg, #b71c1c 0%, #212121 100%);
+    border-bottom: 2px solid #b71c1c;
+}
+
+/* Opacidad personalizada para textos secundarios sobre fondo oscuro */
+.text-white-50 {
+    color: rgba(255, 255, 255, 0.7) !important;
+}
+
+/* Efecto Hover interactivo en el botón */
+.btn-login-submit {
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+    .btn-login-submit:hover:not(:disabled) {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(244, 67, 54, 0.4);
+    }
+
+/* Animación sutil de respiración para el icono del logo */
+.logo-animate {
+    animation: pulse 3s infinite alternate;
+}
+
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+    }
+
+    100% {
+        transform: scale(1.08);
+    }
+}
+
+/* Ajustes adicionales para que combine con tu estética oscura */
+.backend-card-custom {
+    background-color: #1a1a1a !important;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
