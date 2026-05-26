@@ -214,4 +214,28 @@ public class ProductService : IProductService
             throw;
         }
     }
+
+    public async Task<List<ProductDetailDto>> GetProductDetailsAsync()
+    {
+        return await _context.Products
+            .Include(p => p.ProductStores)
+            .Where(p => p.IsActive) // Opcional: Solo traer productos activos para los combos
+            .Select(p => new ProductDetailDto
+            {
+                ProductId = p.ProductId,
+                Name = p.Name,
+                // Buscamos la relación con la tienda actual (Haina) para sacar precio e imagen
+                Price = p.ProductStores
+                    .Where(ps => ps.StoreId == AppStore.StoreId)
+                    .Select(ps => ps.Price)
+                    .FirstOrDefault(),
+                Stock = p.ProductStores
+                    .Where(ps => ps.StoreId == AppStore.StoreId)
+                    .Select(ps => ps.Stock)
+                    .FirstOrDefault(),
+                ImageUrl = p.ImageUrl,
+                IsActive = p.IsActive
+            })
+            .ToListAsync();
+    }
 }

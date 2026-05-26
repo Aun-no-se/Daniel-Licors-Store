@@ -4,6 +4,7 @@ using Daniel_Licors_Store.Data;
 using Daniel_Licors_Store.Data.Repositories.Generic;
 using Daniel_Licors_Store.Data.Repositories.Interfaces;
 using Daniel_Licors_Store.Data.Services;
+using Daniel_Licors_Store.Data.Services.Interfaces;
 using Daniel_Licors_Store.Models.Users.Auth;
 using Daniel_Licors_Store.Services;
 using Daniel_Licors_Store.Services.Auth;
@@ -56,6 +57,8 @@ builder.Services.AddScoped<ICatalogService, CatalogService>();
 builder.Services.AddScoped<ProductStateService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<AdminDashboardService>();
+builder.Services.AddScoped<IComboService, ComboService>();
+builder.Services.AddMudServices();
 
 builder.Services.AddHttpContextAccessor();
 

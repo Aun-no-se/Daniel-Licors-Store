@@ -1,0 +1,11 @@
+﻿namespace Daniel_Licors_Store.Models.Combo;
+
+public class ComboDetailDto
+{
+    public int ComboId { get; set; }
+    public string Name { get; set; } = "";
+    public string Description { get; set; } = "";
+    public decimal ComboPrice { get; set; }
+
+    public List<ComboProductDto> Products { get; set; } = new();
+}

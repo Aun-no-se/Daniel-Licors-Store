@@ -1,5 +1,6 @@
 ﻿using Daniel_Licors_Store.Data.Repositories.Interfaces;
 using Daniel_Licors_Store.Data.Services;
+using Daniel_Licors_Store.Data.Services.Interfaces;
 using Daniel_Licors_Store.Models.Combo;
 using Daniel_Licors_Store.Models.Product;
 using Microsoft.AspNetCore.Components;
@@ -11,6 +12,7 @@ namespace Daniel_Licors_Store.Components.Pages
         [Parameter] public int ProductId { get; set; }
 
         [Inject] public ICatalogService CatalogService { get; set; } = default!;
+        [Inject] public IComboService ComboService { get; set; } = default!;
 
         ProductDetailDto? Product;
         List<ComboDto> Combos = new();
@@ -33,7 +35,7 @@ namespace Daniel_Licors_Store.Components.Pages
 
                 if (Product is not null)
                 {
-                    Combos = await CatalogService.GetCombosByProductAsync(ProductId);
+                    Combos = await ComboService.GetCombosByProductAsync(ProductId);
                     Promotions = await CatalogService.GetPromotionsByProductAsync(ProductId);
                 }
             }

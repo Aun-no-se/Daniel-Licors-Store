@@ -1,0 +1,29 @@
+﻿@namespace Daniel_Licors_Store.Components.Dialogs
+@using MudBlazor
+
+<MudDialog>
+    <DialogContent>
+        <MudText Typo="Typo.h6" Class="mb-2">
+            @SelectedProduct?.Name
+        </MudText>
+
+        <!-- Resto de tu código intacto... -->
+
+        <MudText Typo="Typo.body2" Class="mb-4">
+            Selecciona la cantidad que quieres agregar al combo
+        </MudText>
+
+        <MudNumericField T="int"
+                         @bind-Value="Quantity"
+                         Min="1"
+                         Max="100"
+                         Label="Cantidad"
+                         Variant="Variant.Outlined"
+                         Class="mb-4" />
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton OnClick="Cancel" Color="Color.Error">Cancelar</MudButton>
+        <MudButton OnClick="Confirm" Color="Color.Success" Variant="Variant.Filled">Agregar</MudButton>
+    </DialogActions>
+</MudDialog>
