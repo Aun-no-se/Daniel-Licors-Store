@@ -59,9 +59,60 @@ namespace Daniel_Licors_Store.Data.Services
         }
 
         // =========================
-        // CENTRAL MAPPER
+        // PRODUCT DETAIL
         // =========================
+        public async Task<ProductDetailDto?> GetProductDetailAsync(int productId)
+        {
+            var p = await _context.Products
+                .Include(x => x.Category)
+                .Include(x => x.Brand)
+                .Include(x => x.ProductStores)
+                .FirstOrDefaultAsync(x => x.ProductId == productId && x.IsActive);
 
+            if (p == null)
+                return null;
+
+            return MapDetail(p);
+        }
+
+        // =========================
+        // COMBOS BY PRODUCT
+        // =========================
+        public async Task<List<ComboDto>> GetCombosByProductAsync(int productId)
+        {
+            return await _context.ComboProducts
+                .Where(cp => cp.ProductId == productId)
+                .Include(cp => cp.Combo)
+                .Select(cp => new ComboDto
+                {
+                    ComboId = cp.ComboId,
+                    Name = cp.Combo.Name,
+                    Description = cp.Combo.Description,
+                    ComboPrice = cp.Combo.ComboPrice
+                })
+                .ToListAsync();
+        }
+
+        // =========================
+        // PROMOTIONS BY PRODUCT
+        // =========================
+        public async Task<List<PromotionDto>> GetPromotionsByProductAsync(int productId)
+        {
+            return await _context.PromotionProducts
+                .Where(pp => pp.ProductId == productId)
+                .Include(pp => pp.Promotion)
+                .Select(pp => new PromotionDto
+                {
+                    PromotionId = pp.PromotionId,
+                    Title = pp.Promotion.Title,
+                    Description = pp.Promotion.Description
+                })
+                .ToListAsync();
+        }
+
+        // =========================
+        // MAPPERS
+        // =========================
         private static ProductResponseModel Map(Product p)
         {
             return new ProductResponseModel
@@ -79,6 +130,8 @@ namespace Daniel_Licors_Store.Data.Services
 
         private static ProductDetailDto MapDetail(Product p)
         {
+            var store = p.ProductStores?.FirstOrDefault();
+
             return new ProductDetailDto
             {
                 ProductId = p.ProductId,
@@ -90,57 +143,9 @@ namespace Daniel_Licors_Store.Data.Services
                 IsPremium = p.IsPremium,
                 IsActive = p.IsActive,
 
-                // agrega esto si lo tienes en DTO
-                Price = p.ProductStores.FirstOrDefault()?.Price ?? 0,
-                Stock = p.ProductStores.FirstOrDefault()?.Stock ?? 0
+                Price = store?.Price ?? 0,
+                Stock = store?.Stock ?? 0
             };
-        }
-
-        public async Task<ProductDetailDto?> GetProductDetailAsync(int productId)
-        {
-            // Usamos directamente el _context para poder incluir de manera limpia las relaciones
-            var p = await _context.Products
-                .Include(x => x.Category)
-                .Include(x => x.Brand)
-                .Include(x => x.ProductStores) // 👈 CRUCIAL para el precio y el stock
-                .FirstOrDefaultAsync(x => x.ProductId == productId && x.IsActive);
-
-            if (p == null) return null;
-
-            return MapDetail(p);
-        }
-
-        public async Task<List<ComboDto>> GetCombosByProductAsync(int productId)
-        {
-            var combos = await _context.ComboProducts
-                .Where(cp => cp.ProductId == productId)
-                .Include(cp => cp.Combo)
-                .Select(cp => new ComboDto
-                {
-                    ComboId = cp.ComboId,
-                    Name = cp.Combo.Name,
-                    Description = cp.Combo.Description,
-                    ComboPrice = cp.Combo.ComboPrice
-                })
-                .ToListAsync();
-
-            return combos;
-        }
-
-        public async Task<List<PromotionDto>> GetPromotionsByProductAsync(int productId)
-        {
-            var promos = await _context.PromotionProducts
-                .Where(pp => pp.ProductId == productId)
-                .Include(pp => pp.Promotion)
-                .Select(pp => new PromotionDto
-                {
-                    PromotionId = pp.PromotionId,
-                    Title = pp.Promotion.Title,
-                    Description = pp.Promotion.Description
-                })
-                .ToListAsync();
-
-            return promos;
         }
     }
 }

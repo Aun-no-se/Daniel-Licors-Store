@@ -1,5 +1,6 @@
 ﻿@page "/admin/combos"
-
+@using Microsoft.AspNetCore.Components.Forms
+@using Daniel_Licors_Store.Models.Combo
 
 <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-6">
 
@@ -17,7 +18,7 @@
     {
         <MudPaper Elevation="1" Class="pa-4 rounded-lg">
 
-            <MudTable Items="AdminCombos" Dense="true" Hover="true" Bordered="true">
+            <MudTable Items="AdminCombos" Dense Hover Bordered>
                 <HeaderContent>
                     <MudTh>Imagen</MudTh>
                     <MudTh>Nombre</MudTh>
@@ -28,11 +29,8 @@
 
                 <RowTemplate>
                     <MudTd>
-                        <MudAvatar Size="Size.Medium" Square="true">
-                            <MudImage Src="@context.ImageUrl"
-                                      Alt="@context.Name"
-                                      Width="48"
-                                      Height="48" />
+                        <MudAvatar Size="Size.Medium" Square>
+                            <MudImage Src="@context.ImageUrl" Width="48" Height="48" />
                         </MudAvatar>
                     </MudTd>
 
@@ -68,7 +66,6 @@
                                        OnClick="@(() => DeleteCombo(context.ComboId))" />
                     </MudTd>
                 </RowTemplate>
-
             </MudTable>
 
         </MudPaper>
@@ -84,67 +81,126 @@
     }
 
     @if (ShowCreateCombo)
-{
-    <MudPaper Elevation="2" Class="pa-4 mt-6">
+    {
+        <MudPaper Elevation="2" Class="pa-4 mt-6">
 
-        <MudText Typo="Typo.h5" Class="mb-2">
-            Crear nuevo combo
-        </MudText>
+            <MudText Typo="Typo.h5" Class="mb-2">
+                Crear nuevo combo
+            </MudText>
 
-        <MudDivider Class="mb-4" />
+            <MudDivider Class="mb-4" />
 
-        <!-- AQUÍ VA LA TABLA DE PRODUCTOS -->
-        <MudTable Items="_products" Dense Hover Bordered>
+            <MudGrid Class="mb-4">
+                <MudItem xs="12" sm="8">
+                    <MudTextField @bind-Value="NewComboModel.Name"
+                                  Label="Nombre del Combo"
+                                  Variant="Variant.Outlined"
+                                  Required />
+                </MudItem>
 
-            <HeaderContent>
-                <MudTh>Imagen</MudTh>
-                <MudTh>Producto</MudTh>
-                <MudTh>Precio</MudTh>
-                <MudTh Align="Align.Center">Opciones</MudTh>
-            </HeaderContent>
+                <MudItem xs="12" sm="4">
+                    <MudNumericField @bind-Value="NewComboModel.ComboPrice"
+                                     Label="Precio ($)"
+                                     Variant="Variant.Outlined"
+                                     Format="N2"
+                                     Required />
+                </MudItem>
 
-            <RowTemplate>
-                <MudTd>
-                    <MudAvatar Size="Size.Medium" Square>
-                        <MudImage Src="@context.ImageUrl" />
-                    </MudAvatar>
-                </MudTd>
+                <MudItem xs="12" md="7">
+                    <MudTextField @bind-Value="NewComboModel.Description"
+                                  Label="Descripción"
+                                  Lines="4"
+                                  Variant="Variant.Outlined" />
+                </MudItem>
 
-                <MudTd>@context.Name</MudTd>
+                <MudItem xs="12" md="5" Class="d-flex flex-column align-center justify-center pa-4 border-dashed rounded-lg">
 
-                <MudTd>$@context.Price.ToString("N2")</MudTd>
+                    @if (!string.IsNullOrEmpty(_selectedFileName))
+                    {
+                        <MudText Typo="Typo.subtitle2" Color="Color.Success">
+                            @_selectedFileName
+                        </MudText>
 
-                <MudTd Align="Align.Center">
-                    <MudIconButton Icon="@Icons.Material.Filled.Add"
-                                   Color="Color.Success"
-                                   OnClick="@(() => OpenQuantityModal(context))" />
-                </MudTd>
-            </RowTemplate>
+                        <MudButton Color="Color.Error"
+                                   Variant="Variant.Text"
+                                   OnClick="ClearSelectedImage">
+                            Quitar imagen
+                        </MudButton>
+                    }
+                    else
+                    {
+                        <label for="comboImage"
+                               class="mud-button-root mud-btn mud-btn-outlined mud-btn-outlined-primary cursor-pointer">
+                            <span class="mud-btn-label">
+                                <MudIcon Icon="@Icons.Material.Filled.CloudUpload" Class="mr-2" />
+                                Subir imagen del combo
+                            </span>
+                        </label>
 
-        </MudTable>
+                        <InputFile id="comboImage"
+                                   OnChange="HandleFileSelected"
+                                   accept=".jpg,.jpeg,.png,.webp"
+                                   style="display:none" />
+                    }
+                </MudItem>
+            </MudGrid>
 
-        <MudDivider Class="my-4" />
+            <MudText Typo="Typo.subtitle2" Class="mb-2 font-weight-bold">
+                Seleccionar productos
+            </MudText>
 
-        <MudText Typo="Typo.subtitle1">
-            Productos en el combo
-        </MudText>
+            <MudTable Items="_products" Dense Hover Bordered>
+                <HeaderContent>
+                    <MudTh>Imagen</MudTh>
+                    <MudTh>Producto</MudTh>
+                    <MudTh>Precio</MudTh>
+                    <MudTh Align="Align.Center">Agregar</MudTh>
+                </HeaderContent>
 
-        @foreach (var item in ComboBuilder)
-        {
-                <MudChip T="string" Color="Color.Primary" Class="mr-2 mb-2">
+                <RowTemplate>
+                    <MudTd>
+                        <MudAvatar Size="Size.Medium" Square>
+                            <MudImage Src="@context.ImageUrl" />
+                        </MudAvatar>
+                    </MudTd>
+
+                    <MudTd>@context.Name</MudTd>
+                    <MudTd>$@context.Price.ToString("N2")</MudTd>
+
+                    <MudTd Align="Align.Center">
+                        <MudIconButton Icon="@Icons.Material.Filled.Add"
+                                       Color="Color.Success"
+                                       OnClick="@(() => OpenQuantityModal(context))" />
+                    </MudTd>
+                </RowTemplate>
+            </MudTable>
+
+            <MudDivider Class="my-4" />
+
+            @foreach (var item in ComboBuilder)
+            {
+                <MudChip T="ComboProductTemp"
+                         OnClose="@(() => ComboBuilder.Remove(item))"
+                         Closeable="true">
                     @($"{item.Quantity} x {item.ProductName}")
                 </MudChip>
-        }
+            }
 
-        <div class="d-flex justify-end mt-4">
-            <MudButton Color="Color.Success"
-                       Variant="Variant.Filled"
-                       Disabled="@(ComboBuilder.Count == 0)">
-                Guardar combo
-            </MudButton>
-        </div>
+            <div class="d-flex justify-end mt-4">
+                <MudButton Color="Color.Success"
+                           Disabled="@(ComboBuilder.Count == 0)"
+                           OnClick="SaveCombo">
+                    Guardar combo
+                </MudButton>
 
-    </MudPaper>
-}
+                <MudButton Color="Color.Secondary"
+                           Variant="Variant.Outlined"
+                           OnClick="@(() => { ShowCreateCombo = false; ComboBuilder.Clear(); })">
+                    Cancelar
+                </MudButton>
+            </div>
+
+        </MudPaper>
+    }
 
 </MudContainer>

@@ -5,7 +5,6 @@ using Daniel_Licors_Store.Data.Repositories.Interfaces;
 using Daniel_Licors_Store.Models.Product;
 using Microsoft.EntityFrameworkCore;
 
-
 public class ProductService : IProductService
 {
     private readonly ApplicationDbContext _context;
@@ -13,6 +12,9 @@ public class ProductService : IProductService
     public ProductService(ApplicationDbContext context)
     {
         _context = context;
+
+        // 🔧 Evita comportamientos raros en Blazor Server con tracking EF
+        _context.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.TrackAll;
     }
 
     public async Task<int> CreateProductAsync(ProductCreateModel model)
@@ -30,7 +32,9 @@ public class ProductService : IProductService
                 Description = model.Description,
                 CategoryId = model.CategoryId,
                 BrandId = model.BrandId,
-                ImageUrl = model.ImageFileName,
+                ImageUrl = string.IsNullOrWhiteSpace(model.ImageFileName)
+                    ? null
+                    : model.ImageFileName,
                 IsPremium = model.IsPremium,
                 IsActive = model.IsActive,
                 CreatedAt = DateTime.Now,
@@ -46,7 +50,7 @@ public class ProductService : IProductService
             var productStore = new ProductStore
             {
                 ProductId = product.ProductId,
-                StoreId = AppStore.StoreId, // 👈 FIJO HAINA
+                StoreId = AppStore.StoreId,
                 Price = model.Price,
                 Stock = model.Stock,
                 IsAvailable = model.Stock > 0
@@ -69,10 +73,6 @@ public class ProductService : IProductService
             _context.StockMovements.Add(movement);
 
             await _context.SaveChangesAsync();
-
-            // =========================
-            // COMMIT
-            // =========================
             await transaction.CommitAsync();
 
             return product.ProductId;
@@ -80,8 +80,7 @@ public class ProductService : IProductService
         catch (Exception ex)
         {
             await transaction.RollbackAsync();
-            var message = ex.InnerException?.Message ?? ex.Message;
-            throw new Exception("Error creando producto: " + message);
+            throw new Exception("Error creando producto: " + (ex.InnerException?.Message ?? ex.Message));
         }
     }
 
@@ -94,7 +93,7 @@ public class ProductService : IProductService
         if (product == null)
             return null;
 
-        var store = product.ProductStores
+        var store = product.ProductStores?
             .FirstOrDefault(ps => ps.StoreId == AppStore.StoreId);
 
         return new ProductEditModel
@@ -127,7 +126,7 @@ public class ProductService : IProductService
                 throw new Exception("Producto no encontrado");
 
             // =========================
-            // 1. UPDATE PRODUCT
+            // 1. PRODUCTO
             // =========================
             product.Name = model.Name;
             product.Description = model.Description;
@@ -141,11 +140,22 @@ public class ProductService : IProductService
             // =========================
             // 2. INVENTARIO
             // =========================
-            var store = product.ProductStores
+            var store = product.ProductStores?
                 .FirstOrDefault(ps => ps.StoreId == AppStore.StoreId);
 
             if (store == null)
-                throw new Exception("Inventario no encontrado para la tienda");
+            {
+                store = new ProductStore
+                {
+                    ProductId = product.ProductId,
+                    StoreId = AppStore.StoreId,
+                    Price = model.Price,
+                    Stock = model.Stock,
+                    IsAvailable = model.Stock > 0
+                };
+
+                _context.ProductStores.Add(store);
+            }
 
             var stockDiff = model.Stock - store.Stock;
 
@@ -171,10 +181,10 @@ public class ProductService : IProductService
             await _context.SaveChangesAsync();
             await transaction.CommitAsync();
         }
-        catch
+        catch (Exception ex)
         {
             await transaction.RollbackAsync();
-            throw;
+            throw new Exception("Error actualizando producto: " + (ex.InnerException?.Message ?? ex.Message));
         }
     }
 
@@ -184,19 +194,18 @@ public class ProductService : IProductService
 
         try
         {
-            // 1. Eliminar relaciones ProductStores
-            var productStores = _context.ProductStores
-                .Where(ps => ps.ProductId == productId);
+            var productStores = await _context.ProductStores
+                .Where(ps => ps.ProductId == productId)
+                .ToListAsync();
 
             _context.ProductStores.RemoveRange(productStores);
 
-            // 2. Eliminar movimientos de stock
-            var stockMovements = _context.StockMovements
-                .Where(sm => sm.ProductId == productId);
+            var stockMovements = await _context.StockMovements
+                .Where(sm => sm.ProductId == productId)
+                .ToListAsync();
 
             _context.StockMovements.RemoveRange(stockMovements);
 
-            // 3. Eliminar el producto
             var product = await _context.Products
                 .FirstOrDefaultAsync(p => p.ProductId == productId);
 
@@ -208,10 +217,10 @@ public class ProductService : IProductService
             await _context.SaveChangesAsync();
             await transaction.CommitAsync();
         }
-        catch
+        catch (Exception ex)
         {
             await transaction.RollbackAsync();
-            throw;
+            throw new Exception("Error eliminando producto: " + (ex.InnerException?.Message ?? ex.Message));
         }
     }
 
@@ -219,12 +228,11 @@ public class ProductService : IProductService
     {
         return await _context.Products
             .Include(p => p.ProductStores)
-            .Where(p => p.IsActive) // Opcional: Solo traer productos activos para los combos
+            .Where(p => p.IsActive)
             .Select(p => new ProductDetailDto
             {
                 ProductId = p.ProductId,
                 Name = p.Name,
-                // Buscamos la relación con la tienda actual (Haina) para sacar precio e imagen
                 Price = p.ProductStores
                     .Where(ps => ps.StoreId == AppStore.StoreId)
                     .Select(ps => ps.Price)

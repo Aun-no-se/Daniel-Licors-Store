@@ -4,6 +4,7 @@ using Daniel_Licors_Store.Data.Services.Interfaces;
 using Daniel_Licors_Store.Models.Combo;
 using Daniel_Licors_Store.Models.Product;
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Forms;
 using MudBlazor;
 
 namespace Daniel_Licors_Store.Components.Pages
@@ -11,119 +12,148 @@ namespace Daniel_Licors_Store.Components.Pages
     public partial class Combos
     {
         [Inject] public IComboService ComboService { get; set; } = default!;
-        [Inject] public ISnackbar Snackbar { get; set; } = default!;
         [Inject] public IProductService ProductService { get; set; } = default!;
-
+        [Inject] public ISnackbar Snackbar { get; set; } = default!;
         [Inject] public IDialogService DialogService { get; set; } = default!;
-
-        ProductDetailDto? SelectedProduct;
-        int SelectedQuantity = 1;
+        [Inject] public IWebHostEnvironment Env { get; set; } = default!;
 
         List<ProductDetailDto> _products = new();
-
         List<ComboAdminDto> AdminCombos = new();
-        bool _loading = true;
-
-        bool ShowCreateCombo = false;
-
-        // productos seleccionados para el combo (en memoria)
         List<ComboProductTemp> ComboBuilder = new();
+
+        bool _loading = true;
+        bool ShowCreateCombo;
+        byte[]? _pendingImageBytes;
+        string? _pendingImageName;
+
+        IBrowserFile? _selectedFile;
+        string? _selectedFileName;
+
+        ComboCreateModel NewComboModel = new();
 
         protected override async Task OnInitializedAsync()
         {
-            await LoadCombos();
             _products = await ProductService.GetProductDetailsAsync();
+            await LoadCombos();
         }
 
-        private async Task LoadCombos()
+        async Task LoadCombos()
         {
             _loading = true;
-
-            try
-            {
-                AdminCombos = await ComboService.GetAdminCombosAsync();
-            }
-            catch
-            {
-                Snackbar.Add("Error cargando los combos", Severity.Error);
-            }
-            finally
-            {
-                _loading = false;
-            }
+            AdminCombos = await ComboService.GetAdminCombosAsync();
+            _loading = false;
         }
 
-        private void ShowCreateSection()
-        {
-            ShowCreateCombo = true;
-        }
+        void ShowCreateSection() => ShowCreateCombo = true;
 
-        private void ViewCombo(int comboId)
-        {
-            Snackbar.Add($"Ver combo {comboId}", Severity.Normal);
-        }
-
-        private void EditCombo(int comboId)
-        {
-            Snackbar.Add($"Editar combo {comboId}", Severity.Warning);
-        }
-
-        private void DeleteCombo(int comboId)
-        {
-            Snackbar.Add($"Eliminar combo {comboId}", Severity.Error);
-        }
-
-        // CAMBIO: Añadimos async para poder usar await de forma limpia
         async Task OpenQuantityModal(ProductDetailDto product)
         {
-            SelectedProduct = product;
-            SelectedQuantity = 1;
+            var dialog = DialogService.Show<QuantityDialog>("Cantidad",
+                new DialogParameters { ["SelectedProduct"] = product });
 
-            var parameters = new DialogParameters
-    {
-        { "SelectedProduct", product }
-    };
-
-            // 1. Abrimos el modal y guardamos la referencia
-            var dialog = DialogService.Show<QuantityDialog>(
-                "Cantidad",
-                parameters,
-                new DialogOptions { CloseButton = true, MaxWidth = MaxWidth.ExtraSmall }
-            );
-
-            // 2. Esperamos de verdad el resultado usando await de forma limpia
             var result = await dialog.Result;
 
-            // 3. Evaluamos si no se canceló
-            if (result != null && !result.Canceled)
-            {
-                // En MudBlazor el Data viene directamente tipado o como object
-                if (result.Data is int quantity)
-                {
-                    AddProductToCombo(product, quantity);
-                    StateHasChanged(); // Forzamos el renderizado de la lista en la pantalla principal
-                }
-            }
+            if (!result.Canceled && result.Data is int qty)
+                AddProduct(product, qty);
         }
 
-        void AddProductToCombo(ProductDetailDto product, int quantity)
+        void AddProduct(ProductDetailDto product, int qty)
         {
-            var existing = ComboBuilder.FirstOrDefault(p => p.ProductId == product.ProductId);
+            var item = ComboBuilder.FirstOrDefault(x => x.ProductId == product.ProductId);
 
-            if (existing != null)
-            {
-                existing.Quantity += quantity;
-            }
+            if (item != null)
+                item.Quantity += qty;
             else
-            {
                 ComboBuilder.Add(new ComboProductTemp
                 {
                     ProductId = product.ProductId,
                     ProductName = product.Name,
-                    ImageUrl = product.ImageUrl ?? "",
-                    Quantity = quantity
+                    Quantity = qty,
+                    ImageUrl = product.ImageUrl ?? ""
                 });
+        }
+
+        async Task HandleFileSelected(InputFileChangeEventArgs e)
+        {
+            try
+            {
+                var file = e.File;
+
+                // Copia inmediata a memoria local (rompe dependencia de Blazor internals)
+                using var stream = file.OpenReadStream(10 * 1024 * 1024);
+                using var ms = new MemoryStream();
+
+                await stream.CopyToAsync(ms);
+                var bytes = ms.ToArray();
+
+                _selectedFileName = file.Name;
+
+                // guardas bytes en memoria, no el IBrowserFile
+                _pendingImageBytes = bytes;
+                _pendingImageName = file.Name;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex);
             }
         }
+
+        void ClearSelectedImage()
+        {
+            _selectedFile = null;
+            _selectedFileName = null;
+        }
+
+        async Task SaveCombo()
+        {
+            try
+            {
+                if (_pendingImageBytes != null)
+                    NewComboModel.ImageUrl = await SaveImage();
+
+                NewComboModel.Products = ComboBuilder;
+
+                await ComboService.CreateComboAsync(NewComboModel);
+
+                Snackbar.Add("Combo creado correctamente", Severity.Success);
+
+                ShowCreateCombo = false;
+                ComboBuilder.Clear();
+                ClearSelectedImage();
+                NewComboModel = new();
+
+                await LoadCombos();
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add(ex.Message, Severity.Error);
+            }
+        }
+
+        async Task<string> SaveImage()
+        {
+            try
+            {
+                var folder = Path.Combine(Env.WebRootPath, "images", "Combos");
+                Directory.CreateDirectory(folder);
+
+                var ext = Path.GetExtension(_pendingImageName ?? ".jpg");
+                var fileName = $"{Guid.NewGuid()}{ext}";
+                var path = Path.Combine(folder, fileName);
+
+                await File.WriteAllBytesAsync(path, _pendingImageBytes!);
+
+                return $"/images/Combos/{fileName}";
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("ERROR GUARDANDO IMAGEN: " + ex.Message);
+                throw;
+            }
+        }
+
+        void ViewCombo(int id) { }
+        void EditCombo(int id) { }
+        void DeleteCombo(int id) { }
     }
 }

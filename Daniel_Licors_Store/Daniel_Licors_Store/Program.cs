@@ -17,65 +17,65 @@ using System.Security.Claims;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// =====================
-// COMPONENTES
-// =====================
-builder.Services.AddRazorComponents()
-    .AddInteractiveServerComponents();
+#region ===================== LOGGING (CRÍTICO PARA DEBUG) =====================
+builder.Logging.ClearProviders();
+builder.Logging.AddConsole();
+builder.Logging.AddDebug();
+builder.Logging.SetMinimumLevel(LogLevel.Trace);
+#endregion
 
-// =====================
-// DB
-// =====================
+#region ===================== COMPONENTES =====================
+builder.Services
+    .AddRazorComponents()
+    .AddInteractiveServerComponents()
+    .AddHubOptions(options =>
+    {
+        options.MaximumReceiveMessageSize = 32 * 1024 * 1024; // 👈 uploads grandes
+    });
+#endregion
+
+#region ===================== DB =====================
 builder.Services.AddDbContextFactory<ApplicationDbContext>(options =>
     options.UseSqlServer(
         builder.Configuration.GetConnectionString("DefaultConnection")
     ));
+#endregion
 
-// =====================
-// REPOSITORIOS
-// =====================
+#region ===================== REPOSITORIOS =====================
 builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
+#endregion
 
-// =====================
-// MUD BLAZOR
-// =====================
+#region ===================== MUD BLAZOR =====================
 builder.Services.AddMudServices();
+#endregion
 
-// =====================
-// HTTP CLIENT
-// =====================
+#region ===================== HTTP CLIENT =====================
 builder.Services.AddHttpClient("LocalApi", client =>
 {
     client.BaseAddress = new Uri("https://localhost:7025");
 });
+#endregion
 
-// =====================
-// SERVICES
-// =====================
+#region ===================== SERVICES =====================
 builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<ICatalogService, CatalogService>();
 builder.Services.AddScoped<ProductStateService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<AdminDashboardService>();
 builder.Services.AddScoped<IComboService, ComboService>();
-builder.Services.AddMudServices();
+#endregion
 
 builder.Services.AddHttpContextAccessor();
 
-// =====================
-// LOCAL STORAGE
-// =====================
+#region ===================== LOCAL STORAGE =====================
 builder.Services.AddBlazoredLocalStorage();
+#endregion
 
-// =====================
-// AUTH STATE (IMPORTANTE)
-// =====================
+#region ===================== AUTH =====================
 builder.Services.AddAuthorization();
+
 builder.Services.AddScoped<AuthenticationStateProvider, CustomAuthStateProvider>();
 
-// =====================
-// COOKIE AUTH (LO DEJO POR COMPATIBILIDAD, NO ES OBLIGATORIO)
-// =====================
 builder.Services
     .AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
@@ -87,75 +87,90 @@ builder.Services
         options.Cookie.HttpOnly = true;
         options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
     });
+#endregion
 
 var app = builder.Build();
 
-// =====================
-// ERROR HANDLING
-// =====================
-if (!app.Environment.IsDevelopment())
+#region ===================== GLOBAL ERROR HANDLER (CLAVE PARA -1) =====================
+app.Use(async (context, next) =>
 {
-    app.UseExceptionHandler("/Error", createScopeForErrors: true);
+    try
+    {
+        await next();
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine("🔥 ERROR GLOBAL CAPTURADO:");
+        Console.WriteLine(ex.ToString());
+        throw;
+    }
+});
+#endregion
+
+#region ===================== ERROR PAGES =====================
+if (app.Environment.IsDevelopment())
+{
+    app.UseDeveloperExceptionPage();
+}
+else
+{
+    app.UseExceptionHandler("/Error");
     app.UseHsts();
 }
+#endregion
 
-// =====================
-// PIPELINE
-// =====================
+#region ===================== PIPELINE =====================
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseAntiforgery();
 
 app.UseAuthentication();
 app.UseAuthorization();
+#endregion
 
-// =====================
-// LOGIN API
-// =====================
+#region ===================== LOGIN API =====================
 app.MapPost("/api/login", async (
     LoginModel model,
-    IAuthService auth,
-    HttpContext http) =>
+    IAuthService auth) =>
 {
-    var user = await auth.ValidateLoginAsync(model);
-
-    if (user == null)
-        return Results.Unauthorized();
-
-    var roles = user.UserRoles.Select(r => r.Role.Name).ToList();
-
-    var claims = new List<Claim>
+    try
     {
-        new Claim(ClaimTypes.NameIdentifier, user.UserId.ToString()),
-        new Claim(ClaimTypes.Email, user.Email),
-        new Claim(ClaimTypes.Name, user.FullName)
-    };
+        var user = await auth.ValidateLoginAsync(model);
 
-    claims.AddRange(roles.Select(r =>
-        new Claim(ClaimTypes.Role, r)));
+        if (user == null)
+            return Results.Unauthorized();
 
-    var identity = new ClaimsIdentity(
-        claims,
-        CookieAuthenticationDefaults.AuthenticationScheme
-    );
+        var roles = user.UserRoles.Select(r => r.Role.Name).ToList();
 
-    var principal = new ClaimsPrincipal(identity);
+        var claims = new List<Claim>
+        {
+            new Claim(ClaimTypes.NameIdentifier, user.UserId.ToString()),
+            new Claim(ClaimTypes.Email, user.Email ?? ""),
+            new Claim(ClaimTypes.Name, user.FullName ?? "")
+        };
 
-    // ⚠️ IMPORTANTE:
-    // ya NO estamos usando SignInAsync porque Blazor usa LocalStorage AuthStateProvider
+        claims.AddRange(roles.Select(r =>
+            new Claim(ClaimTypes.Role, r)));
 
-    return Results.Ok(new
+        return Results.Ok(new
+        {
+            userId = user.UserId,
+            email = user.Email,
+            roles
+        });
+    }
+    catch (Exception ex)
     {
-        userId = user.UserId,
-        email = user.Email,
-        roles
-    });
+        Console.WriteLine("🔥 ERROR LOGIN:");
+        Console.WriteLine(ex.ToString());
+        return Results.Problem("Error interno en login");
+    }
 });
+#endregion
 
-// =====================
-// RAZOR COMPONENTS
-// =====================
+#region ===================== RAZOR COMPONENTS =====================
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
+#endregion
 
 app.Run();

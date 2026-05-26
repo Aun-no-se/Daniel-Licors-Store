@@ -232,12 +232,18 @@ public class ApplicationDbContext : DbContext
             entity.Property(e => e.ComboPrice)
                   .HasColumnType("decimal(10,2)");
 
+            entity.Property(e => e.ImageUrl)
+                  .HasMaxLength(500);
+
             entity.HasMany(c => c.ComboProducts)
                   .WithOne(cp => cp.Combo)
                   .HasForeignKey(cp => cp.ComboId)
                   .OnDelete(DeleteBehavior.Cascade);
         });
 
+        // ============================
+        // COMBO PRODUCT (Corregido Definitivo)
+        // ============================
         modelBuilder.Entity<ComboProduct>(entity =>
         {
             entity.ToTable("ComboProducts");
@@ -247,13 +253,18 @@ public class ApplicationDbContext : DbContext
             entity.Property(e => e.Quantity)
                   .IsRequired();
 
+            // Relación con Combo
             entity.HasOne(cp => cp.Combo)
                   .WithMany(c => c.ComboProducts)
-                  .HasForeignKey(cp => cp.ComboId);
+                  .HasForeignKey(cp => cp.ComboId)
+                  .OnDelete(DeleteBehavior.Cascade);
 
+            // Relación con Product 
+            // 💡 Al dejar WithMany() vacío, le dices a EF que Product NO tiene la colección al revés
             entity.HasOne(cp => cp.Product)
                   .WithMany()
-                  .HasForeignKey(cp => cp.ProductId);
+                  .HasForeignKey(cp => cp.ProductId)
+                  .OnDelete(DeleteBehavior.Restrict);
         });
     }
 }

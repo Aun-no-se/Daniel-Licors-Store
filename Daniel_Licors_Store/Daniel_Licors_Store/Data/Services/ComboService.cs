@@ -12,6 +12,9 @@ namespace Daniel_Licors_Store.Data.Services
         public ComboService(ApplicationDbContext context)
         {
             _context = context;
+
+            // 🔧 Evita comportamientos raros en tracking (Blazor Server + EF)
+            _context.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.TrackAll;
         }
 
         public async Task<bool> ValidateComboStockAsync(int comboId, int storeId, int quantity)
@@ -41,36 +44,55 @@ namespace Daniel_Licors_Store.Data.Services
 
         public async Task<bool> ConsumeComboStockAsync(int comboId, int storeId, int quantity, string? userId)
         {
-            if (!await ValidateComboStockAsync(comboId, storeId, quantity))
-                return false;
+            using var transaction = await _context.Database.BeginTransactionAsync();
 
-            var comboProducts = await _context.ComboProducts
-                .Where(cp => cp.ComboId == comboId)
-                .ToListAsync();
-
-            foreach (var item in comboProducts)
+            try
             {
-                var productStore = await _context.ProductStores
-                    .FirstAsync(ps =>
-                        ps.ProductId == item.ProductId &&
-                        ps.StoreId == storeId);
+                if (!await ValidateComboStockAsync(comboId, storeId, quantity))
+                    return false;
 
-                var required = item.Quantity * quantity;
+                var comboProducts = await _context.ComboProducts
+                    .Where(cp => cp.ComboId == comboId)
+                    .ToListAsync();
 
-                productStore.Stock -= required;
-
-                _context.StockMovements.Add(new StockMovement
+                foreach (var item in comboProducts)
                 {
-                    ProductId = item.ProductId,
-                    StoreId = storeId,
-                    Quantity = required,
-                    MovementType = "Out",
-                    UserId = userId
-                });
-            }
+                    var productStore = await _context.ProductStores
+                        .FirstOrDefaultAsync(ps =>
+                            ps.ProductId == item.ProductId &&
+                            ps.StoreId == storeId);
 
-            await _context.SaveChangesAsync();
-            return true;
+                    if (productStore == null)
+                        throw new Exception("Inventario no encontrado para producto del combo");
+
+                    var required = item.Quantity * quantity;
+
+                    if (productStore.Stock < required)
+                        throw new Exception("Stock insuficiente en producto del combo");
+
+                    productStore.Stock -= required;
+
+                    _context.StockMovements.Add(new StockMovement
+                    {
+                        ProductId = item.ProductId,
+                        StoreId = storeId,
+                        Quantity = required,
+                        MovementType = "Out",
+                        UserId = userId,
+                        CreatedAt = DateTime.Now
+                    });
+                }
+
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                return true;
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
         }
 
         public async Task<List<ComboDto>> GetCombosByProductAsync(int productId)
@@ -81,7 +103,7 @@ namespace Daniel_Licors_Store.Data.Services
                 {
                     ComboId = cp.ComboId,
                     Name = cp.Combo.Name,
-                    Description = cp.Combo.Description!,
+                    Description = cp.Combo.Description ?? "",
                     ComboPrice = cp.Combo.ComboPrice
                 })
                 .Distinct()
@@ -96,8 +118,9 @@ namespace Daniel_Licors_Store.Data.Services
                 {
                     ComboId = c.ComboId,
                     Name = c.Name,
-                    Description = c.Description,
+                    Description = c.Description ?? "",
                     ComboPrice = c.ComboPrice,
+
                     Products = c.ComboProducts.Select(cp => new ComboProductDto
                     {
                         ProductId = cp.ProductId,
@@ -116,7 +139,7 @@ namespace Daniel_Licors_Store.Data.Services
                 {
                     ComboId = c.ComboId,
                     Name = c.Name,
-                    Description = c.Description!,
+                    Description = c.Description ?? "",
                     ComboPrice = c.ComboPrice
                 })
                 .ToListAsync();
@@ -125,19 +148,72 @@ namespace Daniel_Licors_Store.Data.Services
         public async Task<List<ComboAdminDto>> GetAdminCombosAsync()
         {
             return await _context.Combos
+                .Include(c => c.ComboProducts)
+                    .ThenInclude(cp => cp.Product)
                 .Where(c => c.IsActive)
                 .Select(c => new ComboAdminDto
                 {
                     ComboId = c.ComboId,
                     Name = c.Name,
                     ComboPrice = c.ComboPrice,
-                    ImageUrl = "/images/combo-default.png",
+
+                    ImageUrl = string.IsNullOrWhiteSpace(c.ImageUrl)
+                        ? "/images/combo-default.png"
+                        : c.ImageUrl,
 
                     ProductsSummary = string.Join(", ",
                         c.ComboProducts.Select(cp =>
                             cp.Product.Name + " x" + cp.Quantity))
                 })
                 .ToListAsync();
+        }
+
+        public async Task<bool> CreateComboAsync(ComboCreateModel model)
+        {
+            using var transaction = await _context.Database.BeginTransactionAsync();
+
+            try
+            {
+                if (model.Products == null || !model.Products.Any())
+                    throw new Exception("El combo debe tener al menos un producto");
+
+                var combo = new Combo
+                {
+                    Name = model.Name,
+                    Description = model.Description,
+                    ComboPrice = model.ComboPrice,
+                    ImageUrl = string.IsNullOrWhiteSpace(model.ImageUrl)
+                        ? null
+                        : model.ImageUrl,
+                    IsActive = true
+                };
+
+                _context.Combos.Add(combo);
+                await _context.SaveChangesAsync();
+
+                foreach (var prod in model.Products)
+                {
+                    if (prod.Quantity <= 0)
+                        continue;
+
+                    _context.ComboProducts.Add(new ComboProduct
+                    {
+                        ComboId = combo.ComboId,
+                        ProductId = prod.ProductId,
+                        Quantity = prod.Quantity
+                    });
+                }
+
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                throw new Exception("Error creando combo: " + (ex.InnerException?.Message ?? ex.Message));
+            }
         }
     }
 }

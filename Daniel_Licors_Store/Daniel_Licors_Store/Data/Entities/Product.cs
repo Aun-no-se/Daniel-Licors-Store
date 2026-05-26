@@ -18,5 +18,4 @@ public class Product
     public Brand? Brand { get; set; }
 
     public ICollection<ProductStore> ProductStores { get; set; } = new List<ProductStore>();
-    public ICollection<ComboProduct> ComboProducts { get; set; } = new List<ComboProduct>();
 }

@@ -15,9 +15,13 @@ namespace Daniel_Licors_Store.Data.Services
 
         public async Task<DashboardSummary> GetSummaryAsync()
         {
+            var totalSales = await _context.Orders
+                .Select(o => (decimal?)o.TotalAmount)
+                .SumAsync() ?? 0m;
+
             return new DashboardSummary
             {
-                TotalSales = await _context.Orders.SumAsync(o => o.TotalAmount),
+                TotalSales = totalSales,
                 TotalOrders = await _context.Orders.CountAsync(),
                 TotalCustomers = await _context.Users.CountAsync(),
                 TotalProducts = await _context.Products.CountAsync(p => p.IsActive)
@@ -52,11 +56,11 @@ namespace Daniel_Licors_Store.Data.Services
             var data = await _context.OrderItems
                 .Include(o => o.Product)
                 .ThenInclude(p => p.Category)
+                .Where(x => x.Product != null && x.Product.Category != null)
                 .GroupBy(x => x.Product.Category.Name)
                 .Select(g => new
                 {
                     Category = g.Key,
-
                     Total = g.Sum(x => x.UnitPrice * x.Quantity)
                 })
                 .ToListAsync();

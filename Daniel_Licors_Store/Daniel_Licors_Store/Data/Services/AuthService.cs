@@ -31,7 +31,10 @@ public class AuthService : IAuthService
         if (model.Password != model.ConfirmPassword)
             throw new Exception("Las contraseñas no coinciden");
 
-        var email = model.Email.ToLower().Trim();
+        var email = model.Email?.Trim().ToLower();
+
+        if (string.IsNullOrWhiteSpace(email))
+            throw new Exception("Email inválido");
 
         var exists = await _context.Users.AnyAsync(u => u.Email == email);
         if (exists)
@@ -45,8 +48,8 @@ public class AuthService : IAuthService
 
         var user = new User
         {
-            FullName = model.Name.Trim(),
-            LastName = model.LastName.Trim(),
+            FullName = model.Name?.Trim(),
+            LastName = model.LastName?.Trim(),
             Age = model.Age,
             Email = email,
             IsActive = true,
@@ -73,7 +76,10 @@ public class AuthService : IAuthService
     // =========================
     public async Task CreateUserByAdminAsync(AdminRegisterModel model)
     {
-        var email = model.Email.ToLower().Trim();
+        var email = model.Email?.Trim().ToLower();
+
+        if (string.IsNullOrWhiteSpace(email))
+            throw new Exception("Email inválido");
 
         var exists = await _context.Users.AnyAsync(u => u.Email == email);
         if (exists)
@@ -87,8 +93,8 @@ public class AuthService : IAuthService
 
         var user = new User
         {
-            FullName = model.Name.Trim(),
-            LastName = model.LastName.Trim(),
+            FullName = model.Name?.Trim(),
+            LastName = model.LastName?.Trim(),
             Age = model.Age,
             Email = email,
             IsActive = true,
@@ -111,18 +117,21 @@ public class AuthService : IAuthService
     }
 
     // =========================
-    // LOGIN SOLO VALIDACIÓN
+    // LOGIN VALIDACIÓN
     // =========================
     public async Task<User?> ValidateLoginAsync(LoginModel model)
     {
-        var email = model.Email.ToLower().Trim();
+        var email = model.Email?.Trim().ToLower();
+
+        if (string.IsNullOrWhiteSpace(email))
+            return null;
 
         var user = await _context.Users
             .Include(u => u.UserRoles)
                 .ThenInclude(r => r.Role)
             .FirstOrDefaultAsync(u => u.Email == email && u.IsActive);
 
-        if (user == null)
+        if (user == null || string.IsNullOrEmpty(user.PasswordHash))
             return null;
 
         var result = _hasher.VerifyHashedPassword(
@@ -131,9 +140,8 @@ public class AuthService : IAuthService
             model.Password
         );
 
-        if (result == PasswordVerificationResult.Failed)
-            return null;
-
-        return user;
+        return result == PasswordVerificationResult.Success
+            ? user
+            : null;
     }
 }
