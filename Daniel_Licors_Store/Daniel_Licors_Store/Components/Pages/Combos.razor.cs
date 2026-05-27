@@ -6,6 +6,7 @@ using Daniel_Licors_Store.Models.Product;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Forms;
 using MudBlazor;
+using Microsoft.JSInterop;
 
 namespace Daniel_Licors_Store.Components.Pages
 {
@@ -17,143 +18,189 @@ namespace Daniel_Licors_Store.Components.Pages
         [Inject] public IDialogService DialogService { get; set; } = default!;
         [Inject] public IWebHostEnvironment Env { get; set; } = default!;
 
-        List<ProductDetailDto> _products = new();
-        List<ComboAdminDto> AdminCombos = new();
-        List<ComboProductTemp> ComboBuilder = new();
+        private List<ProductDetailDto> _products = new();
+        private List<ComboAdminDto> _adminCombos = new();
+        private List<ComboProductTemp> _comboBuilder = new();
 
-        bool _loading = true;
-        bool ShowCreateCombo;
-        byte[]? _pendingImageBytes;
-        string? _pendingImageName;
+        private bool _loading = true;
+        private bool _showCreateCombo;
 
-        IBrowserFile? _selectedFile;
-        string? _selectedFileName;
+        private byte[]? _imageBytes;
+        private string? _imageFileName;
 
-        ComboCreateModel NewComboModel = new();
+        private ComboCreateModel _newCombo = new();
 
         protected override async Task OnInitializedAsync()
         {
-            _products = await ProductService.GetProductDetailsAsync();
-            await LoadCombos();
+            try
+            {
+                _products = await ProductService.GetProductDetailsAsync();
+                await LoadCombos();
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Error cargando datos: {ex.Message}", Severity.Error);
+            }
         }
 
-        async Task LoadCombos()
+        private async Task LoadCombos()
         {
             _loading = true;
-            AdminCombos = await ComboService.GetAdminCombosAsync();
-            _loading = false;
+
+            try
+            {
+                _adminCombos = await ComboService.GetAdminCombosAsync();
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Error cargando combos: {ex.Message}", Severity.Error);
+            }
+            finally
+            {
+                _loading = false;
+            }
         }
 
-        void ShowCreateSection() => ShowCreateCombo = true;
-
-        async Task OpenQuantityModal(ProductDetailDto product)
+        private void ShowCreateSection()
         {
-            var dialog = DialogService.Show<QuantityDialog>("Cantidad",
-                new DialogParameters { ["SelectedProduct"] = product });
+            _showCreateCombo = true;
+        }
+
+        private async Task OpenQuantityModal(ProductDetailDto product)
+        {
+            var dialog = DialogService.Show<QuantityDialog>(
+                "Cantidad",
+                new DialogParameters { ["SelectedProduct"] = product }
+            );
 
             var result = await dialog.Result;
 
-            if (!result.Canceled && result.Data is int qty)
+            if (!result.Canceled && result.Data is int qty && qty > 0)
+            {
                 AddProduct(product, qty);
+            }
         }
 
-        void AddProduct(ProductDetailDto product, int qty)
+        private void AddProduct(ProductDetailDto product, int qty)
         {
-            var item = ComboBuilder.FirstOrDefault(x => x.ProductId == product.ProductId);
+            var existing = _comboBuilder.FirstOrDefault(x => x.ProductId == product.ProductId);
 
-            if (item != null)
-                item.Quantity += qty;
+            if (existing != null)
+                existing.Quantity += qty;
             else
-                ComboBuilder.Add(new ComboProductTemp
+            {
+                _comboBuilder.Add(new ComboProductTemp
                 {
                     ProductId = product.ProductId,
                     ProductName = product.Name,
                     Quantity = qty,
-                    ImageUrl = product.ImageUrl ?? ""
+                    ImageUrl = product.ImageUrl ?? string.Empty
                 });
+            }
         }
 
-        async Task HandleFileSelected(InputFileChangeEventArgs e)
+        private async Task HandleFileSelected(InputFileChangeEventArgs e)
         {
             try
             {
                 var file = e.File;
 
-                // Copia inmediata a memoria local (rompe dependencia de Blazor internals)
-                using var stream = file.OpenReadStream(10 * 1024 * 1024);
-                using var ms = new MemoryStream();
+                // Validaciones tempranas sin tocar el stream
+                if (file is null || file.Size <= 0)
+                    return;
 
-                await stream.CopyToAsync(ms);
-                var bytes = ms.ToArray();
+                if (file.Size > 5 * 1024 * 1024)
+                {
+                    Snackbar.Add("La imagen no puede superar 5MB", Severity.Warning);
+                    return;
+                }
 
-                _selectedFileName = file.Name;
+                // Leer el stream en un buffer antes de cualquier await externo
+                var buffer = new byte[file.Size];
+                await using var stream = file.OpenReadStream(maxAllowedSize: 5 * 1024 * 1024);
+                var totalRead = 0;
+                int bytesRead;
 
-                // guardas bytes en memoria, no el IBrowserFile
-                _pendingImageBytes = bytes;
-                _pendingImageName = file.Name;
+                while ((bytesRead = await stream.ReadAsync(
+                           buffer.AsMemory(totalRead, buffer.Length - totalRead))) > 0)
+                {
+                    totalRead += bytesRead;
+                }
+
+                _imageBytes = buffer[..totalRead];
+                _imageFileName = file.Name;
+
+                Snackbar.Add("Imagen cargada correctamente", Severity.Success);
+                StateHasChanged(); // ← sin InvokeAsync, ya estás en el circuit correcto
+            }
+            catch (JSException jsEx)
+            {
+                // El usuario cerró el diálogo o navegó — no es un error real
+                Console.WriteLine($"[InputFile] JSException ignorada: {jsEx.Message}");
+            }
+            catch (TaskCanceledException)
+            {
+                // Circuit cancelado — ignorar silenciosamente
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex);
+                Snackbar.Add($"Error leyendo imagen: {ex.Message}", Severity.Error);
             }
         }
 
-        void ClearSelectedImage()
+        private async Task SaveCombo()
         {
-            _selectedFile = null;
-            _selectedFileName = null;
-        }
+            if (!_comboBuilder.Any())
+            {
+                Snackbar.Add("Agrega al menos un producto al combo", Severity.Warning);
+                return;
+            }
 
-        async Task SaveCombo()
-        {
             try
             {
-                if (_pendingImageBytes != null)
-                    NewComboModel.ImageUrl = await SaveImage();
+                if (_imageBytes != null)
+                    _newCombo.ImageUrl = await SaveImageAsync();
 
-                NewComboModel.Products = ComboBuilder;
+                _newCombo.Products = _comboBuilder;
 
-                await ComboService.CreateComboAsync(NewComboModel);
+                await ComboService.CreateComboAsync(_newCombo);
 
                 Snackbar.Add("Combo creado correctamente", Severity.Success);
 
-                ShowCreateCombo = false;
-                ComboBuilder.Clear();
-                ClearSelectedImage();
-                NewComboModel = new();
-
+                ResetForm();
                 await LoadCombos();
             }
             catch (Exception ex)
             {
-                Snackbar.Add(ex.Message, Severity.Error);
+                Snackbar.Add($"Error creando combo: {ex.Message}", Severity.Error);
             }
         }
 
-        async Task<string> SaveImage()
+        private async Task<string> SaveImageAsync()
         {
-            try
-            {
-                var folder = Path.Combine(Env.WebRootPath, "images", "Combos");
-                Directory.CreateDirectory(folder);
+            var folder = Path.Combine(Env.WebRootPath, "images", "combos");
+            Directory.CreateDirectory(folder);
 
-                var ext = Path.GetExtension(_pendingImageName ?? ".jpg");
-                var fileName = $"{Guid.NewGuid()}{ext}";
-                var path = Path.Combine(folder, fileName);
+            var extension = Path.GetExtension(_imageFileName ?? ".jpg");
+            var fileName = $"{Guid.NewGuid()}{extension}";
+            var fullPath = Path.Combine(folder, fileName);
 
-                await File.WriteAllBytesAsync(path, _pendingImageBytes!);
+            await File.WriteAllBytesAsync(fullPath, _imageBytes!);
 
-                return $"/images/Combos/{fileName}";
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine("ERROR GUARDANDO IMAGEN: " + ex.Message);
-                throw;
-            }
+            return $"/images/combos/{fileName}";
         }
 
-        void ViewCombo(int id) { }
-        void EditCombo(int id) { }
-        void DeleteCombo(int id) { }
+        private void ResetForm()
+        {
+            _showCreateCombo = false;
+            _comboBuilder.Clear();
+            _imageBytes = null;
+            _imageFileName = null;
+            _newCombo = new ComboCreateModel();
+        }
+
+        private void ViewCombo(int id) { }
+        private void EditCombo(int id) { }
+        private void DeleteCombo(int id) { }
     }
 }

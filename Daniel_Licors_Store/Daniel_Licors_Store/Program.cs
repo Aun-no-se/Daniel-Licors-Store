@@ -89,6 +89,21 @@ builder.Services
     });
 #endregion
 
+builder.Services
+    .AddRazorComponents()
+    .AddInteractiveServerComponents()
+    .AddHubOptions(options =>
+    {
+        options.MaximumReceiveMessageSize = 64 * 1024 * 1024; // 64MB
+        options.ClientTimeoutInterval = TimeSpan.FromSeconds(60);
+        options.HandshakeTimeout = TimeSpan.FromSeconds(30);
+    });
+
+builder.Services.AddServerSideBlazor(options =>
+{
+    options.DetailedErrors = true; // solo en Development
+});
+
 var app = builder.Build();
 
 #region ===================== GLOBAL ERROR HANDLER (CLAVE PARA -1) =====================
@@ -173,4 +188,19 @@ app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 #endregion
 
+AppDomain.CurrentDomain.UnhandledException += (s, e) =>
+{
+    File.WriteAllText("fatal.txt", e.ExceptionObject.ToString());
+};
+
+
+app.UseExceptionHandler(errorApp =>
+{
+    errorApp.Run(async context =>
+    {
+        var ex = context.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerFeature>();
+        if (ex?.Error != null)
+            Console.WriteLine($"🔥 CIRCUIT ERROR: {ex.Error}");
+    });
+});
 app.Run();
