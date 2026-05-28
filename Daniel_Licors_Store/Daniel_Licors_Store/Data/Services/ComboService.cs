@@ -121,10 +121,21 @@ namespace Daniel_Licors_Store.Data.Services
                     Description = c.Description ?? "",
                     ComboPrice = c.ComboPrice,
 
-                    Products = c.ComboProducts.Select(cp => new ComboProductDto
+                    ImageUrl = string.IsNullOrWhiteSpace(c.ImageUrl)
+                        ? "/images/combo-default.png"
+                        : c.ImageUrl,
+
+                    Products = c.ComboProducts.Select(cp => new ComboProductDetailDto
                     {
                         ProductId = cp.ProductId,
                         ProductName = cp.Product.Name,
+                        Description = cp.Product.Description ?? "",
+                        ImageUrl = cp.Product.ImageUrl ?? "/images/default-product.png",
+
+                        Price = cp.Product.ProductStores
+                            .Select(ps => ps.Price)
+                            .FirstOrDefault(),
+
                         Quantity = cp.Quantity
                     }).ToList()
                 })
@@ -214,6 +225,48 @@ namespace Daniel_Licors_Store.Data.Services
                 await transaction.RollbackAsync();
                 throw new Exception("Error creando combo: " + (ex.InnerException?.Message ?? ex.Message));
             }
+        }
+
+        public async Task UpdateComboAsync(int comboId, ComboCreateModel model)
+        {
+            var combo = await _context.Combos
+                .Include(c => c.ComboProducts)
+                .FirstOrDefaultAsync(c => c.ComboId == comboId);
+
+            if (combo == null)
+                throw new Exception("Combo no encontrado");
+
+            combo.Name = model.Name;
+            combo.Description = model.Description;
+            combo.ComboPrice = model.ComboPrice;
+
+            // borrar productos actuales
+            _context.ComboProducts.RemoveRange(combo.ComboProducts);
+
+            // agregar nuevos
+            combo.ComboProducts = model.Products.Select(p => new ComboProduct
+            {
+                ProductId = p.ProductId,
+                Quantity = p.Quantity
+            }).ToList();
+
+            if (!string.IsNullOrEmpty(model.ImageUrl))
+                combo.ImageUrl = model.ImageUrl;
+
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task DeleteComboAsync(int comboId)
+        {
+            var combo = await _context.Combos
+                .FirstOrDefaultAsync(c => c.ComboId == comboId);
+
+            if (combo == null)
+                throw new Exception("Combo no encontrado");
+
+            combo.IsActive = false;
+
+            await _context.SaveChangesAsync();
         }
     }
 }

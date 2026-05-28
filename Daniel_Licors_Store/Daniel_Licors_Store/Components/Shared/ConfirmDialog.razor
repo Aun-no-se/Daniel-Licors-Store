@@ -6,15 +6,24 @@
     </DialogContent>
 
     <DialogActions>
-        <MudButton OnClick="Cancel">Cancelar</MudButton>
-        <MudButton Color="Color.Error" OnClick="Ok">Eliminar</MudButton>
+        <MudButton OnClick="Cancel">
+            Cancelar
+        </MudButton>
+
+        <MudButton Color="@ButtonColor" OnClick="Ok">
+            @ButtonText
+        </MudButton>
     </DialogActions>
 </MudDialog>
 
 @code {
-    [CascadingParameter] IMudDialogInstance MudDialog { get; set; }
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = default!;
 
-    [Parameter] public string ContentText { get; set; }
+    [Parameter] public string ContentText { get; set; } = string.Empty;
+
+    // 🔹 NUEVOS PARÁMETROS (estos arreglan tu excepción)
+    [Parameter] public string ButtonText { get; set; } = "Aceptar";
+    [Parameter] public Color ButtonColor { get; set; } = Color.Error;
 
     void Cancel() => MudDialog.Cancel();
     void Ok() => MudDialog.Close(DialogResult.Ok(true));

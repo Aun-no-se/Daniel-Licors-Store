@@ -6,7 +6,7 @@
         public string Description { get; set; } = string.Empty;
         public decimal ComboPrice { get; set; }
 
-        // 👈 NUEVA PROPIEDAD: Para recibir la ruta de la foto asignada en el UploadImageAsync()
+        //NUEVA PROPIEDAD: Para recibir la ruta de la foto asignada en el UploadImageAsync()
         public string? ImageUrl { get; set; }
 
         public List<ComboProductTemp> Products { get; set; } = new();

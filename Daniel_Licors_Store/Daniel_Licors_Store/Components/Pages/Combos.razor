@@ -2,6 +2,7 @@
 @using Microsoft.AspNetCore.Components.Forms
 @using Daniel_Licors_Store.Models.Combo
 
+
 <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-6">
 
     <MudText Typo="Typo.h4" Class="font-weight-bold mb-4">
@@ -55,7 +56,7 @@
                     <MudTd Align="Align.Center">
                         <MudIconButton Icon="@Icons.Material.Filled.Visibility"
                                        Color="Color.Primary"
-                                       OnClick="@(() => ViewCombo(context.ComboId))" />
+                                       OnClick="@(() => Nav.NavigateTo($"/combo/{context.ComboId}", true))" />
 
                         <MudIconButton Icon="@Icons.Material.Filled.Edit"
                                        Color="Color.Warning"

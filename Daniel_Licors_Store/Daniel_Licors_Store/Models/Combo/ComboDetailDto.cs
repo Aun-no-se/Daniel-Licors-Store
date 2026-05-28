@@ -7,5 +7,7 @@ public class ComboDetailDto
     public string Description { get; set; } = "";
     public decimal ComboPrice { get; set; }
 
-    public List<ComboProductDto> Products { get; set; } = new();
+    public string? ImageUrl { get; set; }   
+
+    public List<ComboProductDetailDto> Products { get; set; } = new();
 }
