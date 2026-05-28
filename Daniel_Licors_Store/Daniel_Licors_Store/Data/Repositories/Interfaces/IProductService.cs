@@ -4,7 +4,6 @@ namespace Daniel_Licors_Store.Data.Repositories.Interfaces
 {
     public interface IProductService
     {
-        // 👈 AÑADIMOS ESTA LÍNEA
         Task<List<ProductDetailDto>> GetProductDetailsAsync();
 
         Task<int> CreateProductAsync(ProductCreateModel model);

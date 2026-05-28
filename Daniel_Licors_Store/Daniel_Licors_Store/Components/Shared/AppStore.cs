@@ -2,7 +2,7 @@
 {
     public static class AppStore
     {
-        public const int StoreId = 2; // Haina
+        public const int StoreId = 1; // Haina
         public const string StoreName = "Haina";
     }
 }

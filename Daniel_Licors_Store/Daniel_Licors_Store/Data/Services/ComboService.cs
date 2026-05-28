@@ -13,7 +13,7 @@ namespace Daniel_Licors_Store.Data.Services
         {
             _context = context;
 
-            // 🔧 Evita comportamientos raros en tracking (Blazor Server + EF)
+            // Evita comportamientos raros en tracking (Blazor Server + EF)
             _context.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.TrackAll;
         }
 

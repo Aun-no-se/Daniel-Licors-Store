@@ -260,7 +260,6 @@ public class ApplicationDbContext : DbContext
                   .OnDelete(DeleteBehavior.Cascade);
 
             // Relación con Product 
-            // 💡 Al dejar WithMany() vacío, le dices a EF que Product NO tiene la colección al revés
             entity.HasOne(cp => cp.Product)
                   .WithMany()
                   .HasForeignKey(cp => cp.ProductId)

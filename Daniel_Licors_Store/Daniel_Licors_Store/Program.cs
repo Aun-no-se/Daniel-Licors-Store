@@ -30,7 +30,7 @@ builder.Services
     .AddInteractiveServerComponents()
     .AddHubOptions(options =>
     {
-        options.MaximumReceiveMessageSize = 32 * 1024 * 1024; // 👈 uploads grandes
+        options.MaximumReceiveMessageSize = 32 * 1024 * 1024; // uploads grandes
     });
 #endregion
 
@@ -176,7 +176,7 @@ app.MapPost("/api/login", async (
     }
     catch (Exception ex)
     {
-        Console.WriteLine("🔥 ERROR LOGIN:");
+        Console.WriteLine(" ERROR LOGIN:");
         Console.WriteLine(ex.ToString());
         return Results.Problem("Error interno en login");
     }
@@ -200,7 +200,7 @@ app.UseExceptionHandler(errorApp =>
     {
         var ex = context.Features.Get<Microsoft.AspNetCore.Diagnostics.IExceptionHandlerFeature>();
         if (ex?.Error != null)
-            Console.WriteLine($"🔥 CIRCUIT ERROR: {ex.Error}");
+            Console.WriteLine($" CIRCUIT ERROR: {ex.Error}");
     });
 });
 app.Run();

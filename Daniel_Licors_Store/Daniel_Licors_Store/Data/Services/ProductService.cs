@@ -13,7 +13,7 @@ public class ProductService : IProductService
     {
         _context = context;
 
-        // 🔧 Evita comportamientos raros en Blazor Server con tracking EF
+        // Evita comportamientos raros en Blazor Server con tracking EF
         _context.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.TrackAll;
     }
 

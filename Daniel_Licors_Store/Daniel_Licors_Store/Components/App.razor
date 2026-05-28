@@ -97,14 +97,12 @@
                         entry.target.classList.add('reveal');
                     }
                     else {
-                        // 🔥 opcional: quitar animación si sale de pantalla
-                        // entry.target.classList.remove('reveal');
                     }
 
                 });
 
             }, {
-                threshold: 0.2 // 👈 se activa cuando 20% es visible
+                threshold: 0.2
             });
 
             sections.forEach(section => observer.observe(section));
