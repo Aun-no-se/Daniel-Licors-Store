@@ -225,12 +225,12 @@
 
             if (ProductId.HasValue)
             {
-                // 🔁 EDICIÓN
+                // EDICIÓN
                 await ProductService.UpdateProductAsync(Model);
             }
             else
             {
-                // 🟢 CREACIÓN → FORZAMOS ACTIVO
+                //  CREACIÓN FORZAMOS ACTIVO
                 Model.IsActive = true;
 
                 var createModel = new ProductCreateModel

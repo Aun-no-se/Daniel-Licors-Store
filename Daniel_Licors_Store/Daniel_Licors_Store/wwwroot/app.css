@@ -60,7 +60,6 @@ body {
 }
 
 /* ===== BOTONES CON FLOW Y ANIMACIÓN ===== */
-/* Botón Primario / Gradiente Resaltado */
 .btn-licol-gradient {
     background: linear-gradient(135deg, #FF1744 0%, #B71C1C 100%) !important;
     color: white !important;
@@ -134,3 +133,40 @@ body {
     ::-webkit-scrollbar-thumb:hover {
         background: #FF1744;
     }
+
+/* ===== ETIQUETAS DE SECCIÓN EN MENÚ MÓVIL ===== */
+.menu-mobile-header {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #888888;
+    padding: 6px 16px;
+    margin: 0;
+}
+
+.menu-mobile-header-work {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #FF8A80; /* Un rojo claro/salmón para los empleados */
+    padding: 6px 16px;
+    margin: 0;
+}
+
+.menu-mobile-header-admin {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #FF1744; /* El rojo brillante de Daniel Liquor Store */
+    padding: 6px 16px;
+    margin: 0;
+}
+
+/* Espaciado del icono interno en MudMenuItem móvil */
+.mud-menu-item .mud-icon-root {
+    margin-right: 12px !important;
+    font-size: 1.25rem;
+}
