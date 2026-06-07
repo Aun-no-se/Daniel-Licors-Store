@@ -12,7 +12,7 @@
                Color="Color.Secondary"
                OnClick="@(() => Nav.NavigateTo("/"))"
                Class="mb-4 text-transform-none">
-        Volver
+        Volver al catálogo
     </MudButton>
 
     @if (_loading)
@@ -24,129 +24,178 @@
     }
     else if (Combo != null)
     {
+        <!-- ===== HERO ===== -->
         <MudGrid Spacing="6" Class="align-center justify-center">
 
-            <!-- Imagen del combo -->
-            <MudItem xs="12" md="6" Class="d-flex justify-center justify-md-end">
+            <!-- Imagen -->
+            <MudItem xs="12" md="5" Class="d-flex justify-center justify-md-end">
                 <div class="image-container-premium">
-                    <img src="@ComboImage" class="product-image-fluid" />
+                    <span class="badge-combo-floating">
+                        <MudIcon Icon="@Icons.Material.Filled.LocalBar" Size="Size.Small" Class="mr-1" />
+                        COMBO
+                    </span>
+                    <img src="@ComboImage" alt="@Combo.Name" class="product-image-fluid" />
                 </div>
             </MudItem>
 
-            <!-- Info del combo -->
-            <MudItem xs="12" md="6">
-                <div class="d-flex flex-column gap-y-4 product-info-container">
+            <!-- Info -->
+            <MudItem xs="12" md="7" Class="d-flex justify-center justify-md-start">
+                <div class="d-flex flex-column gap-y-3 product-info-container">
 
                     <MudText Typo="Typo.h3" Class="font-weight-black product-title">
                         @Combo.Name
                     </MudText>
 
-                    <MudDivider />
+                    @if (!string.IsNullOrWhiteSpace(Combo.Description))
+                    {
+                        <MudText Typo="Typo.body1" Class="product-description">
+                            @Combo.Description
+                        </MudText>
+                    }
 
-                    <MudText Typo="Typo.h2" Color="Color.Success" Class="font-weight-bold">
-                        $@Combo.ComboPrice.ToString("N2")
-                    </MudText>
+                    <MudDivider Class="my-1" />
 
-                    <MudText Typo="Typo.body1" Class="product-description mt-2">
-                        @Combo.Description
-                    </MudText>
+                    <!-- Precio destacado -->
+                    <div class="price-area">
+                        <MudText Typo="Typo.caption" Class="muted-text d-block mb-n1">Precio del combo</MudText>
+                        <MudText Typo="Typo.h2" Color="Color.Success" Class="font-weight-black">
+                            $@Combo.ComboPrice.ToString("N2")
+                        </MudText>
+                        @if (Combo.Products.Any())
+                        {
+                            var valorReal = Combo.Products.Sum(x => x.Price * x.Quantity);
+                            var ahorro = valorReal - Combo.ComboPrice;
+                            if (ahorro > 0)
+                            {
+                                <MudChip T="string" Color="Color.Error" Size="Size.Small" Class="font-weight-bold mt-1">
+                                    ¡Ahorras $@ahorro.ToString("N2")!
+                                </MudChip>
+                            }
+                        }
+                    </div>
 
-                    <!-- RESUMEN DEL COMBO -->
-                    <div class="d-flex flex-wrap gap-2 mt-3">
-
-                        <MudChip T="string"
-                                 Color="Color.Success"
-                                 Class="mb-1">
-                            Total de productos: @Combo.Products.Count
+                    <!-- Resumen chips -->
+                    <div class="d-flex flex-wrap gap-2 mt-1">
+                        <MudChip T="string" Color="Color.Primary" Variant="Variant.Outlined" Size="Size.Small">
+                            <MudIcon Icon="@Icons.Material.Filled.Inventory2" Size="Size.Small" Class="mr-1" />
+                            @Combo.Products.Count producto@(Combo.Products.Count != 1 ? "s" : "")
                         </MudChip>
 
-                        <MudChip T="string"
-                                 Color="Color.Info"
-                                 Class="mb-1">
-                            Items totales: @Combo.Products.Sum(x => x.Quantity)
+                        <MudChip T="string" Color="Color.Info" Variant="Variant.Outlined" Size="Size.Small">
+                            <MudIcon Icon="@Icons.Material.Filled.Layers" Size="Size.Small" Class="mr-1" />
+                            @Combo.Products.Sum(x => x.Quantity) unidades totales
                         </MudChip>
 
-                        <MudChip T="string"
-                                 Color="Color.Warning"
-                                 Class="mb-1">
-                            Valor estimado: $@Combo.Products.Sum(x => x.Price * x.Quantity).ToString("N2")
+                        <MudChip T="string" Color="Color.Warning" Variant="Variant.Outlined" Size="Size.Small">
+                            <MudIcon Icon="@Icons.Material.Filled.PriceCheck" Size="Size.Small" Class="mr-1" />
+                            Valor: $@Combo.Products.Sum(x => x.Price * x.Quantity).ToString("N2")
                         </MudChip>
+                    </div>
 
+                    <!-- Botón WhatsApp / Agregar -->
+                    <div class="actions-box mt-3">
+                        <MudButton Color="Color.Success"
+                                   Variant="Variant.Filled"
+                                   Size="Size.Large"
+                                   FullWidth="true"
+                                   StartIcon="@Icons.Material.Filled.ShoppingCart"
+                                   Class="py-3 btn-combo-cart">
+                            Agregar combo al carrito
+                        </MudButton>
                     </div>
 
                 </div>
             </MudItem>
-
         </MudGrid>
 
-        <!-- Productos del combo -->
-        <MudGrid Class="mt-12">
-            <MudItem xs="12">
-                <div class="section-header d-flex align-center mb-4">
-                    <MudIcon Icon="@Icons.Material.Filled.LocalBar" Color="Color.Primary" Class="mr-2" />
-                    <MudText Typo="Typo.h5" Class="font-weight-bold">
-                        Incluye este combo
-                    </MudText>
-                </div>
+        <!-- ===== PRODUCTOS DEL COMBO ===== -->
+        <div class="mt-12">
+            <div class="section-header d-flex align-center mb-6">
+                <MudIcon Icon="@Icons.Material.Filled.LocalBar" Color="Color.Primary" Class="mr-2" />
+                <MudText Typo="Typo.h5" Class="font-weight-bold">¿Qué incluye este combo?</MudText>
+            </div>
 
-                <MudGrid Spacing="3">
-                    @foreach (var item in Combo.Products)
-                    {
-                        <MudItem xs="12" sm="6" md="4">
-                            <MudCard Class="combo-premium-card cursor-pointer"
-                                     OnClick="@(() => GoToProduct(item.ProductId))">
+            <MudGrid Spacing="4">
+                @foreach (var item in Combo.Products)
+                {
+                    <MudItem xs="12" sm="6" md="4">
+                        <MudCard Class="combo-product-card h-100"
+                                 Elevation="2"
+                                 @onclick="@(() => Nav.NavigateTo($"/producto/{item.ProductId}"))">
 
-                                <MudCardContent>
+                            <!-- Imagen del producto -->
+                            <div class="combo-product-img-wrapper">
+                                <img src="@item.ImageUrl"
+                                     alt="@item.ProductName"
+                                     class="combo-product-img" />
+                                <!-- Badge cantidad -->
+                                <span class="quantity-badge">x@item.Quantity</span>
+                            </div>
 
-                                    <!-- Imagen -->
-                                    <div class="d-flex justify-center mb-2">
-                                        <img src="@item.ImageUrl"
-                                             style="width:80px;height:80px;object-fit:cover;border-radius:10px;" />
-                                    </div>
+                            <MudCardContent Class="pt-2">
 
-                                    <!-- Nombre -->
-                                    <MudText Typo="Typo.subtitle1" Class="font-weight-bold text-center">
-                                        @item.ProductName
-                                    </MudText>
+                                <!-- Nombre -->
+                                <MudText Typo="Typo.subtitle1"
+                                         Class="font-weight-bold text-center product-title-small">
+                                    @item.ProductName
+                                </MudText>
 
-                                    <!-- Descripción -->
-                                    <MudText Typo="Typo.caption" Class="text-center text-muted">
+                                <!-- Descripción corta -->
+                                @if (!string.IsNullOrWhiteSpace(item.Description))
+                                {
+                                    <MudText Typo="Typo.caption"
+                                             Class="text-center muted-text mt-1 d-block desc-clamp">
                                         @item.Description
                                     </MudText>
+                                }
 
-                                    <MudDivider Class="my-2" />
+                                <MudDivider Class="my-2" />
 
-                                    <!-- Precio -->
-                                    <MudText Typo="Typo.body2" Class="text-center">
-                                        <b>Precio:</b> $@item.Price.ToString("N2")
-                                    </MudText>
+                                <!-- Precio unitario y subtotal -->
+                                <div class="d-flex justify-space-between align-center px-1">
+                                    <div>
+                                        <MudText Typo="Typo.caption" Class="muted-text">Precio c/u</MudText>
+                                        <MudText Typo="Typo.body2" Class="font-weight-bold">
+                                            $@item.Price.ToString("N2")
+                                        </MudText>
+                                    </div>
+                                    <div class="text-right">
+                                        <MudText Typo="Typo.caption" Class="muted-text">Subtotal</MudText>
+                                        <MudText Typo="Typo.body1" Color="Color.Success" Class="font-weight-black">
+                                            $@((item.Price * item.Quantity).ToString("N2"))
+                                        </MudText>
+                                    </div>
+                                </div>
 
-                                    <!-- Cantidad -->
-                                    <MudChip T="string"
-                                             Color="Color.Primary"
-                                             Size="Size.Small"
-                                             Class="mt-2 d-flex justify-center">
-                                        Cantidad: @item.Quantity
-                                    </MudChip>
+                                <!-- Ver detalle -->
+                                <div class="d-flex justify-center mt-2">
+                                    <MudButton Variant="Variant.Text"
+                                               Color="Color.Primary"
+                                               Size="Size.Small"
+                                               EndIcon="@Icons.Material.Filled.OpenInNew"
+                                               Class="text-transform-none">
+                                        Ver producto
+                                    </MudButton>
+                                </div>
 
-                                    <!-- Subtotal -->
-                                    <MudText Typo="Typo.caption" Class="text-center mt-2">
-                                        Subtotal: $@((item.Price * item.Quantity).ToString("N2"))
-                                    </MudText>
-
-                                </MudCardContent>
-
-                            </MudCard>
-                        </MudItem>
-                    }
-                </MudGrid>
-            </MudItem>
-        </MudGrid>
+                            </MudCardContent>
+                        </MudCard>
+                    </MudItem>
+                }
+            </MudGrid>
+        </div>
 
     }
     else
     {
-        <MudText>No existe el combo</MudText>
+        <div class="d-flex justify-center align-center flex-column my-12 py-12">
+            <MudIcon Icon="@Icons.Material.Filled.HeartBroken" Size="Size.Large" Color="Color.Error" />
+            <MudText Typo="Typo.h5" Class="mt-4 font-weight-bold">Este combo no existe</MudText>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" Class="mt-3"
+                       OnClick="@(() => Nav.NavigateTo("/"))">
+                Regresar al Inicio
+            </MudButton>
+        </div>
     }
 
 </MudContainer>

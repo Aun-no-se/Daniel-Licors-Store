@@ -9,7 +9,6 @@ namespace Daniel_Licors_Store.Data.Services
     public class CatalogService : ICatalogService
     {
         private readonly ApplicationDbContext _context;
-
         private readonly IRepository<Category> _categoryRepo;
         private readonly IRepository<Brand> _brandRepo;
         private readonly IRepository<Product> _productRepo;
@@ -80,8 +79,14 @@ namespace Daniel_Licors_Store.Data.Services
         // =========================
         public async Task<List<ComboDto>> GetCombosByProductAsync(int productId)
         {
+            var now = DateTime.Now;
+
             return await _context.ComboProducts
-                .Where(cp => cp.ProductId == productId)
+                .Where(cp =>
+                    cp.ProductId == productId &&
+                    cp.Combo.IsActive &&
+                    (cp.Combo.StartDate == null || cp.Combo.StartDate <= now) &&
+                    (cp.Combo.EndDate == null || cp.Combo.EndDate >= now))
                 .Include(cp => cp.Combo)
                 .Select(cp => new ComboDto
                 {
@@ -95,17 +100,32 @@ namespace Daniel_Licors_Store.Data.Services
 
         // =========================
         // PROMOTIONS BY PRODUCT
+        // Solo activas y dentro de vigencia
         // =========================
         public async Task<List<PromotionDto>> GetPromotionsByProductAsync(int productId)
         {
+            var now = DateTime.Now;
+
             return await _context.PromotionProducts
-                .Where(pp => pp.ProductId == productId)
+                .Where(pp =>
+                    pp.ProductId == productId &&
+                    pp.Promotion.IsActive &&
+                    pp.Promotion.StartDate <= now &&
+                    pp.Promotion.EndDate >= now)
                 .Include(pp => pp.Promotion)
                 .Select(pp => new PromotionDto
                 {
                     PromotionId = pp.PromotionId,
                     Title = pp.Promotion.Title,
-                    Description = pp.Promotion.Description
+                    Description = pp.Promotion.Description,
+                    PromotionType = pp.Promotion.PromotionType,
+                    ImageUrl = pp.Promotion.ImageUrl,
+                    StartDate = pp.Promotion.StartDate,
+                    EndDate = pp.Promotion.EndDate,
+                    SpecialPrice = pp.SpecialPrice,
+                    DiscountPercentage = pp.DiscountPercentage,
+                    RequiredQuantity = pp.RequiredQuantity,
+                    PayQuantity = pp.PayQuantity
                 })
                 .ToListAsync();
         }
@@ -142,7 +162,6 @@ namespace Daniel_Licors_Store.Data.Services
                 ImageUrl = p.ImageUrl,
                 IsPremium = p.IsPremium,
                 IsActive = p.IsActive,
-
                 Price = store?.Price ?? 0,
                 Stock = store?.Stock ?? 0
             };

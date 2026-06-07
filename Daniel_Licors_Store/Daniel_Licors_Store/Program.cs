@@ -101,7 +101,7 @@ builder.Services
 
 builder.Services.AddServerSideBlazor(options =>
 {
-    options.DetailedErrors = true; // solo en Development
+    options.DetailedErrors = builder.Environment.IsDevelopment();
 });
 
 var app = builder.Build();
@@ -115,7 +115,7 @@ app.Use(async (context, next) =>
     }
     catch (Exception ex)
     {
-        Console.WriteLine("🔥 ERROR GLOBAL CAPTURADO:");
+        Console.WriteLine("ERROR GLOBAL CAPTURADO:");
         Console.WriteLine(ex.ToString());
         throw;
     }

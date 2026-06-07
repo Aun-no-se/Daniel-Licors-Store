@@ -13,7 +13,7 @@ namespace Daniel_Licors_Store.Data.Repositories.Interfaces
         Task<List<ProductResponseModel>> GetProductsByCategoryAsync(int categoryId);
         Task<List<ComboDto>> GetCombosByProductAsync(int productId);
 
+        // Devuelve promociones activas de un producto con todos los campos del DTO
         Task<List<PromotionDto>> GetPromotionsByProductAsync(int productId);
-
     }
 }

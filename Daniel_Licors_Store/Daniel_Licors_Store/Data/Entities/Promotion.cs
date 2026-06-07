@@ -1,4 +1,4 @@
-﻿namespace Daniel_Licors_Store.Data.Entities;
+namespace Daniel_Licors_Store.Data.Entities;
 
 public class Promotion
 {
@@ -7,7 +7,8 @@ public class Promotion
     public string? Description { get; set; }
     public DateTime StartDate { get; set; }
     public DateTime EndDate { get; set; }
-    public string? PromotionType { get; set; }
+    public string? PromotionType { get; set; } // Weekly, Combo, Highlight
+    public string? ImageUrl { get; set; }
     public bool IsActive { get; set; }
 
     public ICollection<PromotionProduct> PromotionProducts { get; set; } = new List<PromotionProduct>();

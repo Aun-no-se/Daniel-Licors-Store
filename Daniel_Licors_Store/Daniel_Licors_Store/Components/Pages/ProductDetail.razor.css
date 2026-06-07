@@ -1,26 +1,24 @@
-﻿/* Cuadrado fijo perfecto y balanceado para el Grid 50/50 */
+﻿/* === IMAGEN === */
 .image-container-premium {
     position: relative;
-    width: 400px; /* Tamaño ideal para destacar en pantallas de PC */
-    height: 400px; /* Simetría total en alto y ancho */
+    width: 400px;
+    height: 400px;
     background: #ffffff;
     border-radius: 24px;
-    padding: 0px;
+    padding: 0;
     display: flex;
     justify-content: center;
     align-items: center;
-    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4); /* Un toque extra de sombra por el fondo oscuro */
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
     border: 1px solid rgba(255, 255, 255, 0.08);
     overflow: hidden;
 }
 
-/* Contenedor del texto para limitar su ancho en monitores ultra-wide */
 .product-info-container {
     width: 100%;
-    max-width: 450px; /* Hace que los textos y el botón tengan coherencia visual con la foto */
+    max-width: 450px;
 }
 
-/* Adaptación absoluta de la imagen */
 .product-image-fluid {
     width: 100%;
     height: 100%;
@@ -33,7 +31,7 @@
     transform: scale(1.06);
 }
 
-/* Badge flotante premium en la foto */
+/* === BADGE PREMIUM === */
 .badge-premium-floating {
     position: absolute;
     top: 16px;
@@ -51,23 +49,23 @@
     z-index: 2;
 }
 
-/* Tipografías y textos refinados */
+/* === TEXTOS === */
 .product-title {
-    color: #ffffff; /* Cambiado a blanco para hacer match con tu tema oscuro */
+    color: #ffffff;
     line-height: 1.2;
 }
 
 .muted-text {
-    color: #a1a1aa !important; /* Ajustado para legibilidad en fondo oscuro */
+    color: #a1a1aa !important;
 }
 
 .product-description {
-    color: #d4d4d8; /* Ajustado para legibilidad en fondo oscuro */
+    color: #d4d4d8;
     line-height: 1.6;
     font-size: 1.05rem;
 }
 
-/* Caja de acciones y botón de agregar */
+/* === BOTÓN CARRITO === */
 .btn-add-cart {
     font-weight: 700 !important;
     font-size: 1.1rem !important;
@@ -83,27 +81,66 @@
         box-shadow: 0 8px 25px rgba(244, 67, 54, 0.4) !important;
     }
 
-/* Cards especiales para combos y promociones */
-.combo-premium-card, .promo-premium-card {
+/* === CARDS COMBO === */
+.combo-premium-card {
     border-radius: 12px !important;
     border: 1px solid rgba(255, 255, 255, 0.1) !important;
     background-color: rgba(255, 255, 255, 0.03) !important;
-    transition: all 0.3s ease;
+    transition: all 0.25s ease;
+    cursor: pointer;
 }
 
-    .combo-premium-card:hover, .promo-premium-card:hover {
-        box-shadow: 0 6px 15px rgba(0,0,0,0.2) !important;
-        transform: translateY(-1px);
+    .combo-premium-card:hover {
+        box-shadow: 0 6px 20px rgba(244, 67, 54, 0.18) !important;
+        transform: translateY(-2px);
+        border-color: rgba(244, 67, 54, 0.35) !important;
     }
 
 .border-left-accent {
     border-left: 4px solid var(--mud-palette-error) !important;
 }
 
+/* === CARDS PROMO === */
+.promo-premium-card {
+    border-radius: 12px !important;
+    border: 1px solid rgba(255, 165, 0, 0.2) !important;
+    background-color: rgba(255, 165, 0, 0.04) !important;
+    transition: all 0.25s ease;
+}
+
+    .promo-premium-card:hover {
+        box-shadow: 0 6px 20px rgba(255, 152, 0, 0.18) !important;
+        transform: translateY(-2px);
+        border-color: rgba(255, 152, 0, 0.4) !important;
+    }
+
+.promo-detail-box {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+    padding: 10px 14px;
+    margin-top: 4px;
+}
+
+/* === COLORES PROMO === */
 .text-warning-dark {
     color: #ff9800;
 }
 
+.text-success-custom {
+    color: #66bb6a;
+}
+
+.promo-badge-chip {
+    flex-shrink: 0;
+}
+
+/* === PRECIO TACHADO === */
+.line-through {
+    text-decoration: line-through;
+    opacity: 0.6;
+}
+
+/* === ESTADO VACÍO === */
 .empty-state-box {
     padding: 20px;
     background-color: rgba(255, 255, 255, 0.02) !important;
@@ -112,6 +149,7 @@
     border-color: #444446 !important;
 }
 
+/* === UTILITARIOS === */
 .text-transform-none {
     text-transform: none !important;
 }
@@ -122,4 +160,8 @@
 
 .tracking-wider {
     letter-spacing: 1px;
+}
+
+.cursor-pointer {
+    cursor: pointer;
 }
