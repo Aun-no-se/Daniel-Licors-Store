@@ -6,76 +6,67 @@
 
 <div class="index-page">
 
-    @if (!_loading)
-    {
-        <MudCarousel Class="mud-width-full promo-carousel"
-                     Style="height:75vh;"
-                     ShowArrows="@arrows"
-                     ShowBullets="@bullets"
-                     EnableSwipeGesture="@enableSwipeGesture"
-                     AutoCycle="@autocycle"
-                     AutoCycleInterval="16000"
-                     TData="object"
-                     Transition="@transition">
+    <MudCarousel Class="mud-width-full promo-carousel"
+                 Style="height:75vh;"
+                 ShowArrows="@arrows"
+                 ShowBullets="@bullets"
+                 EnableSwipeGesture="@enableSwipeGesture"
+                 AutoCycle="@autocycle"
+                 AutoCycleInterval="16000"
+                 TData="object"
+                 Transition="@transition">
 
-            <!-- SLIDE VIDEO DESKTOP / IMAGEN MOBILE -->
-            <MudCarouselItem>
+        <MudCarouselItem>
+            <div class="hero-container">
+                <video class="hero-video"
+                       autoplay
+                       muted
+                       loop
+                       playsinline
+                       preload="auto">
+                    <source src="/videos/video1.mp4" type="video/mp4" />
+                </video>
+                <img src="/images/Carrusel/NOTICIA-5-portada-cerveza-1210x642-1.jpg"
+                     class="hero-image"
+                     alt="Promoción Daniel Licors" />
+            </div>
+        </MudCarouselItem>
 
-                <div class="hero-container">
-
-                    <!-- VIDEO SOLO DESKTOP -->
-                    <video class="hero-video"
-                           autoplay
-                           muted
-                           loop
-                           playsinline
-                           preload="auto">
-                        <source src="/videos/video1.mp4" type="video/mp4" />
-                    </video>
-
-                    <!-- IMAGEN SOLO MOBILE -->
-                    <img src="/images/Carrusel/NOTICIA-5-portada-cerveza-1210x642-1.jpg"
-                         class="hero-image"
-                         alt="Promoción Daniel Licors" />
-
+        <MudCarouselItem Color="@Color.Secondary">
+            <div class="carousel-content">
+                <MudIcon Icon="@Icons.Custom.Brands.MudBlazor"
+                         Size="@Size.Large"
+                         Class="icon-animate" />
+                <div class="actions">
+                    <MudButton Class="btn-pedir"
+                               Color="Color.Error"
+                               Variant="Variant.Filled"
+                               OnClick="PedirDemo">
+                        Pedir
+                    </MudButton>
+                    <MudButton Class="btn-ver"
+                               Variant="Variant.Outlined"
+                               OnClick="VerMasDemo">
+                        Ver más
+                    </MudButton>
                 </div>
+            </div>
+        </MudCarouselItem>
 
-            </MudCarouselItem>
+    </MudCarousel>
 
-            <!-- SLIDE NORMAL -->
-            <MudCarouselItem Color="@Color.Secondary">
-                <div class="carousel-content">
+    <!--
+        FIX: Los carouseles de categoría ahora usan key única.
+        @key fuerza a Blazor a crear un nodo nuevo si la lista
+        cambia, evitando que Swiper intente operar sobre un
+        elemento ya destruido por el diffing.
+    -->
+        <CategoryProductCarousel Title="Cervezas"
+                                 Products="@cervezas"
+                                 IsLoading="@_loading" />
 
-                    <MudIcon Icon="@Icons.Custom.Brands.MudBlazor"
-                             Size="@Size.Large"
-                             Class="icon-animate" />
-
-                    <div class="actions">
-                        <MudButton Class="btn-pedir"
-                                   Color="Color.Error"
-                                   Variant="Variant.Filled"
-                                   OnClick="PedirDemo">
-                            Pedir
-                        </MudButton>
-
-                        <MudButton Class="btn-ver"
-                                   Variant="Variant.Outlined"
-                                   OnClick="VerMasDemo">
-                            Ver más
-                        </MudButton>
-                    </div>
-
-                </div>
-            </MudCarouselItem>
-
-        </MudCarousel>
-    }
-
-    <!-- CATEGORÍAS -->
-    <CategoryProductCarousel Title="Cervezas"
-                             Products="@cervezas" />
-
-    <CategoryProductCarousel Title="Rones"
-                             Products="@rones" />
+        <CategoryProductCarousel Title="Rones"
+                                 Products="@rones"
+                                 IsLoading="@_loading" />
 
 </div>

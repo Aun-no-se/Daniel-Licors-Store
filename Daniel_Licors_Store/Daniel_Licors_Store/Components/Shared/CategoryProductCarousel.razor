@@ -6,7 +6,26 @@
 <div class="category-section">
     <h2 class="category-title">@Title</h2>
 
-    @if (Products != null && Products.Any())
+    @if (IsLoading)
+    {
+        <!--
+            FIX: En vez de no renderizar nada mientras carga,
+            mostramos un skeleton. Esto mantiene el nodo en el DOM
+            y evita que Blazor haga insert/remove violento de la
+            sección justo cuando Swiper tiene referencias activas.
+        -->
+        <div class="swiper-skeleton">
+            @for (int i = 0; i < 3; i++)
+            {
+                <div class="skeleton-card">
+                    <div class="skeleton-img"></div>
+                    <div class="skeleton-line"></div>
+                    <div class="skeleton-line short"></div>
+                </div>
+            }
+        </div>
+    }
+    else if (Products != null && Products.Any())
     {
         <div class="swiper-container-wrapper">
 

@@ -29,18 +29,27 @@ namespace Daniel_Licors_Store.Components.Pages
             _loading = false;
         }
 
-        private async void OnStateChanged()
+        // FIX CRÍTICO: Era "async void" — eso hace que las excepciones
+        // no sean capturadas y el circuit Blazor se rompe sin posibilidad
+        // de recovery. Cambiar a Task no funciona directo en un event handler
+        // de Action, así que usamos InvokeAsync para volver al hilo del circuit.
+        private void OnStateChanged()
         {
-            await ReloadData();
+            InvokeAsync(async () =>
+            {
+                await ReloadData();
+            });
         }
 
         private async Task ReloadData()
         {
             _loading = true;
-            await LoadData();
-            _loading = false;
+            StateHasChanged(); // Notifica el estado de carga primero
 
-            await InvokeAsync(StateHasChanged);
+            await LoadData();
+
+            _loading = false;
+            StateHasChanged();
         }
 
         private async Task LoadData()
@@ -50,7 +59,6 @@ namespace Daniel_Licors_Store.Components.Pages
         }
 
         private void PedirDemo() { }
-
         private void VerMasDemo() { }
 
         public void Dispose()

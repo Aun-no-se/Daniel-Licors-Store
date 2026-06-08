@@ -1,5 +1,4 @@
-﻿﻿
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -10,7 +9,6 @@
 
     <base href="/" />
 
-
     <link rel="stylesheet" href="bootstrap/bootstrap.min.css" />
     <link rel="stylesheet" href="app.css" />
     <link rel="stylesheet" href="Daniel_Licors_Store.styles.css" />
@@ -18,93 +16,98 @@
     <link href="_content/MudBlazor/MudBlazor.min.css" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
 
-
     <link rel="icon" type="image/png" href="favicon.png" />
-
 
     <HeadOutlet @rendermode="InteractiveServer" />
 
+    <!--
+        FIX: MudBlazor.min.js movido al HEAD porque registra
+        event listeners que Blazor necesita ANTES de que el
+        circuit se conecte. Antes estaba en body pero DESPUÉS
+        de blazor.web.js, lo que causaba una race condition
+        donde Blazor intentaba usar funciones MudBlazor que
+        aún no existían — Chrome lo detecta, Edge/Brave no.
+    -->
     <script src="_content/MudBlazor/MudBlazor.min.js"></script>
-
-
 </head>
 
 <body>
     <Routes @rendermode="new InteractiveServerRenderMode(prerender: false)" />
+
+    <!-- blazor primero, luego librerías externas -->
     <script src="_framework/blazor.web.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+
     <script>
         window.initProductSwiper = (element) => {
             if (!element) return;
 
-            // Si ya existe una instancia de Swiper en este elemento, la destruimos para evitar duplicados
+            // Si ya existe una instancia, la destruimos limpiamente
             if (element.swiper) {
                 element.swiper.destroy(true, true);
+                element.swiper = null;
             }
 
             const slidesCount = element.querySelectorAll('.swiper-slide').length;
-            const nextBtn = element.parentElement.querySelector('.swiper-button-next');
-            const prevBtn = element.parentElement.querySelector('.swiper-button-prev');
+            if (slidesCount === 0) return; // FIX: no inicializar con 0 slides
 
-            element.swiper = new Swiper(element, {
-                direction: 'horizontal',
-                slidesPerView: 3,
-                spaceBetween: 20,
-                loop: false,
-                centeredSlides: true,
-                initialSlide: Math.floor(slidesCount / 2),
-                grabCursor: true,
-                navigation: {
-                    nextEl: nextBtn,
-                    prevEl: prevBtn,
-                },
-                breakpoints: {
-                    0: {
-                        slidesPerView: 1,
-                        centeredSlides: true,
-                        spaceBetween: 10
+            const wrapper = element.parentElement;
+            const nextBtn = wrapper ? wrapper.querySelector('.swiper-button-next') : null;
+            const prevBtn = wrapper ? wrapper.querySelector('.swiper-button-prev') : null;
+
+            try {
+                element.swiper = new Swiper(element, {
+                    direction: 'horizontal',
+                    slidesPerView: 3,
+                    spaceBetween: 20,
+                    loop: false,
+                    centeredSlides: true,
+                    initialSlide: Math.floor(slidesCount / 2),
+                    grabCursor: true,
+                    navigation: {
+                        nextEl: nextBtn,
+                        prevEl: prevBtn,
                     },
-                    768: {
-                        slidesPerView: 2,
-                        centeredSlides: true,
-                        spaceBetween: 15
+                    breakpoints: {
+                        0: { slidesPerView: 1, centeredSlides: true, spaceBetween: 10 },
+                        768: { slidesPerView: 2, centeredSlides: true, spaceBetween: 15 },
+                        1024: { slidesPerView: 3, centeredSlides: true, spaceBetween: 20 }
                     },
-                    1024: {
-                        slidesPerView: 3,
-                        centeredSlides: true,
-                        spaceBetween: 20
+                    on: {
+                        click: function (swiper) {
+                            swiper.slideTo(swiper.clickedIndex);
+                        }
                     }
-                },
-                on: {
-                    click: function (swiper) {
-                        swiper.slideTo(swiper.clickedIndex);
-                    }
+                });
+            } catch (e) {
+                console.warn('[DLS] Swiper init error:', e.message);
+            }
+        };
+
+        // FIX: función de destrucción llamada desde IAsyncDisposable del componente
+        window.destroyProductSwiper = (element) => {
+            if (!element) return;
+            if (element.swiper) {
+                try {
+                    element.swiper.destroy(true, true);
+                    element.swiper = null;
+                } catch (e) {
+                    // silencioso — el nodo puede ya no existir
                 }
-            });
+            }
         };
     </script>
 
     <script>
         window.initScrollReveal = () => {
-
             const sections = document.querySelectorAll('.category-section');
-
             const observer = new IntersectionObserver((entries) => {
-
                 entries.forEach(entry => {
-
                     if (entry.isIntersecting) {
                         entry.target.classList.add('reveal');
                     }
-                    else {
-                    }
-
                 });
-
-            }, {
-                threshold: 0.2
-            });
-
+            }, { threshold: 0.2 });
             sections.forEach(section => observer.observe(section));
         };
     </script>
