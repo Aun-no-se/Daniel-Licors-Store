@@ -8,12 +8,12 @@ using Daniel_Licors_Store.Data.Services.Interfaces;
 using Daniel_Licors_Store.Models.Users.Auth;
 using Daniel_Licors_Store.Services;
 using Daniel_Licors_Store.Services.Auth;
-using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.EntityFrameworkCore;
 using MudBlazor.Services;
 using System.Security.Claims;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -63,6 +63,7 @@ builder.Services.AddScoped<ProductStateService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<AdminDashboardService>();
 builder.Services.AddScoped<IComboService, ComboService>();
+builder.Services.AddScoped<IPromotionService, PromotionService>();
 #endregion
 
 builder.Services.AddHttpContextAccessor();

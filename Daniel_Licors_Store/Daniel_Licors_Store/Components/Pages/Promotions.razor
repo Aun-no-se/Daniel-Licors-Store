@@ -1,0 +1,345 @@
+@page "/admin/promociones"
+@attribute [Authorize(Roles = "Admin,Empleado")]
+
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Components.Forms
+@using Daniel_Licors_Store.Models.Promotion
+@using Daniel_Licors_Store.Models.Product
+
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-6">
+
+    <MudText Typo="Typo.h4" Class="font-weight-bold mb-1">
+        Administración de Promociones
+    </MudText>
+    <MudText Typo="Typo.body2" Class="muted-text mb-5">
+        Crea y gestiona descuentos, precios especiales y ofertas tipo "Lleva X Paga Y".
+    </MudText>
+
+    @if (_loading)
+    {
+        <div class="d-flex justify-center my-12">
+            <MudProgressCircular Indeterminate Size="Size.Large" Color="Color.Warning" />
+        </div>
+    }
+    else
+    {
+        <!-- ===== TABLA DE PROMOCIONES ===== -->
+        <MudPaper Elevation="1" Class="pa-4 rounded-lg">
+
+            <MudTable Items="_promos" Dense Hover Bordered>
+                <HeaderContent>
+                    <MudTh>Título</MudTh>
+                    <MudTh>Tipo</MudTh>
+                    <MudTh>Productos</MudTh>
+                    <MudTh>Vigencia</MudTh>
+                    <MudTh>Estado</MudTh>
+                    <MudTh Align="Align.Center">Acciones</MudTh>
+                </HeaderContent>
+
+                <RowTemplate>
+                    <MudTd>
+                        <MudText Typo="Typo.subtitle2" Class="font-weight-bold">
+                            @context.Title
+                        </MudText>
+                        @if (!string.IsNullOrWhiteSpace(context.Description))
+                        {
+                            <MudText Typo="Typo.caption" Class="muted-text d-block desc-clamp">
+                                @context.Description
+                            </MudText>
+                        }
+                    </MudTd>
+
+                    <MudTd>
+                        <MudChip T="string"
+                                 Color="@GetTypeColor(context.PromotionType)"
+                                 Size="Size.Small"
+                                 Class="font-weight-bold">
+                            @GetTypeLabel(context.PromotionType)
+                        </MudChip>
+                    </MudTd>
+
+                    <MudTd>
+                        <MudText Typo="Typo.body2">
+                            @context.ProductCount producto@(context.ProductCount != 1 ? "s" : "")
+                        </MudText>
+                        <MudText Typo="Typo.caption" Class="muted-text desc-clamp">
+                            @context.ProductsSummary
+                        </MudText>
+                    </MudTd>
+
+                    <MudTd>
+                        <MudText Typo="Typo.caption">
+                            @context.StartDate.ToString("dd MMM") — @context.EndDate.ToString("dd MMM yyyy")
+                        </MudText>
+                    </MudTd>
+
+                    <MudTd>
+                        @if (context.IsVigente)
+                        {
+                            <MudChip T="string" Color="Color.Success" Size="Size.Small">Activa</MudChip>
+                        }
+                        else if (!context.IsActive)
+                        {
+                            <MudChip T="string" Color="Color.Default" Size="Size.Small">Inactiva</MudChip>
+                        }
+                        else
+                        {
+                            <MudChip T="string" Color="Color.Warning" Size="Size.Small">Vencida</MudChip>
+                        }
+                    </MudTd>
+
+                    <MudTd Align="Align.Center">
+                        <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                       Color="Color.Warning"
+                                       OnClick="@(() => EditPromo(context.PromotionId))" />
+                        <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                       Color="Color.Error"
+                                       OnClick="@(() => DeletePromo(context.PromotionId))" />
+                    </MudTd>
+                </RowTemplate>
+
+                <NoRecordsContent>
+                    <MudText Class="pa-4 muted-text text-center">
+                        No hay promociones creadas aún.
+                    </MudText>
+                </NoRecordsContent>
+            </MudTable>
+
+        </MudPaper>
+
+        <div class="d-flex justify-end mt-4">
+            <MudButton Color="Color.Warning"
+                       Variant="Variant.Filled"
+                       StartIcon="@Icons.Material.Filled.Add"
+                       OnClick="ShowCreateSection">
+                Nueva Promoción
+            </MudButton>
+        </div>
+    }
+
+    <!-- ===== FORMULARIO CREAR / EDITAR ===== -->
+    @if (_showForm)
+    {
+        <MudPaper Elevation="2" Class="pa-5 mt-6 rounded-lg form-panel">
+
+            <div class="d-flex align-center mb-4">
+                <MudIcon Icon="@Icons.Material.Filled.LocalOffer" Color="Color.Warning" Class="mr-2" />
+                <MudText Typo="Typo.h5" Class="font-weight-bold">
+                    @(_isEditMode ? "Editar Promoción" : "Crear Nueva Promoción")
+                </MudText>
+            </div>
+
+            <MudDivider Class="mb-5" />
+
+            <!-- FILA 1: Título + Tipo -->
+            <MudGrid Class="mb-2">
+
+                <MudItem xs="12" sm="7">
+                    <MudTextField @bind-Value="_form.Title"
+                                  Label="Título de la promoción"
+                                  Variant="Variant.Outlined"
+                                  Required
+                                  Placeholder="Ej: Día de las Madres — 5% en Rones" />
+                </MudItem>
+
+                <MudItem xs="12" sm="5">
+                    <MudSelect @bind-Value="_form.PromotionType"
+                               Label="Tipo de promoción"
+                               Variant="Variant.Outlined">
+                        <MudSelectItem Value="@("Discount")">% Descuento</MudSelectItem>
+                        <MudSelectItem Value="@("SpecialPrice")">Precio Especial</MudSelectItem>
+                        <MudSelectItem Value="@("PayXGetY")">Lleva X Paga Y</MudSelectItem>
+                    </MudSelect>
+                </MudItem>
+
+                <MudItem xs="12">
+                    <MudTextField @bind-Value="_form.Description"
+                                  Label="Descripción (opcional)"
+                                  Lines="2"
+                                  Variant="Variant.Outlined"
+                                  Placeholder="Describe brevemente la promoción..." />
+                </MudItem>
+
+            </MudGrid>
+
+            <!-- FILA 2: Fechas + Estado -->
+            <MudGrid Class="mb-2">
+
+                <MudItem xs="12" sm="4">
+                    <MudDatePicker @bind-Date="_startDate"
+                                   Label="Fecha de inicio"
+                                   Variant="Variant.Outlined"
+                                   DateFormat="dd/MM/yyyy" />
+                </MudItem>
+
+                <MudItem xs="12" sm="4">
+                    <MudDatePicker @bind-Date="_endDate"
+                                   Label="Fecha de fin"
+                                   Variant="Variant.Outlined"
+                                   DateFormat="dd/MM/yyyy" />
+                </MudItem>
+
+                <MudItem xs="12" sm="4" Class="d-flex align-center">
+                    <MudSwitch @bind-Value="_form.IsActive"
+                               Color="Color.Success"
+                               Label="@(_form.IsActive ? "Activa" : "Inactiva")" />
+                </MudItem>
+
+            </MudGrid>
+
+            <MudDivider Class="my-5" />
+
+            <!-- ===== SELECTOR DE PRODUCTOS ===== -->
+            <MudText Typo="Typo.subtitle1" Class="font-weight-bold mb-3">
+                <MudIcon Icon="@Icons.Material.Filled.Inventory2" Size="Size.Small" Class="mr-1" />
+                Productos en esta promoción
+            </MudText>
+
+            <MudTable Items="_products" Dense Hover Bordered Class="mb-3">
+                <HeaderContent>
+                    <MudTh>Producto</MudTh>
+                    <MudTh>Precio normal</MudTh>
+                    <MudTh Align="Align.Center">Agregar</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd>
+                        <MudText Typo="Typo.body2" Class="font-weight-bold">@context.Name</MudText>
+                    </MudTd>
+                    <MudTd>
+                        <MudText Color="Color.Success" Class="font-weight-bold">
+                            $@context.Price.ToString("N2")
+                        </MudText>
+                    </MudTd>
+                    <MudTd Align="Align.Center">
+                        <MudIconButton Icon="@Icons.Material.Filled.AddCircleOutline"
+                                       Color="Color.Warning"
+                                       OnClick="@(() => OpenPromoLineDialog(context))" />
+                    </MudTd>
+                </RowTemplate>
+            </MudTable>
+
+            <!-- LÍNEAS AGREGADAS -->
+            @if (_promoBuilder.Any())
+            {
+                <MudText Typo="Typo.caption" Class="muted-text mb-2 d-block">
+                    Productos incluidos en la promoción:
+                </MudText>
+
+                <div class="d-flex flex-wrap gap-2 mb-4">
+                    @foreach (var line in _promoBuilder)
+                    {
+                        <MudChip T="PromotionProductLine"
+                                 Value="@line"
+                                 Closeable="true"
+                                 Color="Color.Warning"
+                                 OnClose="@(() => _promoBuilder.Remove(line))">
+                            @GetLineLabel(line)
+                        </MudChip>
+                    }
+                </div>
+            }
+
+            <!-- ===== ACCIONES ===== -->
+            <div class="d-flex justify-end gap-x-3 mt-2">
+                <MudButton Color="Color.Secondary"
+                           Variant="Variant.Outlined"
+                           OnClick="ResetForm">
+                    Cancelar
+                </MudButton>
+
+                <MudButton Color="Color.Warning"
+                           Variant="Variant.Filled"
+                           StartIcon="@Icons.Material.Filled.Save"
+                           Disabled="@(!_promoBuilder.Any())"
+                           OnClick="SavePromo">
+                    @(_isEditMode ? "Actualizar Promoción" : "Guardar Promoción")
+                </MudButton>
+            </div>
+
+        </MudPaper>
+    }
+
+    <!-- ===== DIALOG: Configurar línea de producto ===== -->
+    @if (_showLineDialog && _lineDialogProduct != null)
+    {
+        <MudOverlay Visible="true" DarkBackground="true" ZIndex="9998" />
+
+        <div class="line-dialog-wrapper">
+            <MudPaper Elevation="24" Class="pa-5 rounded-xl line-dialog-card">
+
+                <MudText Typo="Typo.h6" Class="font-weight-bold mb-1">@_lineDialogProduct.Name</MudText>
+                <MudText Typo="Typo.caption" Class="muted-text mb-4 d-block">
+                    Precio normal: $@_lineDialogProduct.Price.ToString("N2")
+                </MudText>
+
+                <MudDivider Class="mb-4" />
+
+                @if (_form.PromotionType == "Discount")
+                {
+                    <MudNumericField @bind-Value="_lineDiscountPct"
+                                     T="decimal"
+                                     Label="Descuento (%)"
+                                     Min="0.01m" Max="99.99m"
+                                     Variant="Variant.Outlined"
+                                     Adornment="Adornment.End"
+                                     AdornmentText="%" />
+
+                    @if (_lineDiscountPct > 0 && _lineDialogProduct != null)
+                    {
+                        var resultado = _lineDialogProduct.Price * (1 - _lineDiscountPct / 100);
+                        <MudText Typo="Typo.body2" Class="mt-2 text-success-custom font-weight-bold">
+                            Precio resultante: $@resultado.ToString("N2")
+                        </MudText>
+                    }
+                }
+                else if (_form.PromotionType == "SpecialPrice")
+                {
+                    <MudNumericField @bind-Value="_lineSpecialPrice"
+                                     T="decimal"
+                                     Label="Precio especial ($)"
+                                     Min="0.01m"
+                                     Variant="Variant.Outlined"
+                                     Adornment="Adornment.Start"
+                                     AdornmentText="$" />
+                }
+                else if (_form.PromotionType == "PayXGetY")
+                {
+                    <MudGrid>
+                        <MudItem xs="6">
+                            <MudNumericField @bind-Value="_lineReqQty"
+                                             T="int"
+                                             Label="Lleva (cantidad)"
+                                             Min="2"
+                                             Variant="Variant.Outlined" />
+                        </MudItem>
+                        <MudItem xs="6">
+                            <MudNumericField @bind-Value="_linePayQty"
+                                             T="int"
+                                             Label="Paga (cantidad)"
+                                             Min="1"
+                                             Variant="Variant.Outlined" />
+                        </MudItem>
+                    </MudGrid>
+
+                    <MudText Typo="Typo.body2" Class="mt-2 text-success-custom font-weight-bold">
+                        Ejemplo: Lleva @_lineReqQty, paga @_linePayQty
+                    </MudText>
+                }
+
+                <div class="d-flex justify-end gap-x-2 mt-5">
+                    <MudButton Color="Color.Error" Variant="Variant.Outlined"
+                               OnClick="CloseLineDialog">
+                        Cancelar
+                    </MudButton>
+                    <MudButton Color="Color.Warning" Variant="Variant.Filled"
+                               OnClick="ConfirmLineDialog">
+                        Agregar
+                    </MudButton>
+                </div>
+
+            </MudPaper>
+        </div>
+    }
+
+</MudContainer>

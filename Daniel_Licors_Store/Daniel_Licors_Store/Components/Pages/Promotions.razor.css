@@ -1,0 +1,48 @@
+/* === TABLA === */
+.muted-text {
+    color: #a1a1aa !important;
+}
+
+.desc-clamp {
+    display: -webkit-box !important;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    max-width: 220px;
+}
+
+/* === FORMULARIO === */
+.form-panel {
+    border: 1px solid rgba(255, 165, 0, 0.15);
+    background-color: rgba(255, 165, 0, 0.03) !important;
+}
+
+/* === MINI DIALOG LÍNEA === */
+.line-dialog-wrapper {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    padding: 16px;
+}
+
+.line-dialog-card {
+    width: 100%;
+    max-width: 420px;
+    background: #1e1e2e !important;
+    border: 1px solid rgba(255, 165, 0, 0.25) !important;
+}
+
+.text-success-custom {
+    color: #66bb6a;
+}
+
+/* === GAP UTILITIES === */
+.gap-x-2 { gap: 8px; }
+.gap-x-3 { gap: 12px; }
+.gap-2   { gap: 8px; }

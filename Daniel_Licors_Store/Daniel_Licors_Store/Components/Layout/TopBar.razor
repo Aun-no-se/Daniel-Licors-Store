@@ -22,6 +22,7 @@
 
         <div class="topbar-right">
 
+            <!-- ═══════════════ MÓVIL ═══════════════ -->
             <MudHidden Breakpoint="Breakpoint.MdAndUp">
                 <MudMenu AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight" Dense="true">
                     <ActivatorContent>
@@ -36,7 +37,6 @@
                             </NotAuthorized>
                         </AuthorizeView>
 
-                        @* SECCIÓN DE COMPRAS / CLIENTE (Disponible para todos los autenticados) *@
                         <AuthorizeView>
                             <Authorized>
                                 <p class="menu-mobile-header">Tienda</p>
@@ -49,7 +49,6 @@
                             </Authorized>
                         </AuthorizeView>
 
-                        @* SECCIÓN DE GESTIÓN (Solo Empleados y Admins) *@
                         <AuthorizeView Roles="Empleado, Admin">
                             <Authorized>
                                 <MudDivider Class="my-2" />
@@ -58,10 +57,13 @@
                                 <MudMenuItem OnClick="AbrirAgregarBebida" Icon="@Icons.Material.Filled.AddCircle">
                                     Agregar Bebida
                                 </MudMenuItem>
+                                <MudMenuItem OnClick="@(() => Nav.NavigateTo("/admin/promociones"))"
+                                             Icon="@Icons.Material.Filled.LocalOffer">
+                                    Promociones
+                                </MudMenuItem>
                             </Authorized>
                         </AuthorizeView>
 
-                        @* SECCIÓN DE ADMINISTRACIÓN (Solo Admins) *@
                         <AuthorizeView Roles="Admin">
                             <Authorized>
                                 <MudDivider Class="my-2" />
@@ -73,7 +75,6 @@
                             </Authorized>
                         </AuthorizeView>
 
-                        @* BOTÓN DE LOGOUT (Al final y bien separado) *@
                         <AuthorizeView>
                             <Authorized>
                                 <MudDivider Class="my-2" />
@@ -86,8 +87,10 @@
                 </MudMenu>
             </MudHidden>
 
+            <!-- ═══════════════ DESKTOP ═══════════════ -->
             <MudHidden Breakpoint="Breakpoint.SmAndDown">
 
+                <!-- Sin sesión -->
                 <AuthorizeView>
                     <NotAuthorized>
                         <MudMenu>
@@ -104,6 +107,7 @@
                     </NotAuthorized>
                 </AuthorizeView>
 
+                <!-- Cliente -->
                 <AuthorizeView Roles="Cliente">
                     <MudMenu>
                         <ActivatorContent>
@@ -123,6 +127,7 @@
                     </MudButton>
                 </AuthorizeView>
 
+                <!-- Empleado -->
                 <AuthorizeView Roles="Empleado">
                     <MudButton Variant="Variant.Filled" Class="btn-licol-highlight"
                                StartIcon="@Icons.Material.Filled.Add"
@@ -135,7 +140,12 @@
                             <MudButton Variant="Variant.Text" Class="btn-licol-text">Servicios</MudButton>
                         </ActivatorContent>
                         <ChildContent>
-                            <MudMenuItem OnClick="@(() => Nav.NavigateTo("/admin/combos"))">Combos</MudMenuItem>
+                            <MudMenuItem OnClick="@(() => Nav.NavigateTo("/admin/combos"))">
+                                Combos
+                            </MudMenuItem>
+                            <MudMenuItem OnClick="@(() => Nav.NavigateTo("/admin/promociones"))">
+                                Promociones
+                            </MudMenuItem>
                         </ChildContent>
                     </MudMenu>
 
@@ -148,6 +158,7 @@
                     </MudButton>
                 </AuthorizeView>
 
+                <!-- Admin -->
                 <AuthorizeView Roles="Admin">
                     <MudButton Variant="Variant.Filled" Class="btn-licol-highlight"
                                StartIcon="@Icons.Material.Filled.Add"
@@ -166,8 +177,12 @@
                             <MudMenuItem OnClick="@(() => Nav.NavigateTo("/admin/dashboard"))">
                                 Panel de Control
                             </MudMenuItem>
+                            <MudDivider />
                             <MudMenuItem OnClick="@(() => Nav.NavigateTo("/admin/combos"))">
                                 Combos
+                            </MudMenuItem>
+                            <MudMenuItem OnClick="@(() => Nav.NavigateTo("/admin/promociones"))">
+                                Promociones
                             </MudMenuItem>
                         </ChildContent>
                     </MudMenu>

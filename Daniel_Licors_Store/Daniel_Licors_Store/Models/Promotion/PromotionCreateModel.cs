@@ -11,20 +11,19 @@ public class PromotionCreateModel
     [MaxLength(500)]
     public string? Description { get; set; }
 
-    [Required(ErrorMessage = "La fecha de inicio es obligatoria")]
+    [Required]
     public DateTime StartDate { get; set; } = DateTime.Today;
 
-    [Required(ErrorMessage = "La fecha de fin es obligatoria")]
+    [Required]
     public DateTime EndDate { get; set; } = DateTime.Today.AddDays(7);
 
-    // Weekly | Highlight | Discount | PayXGetY
-    public string? PromotionType { get; set; } = "Discount";
+    // Discount | SpecialPrice | PayXGetY
+    public string PromotionType { get; set; } = "Discount";
 
     public string? ImageUrl { get; set; }
 
     public bool IsActive { get; set; } = true;
 
-    // Productos incluidos en la promo
     public List<PromotionProductLine> Products { get; set; } = new();
 }
 
@@ -34,9 +33,9 @@ public class PromotionProductLine
     public string ProductName { get; set; } = string.Empty;
     public decimal OriginalPrice { get; set; }
 
-    // Llenar solo uno de los tres tipos:
-    public decimal? SpecialPrice { get; set; }
+    // Solo uno de los tres se usa según PromotionType
     public decimal? DiscountPercentage { get; set; }
+    public decimal? SpecialPrice { get; set; }
     public int? RequiredQuantity { get; set; }
     public int? PayQuantity { get; set; }
 }
