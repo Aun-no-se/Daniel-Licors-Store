@@ -1,0 +1,405 @@
+@page "/carrito"
+@using Daniel_Licors_Store.Components.Shared
+@using Daniel_Licors_Store.Data.Services
+@using Daniel_Licors_Store.Models.Cart
+@using Microsoft.AspNetCore.Components.Authorization
+@using MudBlazor
+
+@inject ICartService CartService
+@inject IWhatsAppService WhatsAppService
+@inject AuthenticationStateProvider AuthStateProvider
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+@inject NavigationManager Nav
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-6 mb-12">
+
+    <!-- Encabezado -->
+    <div class="d-flex align-center mb-6 gap-x-3">
+        <MudButton Variant="Variant.Text"
+                   StartIcon="@Icons.Material.Filled.ArrowBack"
+                   OnClick="@(() => Nav.NavigateTo("/"))"
+                   Class="text-transform-none">
+            Volver al catálogo
+        </MudButton>
+        <MudText Typo="Typo.h4" Class="font-weight-bold">Mi Carrito</MudText>
+    </div>
+
+    @if (_loading)
+    {
+        <div class="d-flex justify-center align-center flex-column my-12 py-12">
+            <MudProgressCircular Color="Color.Primary" Size="Size.Large" Indeterminate="true" />
+            <MudText Typo="Typo.body1" Class="mt-4 muted-text">Cargando carrito...</MudText>
+        </div>
+    }
+    else if (_cartView == null || (_cartView.Products.Count == 0 && _cartView.Combos.Count == 0))
+    {
+        <MudPaper Variant="Variant.Outlined" Class="d-flex flex-column align-center p-8 rounded-lg">
+            <MudIcon Icon="@Icons.Material.Filled.ShoppingCart" Size="Size.Large" Class="mb-4 muted-text" Style="opacity: 0.5;" />
+            <MudText Typo="Typo.h5" Class="font-weight-bold mb-2">Carrito Vacío</MudText>
+            <MudText Typo="Typo.body2" Class="muted-text mb-4">No tienes artículos en tu carrito</MudText>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@(() => Nav.NavigateTo("/"))">
+                Continuar comprando
+            </MudButton>
+        </MudPaper>
+    }
+    else
+    {
+        <MudGrid Spacing="3">
+
+            <!-- COLUMNA IZQUIERDA: Items del carrito -->
+            <MudItem xs="12" md="8">
+
+                <!-- Filtro y búsqueda -->
+                <MudPaper Elevation="1" Class="p-4 mb-4">
+                    <MudGrid Spacing="2">
+                        <MudItem xs="12" sm="6">
+                            <MudTextField @bind-Value="_searchTerm" 
+                                         Placeholder="Buscar productos..." 
+                                         Variant="Variant.Outlined"
+                                         Adornment="Adornment.Start"
+                                         AdornmentIcon="@Icons.Material.Filled.Search"
+                                         Size="Size.Small"
+                                         OnKeyUp="FilterItems" />
+                        </MudItem>
+                        <MudItem xs="12" sm="6">
+                            <MudSelect @bind-Value="_filterCategory" 
+                                      Placeholder="Filtrar por categoría..."
+                                      Variant="Variant.Outlined"
+                                      Size="Size.Small"
+                                      @onchange="FilterItems">
+                                <MudSelectItem Value="@("")">Todas las categorías</MudSelectItem>
+                                <MudSelectItem Value="@("Producto")">Productos</MudSelectItem>
+                                <MudSelectItem Value="@("Combo")">Combos</MudSelectItem>
+                                <MudSelectItem Value="@("Promoción")">Promociones</MudSelectItem>
+                            </MudSelect>
+                        </MudItem>
+                    </MudGrid>
+                </MudPaper>
+
+                <!-- Sección PRODUCTOS -->
+                @if (_filteredProducts.Count > 0)
+                {
+                    <div class="section-separator mb-6">
+                        <MudText Typo="Typo.h6" Class="font-weight-bold mb-3">
+                            <MudIcon Icon="@Icons.Material.Filled.LocalBar" Size="Size.Small" Class="mr-2" />
+                            PRODUCTOS (@_filteredProducts.Count)
+                        </MudText>
+
+                        @foreach (var product in _filteredProducts)
+                        {
+                            <CartItemComponent Item="product" 
+                                              ItemType="product"
+                                              OnRemove="RemoveItem"
+                                              OnQuantityChange="UpdateQuantity"
+                                              OnSelectionChange="UpdateSelection" />
+                        }
+                    </div>
+                }
+
+                <!-- Sección COMBOS -->
+                @if (_filteredCombos.Count > 0)
+                {
+                    <div class="section-separator mb-6">
+                        <MudText Typo="Typo.h6" Class="font-weight-bold mb-3">
+                            <MudIcon Icon="@Icons.Material.Filled.LocalFireDepartment" Size="Size.Small" Class="mr-2" />
+                            COMBOS (@_filteredCombos.Count)
+                        </MudText>
+
+                        @foreach (var combo in _filteredCombos)
+                        {
+                            <CartItemComponent Item="combo" 
+                                              ItemType="combo"
+                                              OnRemove="RemoveItem"
+                                              OnQuantityChange="UpdateQuantity"
+                                              OnSelectionChange="UpdateSelection" />
+                        }
+                    </div>
+                }
+
+                <!-- Botones de control -->
+                <MudPaper Elevation="1" Class="p-4 d-flex gap-2">
+                    <MudButton Variant="Variant.Outlined" 
+                              Color="Color.Primary"
+                              StartIcon="@Icons.Material.Filled.CheckBox"
+                              Size="Size.Small"
+                              OnClick="SelectAll">
+                        Seleccionar todo
+                    </MudButton>
+                    <MudButton Variant="Variant.Outlined" 
+                              Color="Color.Default"
+                              StartIcon="@Icons.Material.Filled.CheckBoxOutlineBlank"
+                              Size="Size.Small"
+                              OnClick="DeselectAll">
+                        Deseleccionar
+                    </MudButton>
+                    <MudButton Variant="Variant.Outlined" 
+                              Color="Color.Error"
+                              StartIcon="@Icons.Material.Filled.DeleteSweep"
+                              Size="Size.Small"
+                              OnClick="ClearCart">
+                        Vaciar carrito
+                    </MudButton>
+                </MudPaper>
+
+            </MudItem>
+
+            <!-- COLUMNA DERECHA: Resumen y compra -->
+            <MudItem xs="12" md="4">
+
+                <MudPaper Elevation="2" Class="sticky-summary p-4 rounded-lg">
+
+                    <!-- Contador Total -->
+                    <div class="summary-section mb-4">
+                        <MudText Typo="Typo.body2" Class="muted-text">TOTAL DE PRODUCTOS</MudText>
+                        <MudText Typo="Typo.h4" Class="font-weight-bold text-primary">
+                            @_cartView.TotalProductsCount
+                        </MudText>
+                        <MudDivider Class="my-2" />
+                        <MudText Typo="Typo.h6" Class="font-weight-bold">
+                            @_cartView.TotalPrice.ToString("C2")
+                        </MudText>
+                    </div>
+
+                    <!-- Contador Seleccionados -->
+                    <div class="summary-section mb-4">
+                        <MudText Typo="Typo.body2" Class="muted-text">PRODUCTOS SELECCIONADOS</MudText>
+                        <MudText Typo="Typo.h4" Class="font-weight-bold" Color="Color.Success">
+                            @_cartView.SelectedProductsCount
+                        </MudText>
+                        <MudDivider Class="my-2" />
+                        <MudText Typo="Typo.h6" Class="font-weight-bold">
+                            @_cartView.SelectedPrice.ToString("C2")
+                        </MudText>
+                    </div>
+
+                    <MudDivider Class="my-4" />
+
+                    <!-- Botones de Compra -->
+                    <div class="d-flex flex-column gap-2">
+
+                        <!-- Comprar TODO -->
+                        <MudButton Variant="Variant.Filled" 
+                                  Color="Color.Primary"
+                                  Size="Size.Large"
+                                  FullWidth="true"
+                                  StartIcon="@Icons.Material.Filled.ShoppingCart"
+                                  Disabled="@(_cartView.TotalProductsCount == 0)"
+                                  OnClick="CheckoutAll"
+                                  Class="py-3">
+                            Comprar Todo (@(_cartView.TotalProductsCount) artículos)
+                        </MudButton>
+
+                        <!-- Comprar SELECCIONADOS -->
+                        <MudButton Variant="Variant.Filled" 
+                                  Color="Color.Success"
+                                  Size="Size.Large"
+                                  FullWidth="true"
+                                  StartIcon="@Icons.Material.Filled.CheckCircle"
+                                  Disabled="@(_cartView.SelectedProductsCount == 0)"
+                                  OnClick="CheckoutSelected"
+                                  Class="py-3">
+                            Comprar Seleccionados (@(_cartView.SelectedProductsCount))
+                        </MudButton>
+
+                    </div>
+
+                </MudPaper>
+
+            </MudItem>
+
+        </MudGrid>
+    }
+
+</MudContainer>
+
+<style>
+    .sticky-summary {
+        position: sticky;
+        top: 120px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+
+    .summary-section {
+        background: rgba(255, 255, 255, 0.1);
+        padding: 12px;
+        border-radius: 8px;
+        backdrop-filter: blur(10px);
+    }
+
+    .section-separator {
+        border-left: 4px solid #667eea;
+        padding-left: 16px;
+    }
+
+    .text-primary {
+        color: #667eea !important;
+    }
+</style>
+
+@code {
+    private CartViewDto? _cartView;
+    private List<CartItemDisplayDto> _filteredProducts = new();
+    private List<CartComboDisplayDto> _filteredCombos = new();
+    private string _searchTerm = "";
+    private string _filterCategory = "";
+    private bool _loading = true;
+    private string _currentUserId = "";
+    private int _storeId = 1; // Default store
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        Console.WriteLine($"USER AUTH: {user.Identity?.IsAuthenticated}");
+
+        _currentUserId =
+            user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+            ?? user.FindFirst("sub")?.Value
+            ?? user.FindFirst("id")?.Value
+            ?? user.FindFirst("userId")?.Value
+            ?? "";
+
+        Console.WriteLine($"USER ID: {_currentUserId}");
+
+        if (!user.Identity?.IsAuthenticated ?? true || string.IsNullOrEmpty(_currentUserId))
+        {
+            Nav.NavigateTo("/login");
+            return;
+        }
+
+        await LoadCart();
+        _loading = false;
+    }
+
+    private async Task LoadCart()
+    {
+        try
+        {
+            _cartView = await CartService.GetCartAsync(_currentUserId, _storeId);
+            FilterItems();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error al cargar carrito: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private void FilterItems()
+    {
+        _filteredProducts = _cartView?.Products
+            .Where(p => string.IsNullOrEmpty(_searchTerm) || p.ProductName.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase))
+            .Where(p => string.IsNullOrEmpty(_filterCategory) || p.Category == _filterCategory)
+            .ToList() ?? new();
+
+        _filteredCombos = _cartView?.Combos
+            .Where(c => string.IsNullOrEmpty(_searchTerm) || c.ComboName.Contains(_searchTerm, StringComparison.OrdinalIgnoreCase))
+            .Where(c => string.IsNullOrEmpty(_filterCategory) || c.Category == _filterCategory)
+            .ToList() ?? new();
+    }
+
+    private async Task RemoveItem(int itemId, string itemType)
+    {
+        _cartView = await CartService.RemoveItemAsync(_currentUserId, itemId, itemType);
+        FilterItems();
+        Snackbar.Add("Artículo eliminado del carrito", Severity.Info);
+    }
+
+    private async Task UpdateQuantity(int itemId, int newQuantity, string itemType)
+    {
+        _cartView = await CartService.UpdateItemQuantityAsync(_currentUserId, itemId, newQuantity, itemType);
+        FilterItems();
+    }
+
+    private void UpdateSelection(int itemId, bool isSelected, string itemType)
+    {
+        if (itemType == "product")
+        {
+            var item = _cartView?.Products.FirstOrDefault(p => p.CartItemId == itemId);
+            if (item != null) item.IsSelected = isSelected;
+        }
+        else if (itemType == "combo")
+        {
+            var item = _cartView?.Combos.FirstOrDefault(c => c.CartComboId == itemId);
+            if (item != null) item.IsSelected = isSelected;
+        }
+    }
+
+    private void SelectAll()
+    {
+        _cartView?.Products.ForEach(p => p.IsSelected = true);
+        _cartView?.Combos.ForEach(c => c.IsSelected = true);
+    }
+
+    private void DeselectAll()
+    {
+        _cartView?.Products.ForEach(p => p.IsSelected = false);
+        _cartView?.Combos.ForEach(c => c.IsSelected = false);
+    }
+
+    private async Task ClearCart()
+    {
+        var parameters = new DialogParameters { };
+        var dialog = await DialogService.ShowAsync<ConfirmDialog>(
+            "Vaciar carrito",
+            parameters);
+        
+        var result = await dialog.Result;
+
+        if (result.Canceled) return;
+
+        _cartView = await CartService.ClearCartAsync(_currentUserId);
+        FilterItems();
+        Snackbar.Add("Carrito vaciado", Severity.Success);
+    }
+
+    private async Task CheckoutAll()
+    {
+        await PerformCheckout(false);
+    }
+
+    private async Task CheckoutSelected()
+    {
+        await PerformCheckout(true);
+    }
+
+    private async Task PerformCheckout(bool selectedOnly)
+    {
+        try
+        {
+            // Generar recibo
+            var receipt = await CartService.GenerateReceiptAsync(_currentUserId, selectedOnly);
+
+            // Usar un teléfono por defecto o pedirlo
+            var defaultPhone = "+1234567890"; // Cambiar por teléfono real si lo tienes
+            var whatsappLink = WhatsAppService.GenerateWhatsAppLink(defaultPhone, 
+                WhatsAppService.GenerateReceiptMessage(receipt));
+
+            // Mostrar diálogo con opciones
+            var parameters = new DialogParameters
+            {
+                { "Receipt", receipt },
+                { "WhatsAppLink", whatsappLink }
+            };
+
+            var dialogResult = await DialogService.ShowAsync<ReceiptDialog>("Tu Recibo", parameters);
+            var result = await dialogResult.Result;
+
+            if (!result.Canceled)
+            {
+                // Marcar carrito como enviado
+                await CartService.CheckoutAsync(_currentUserId, new List<int>(), "");
+                _cartView = await CartService.GetCartAsync(_currentUserId, _storeId);
+                FilterItems();
+
+                Snackbar.Add("¡Compra completada! Revisa WhatsApp para el recibo", Severity.Success);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error en la compra: {ex.Message}", Severity.Error);
+        }
+    }
+}

@@ -1,0 +1,232 @@
+@using Daniel_Licors_Store.Models.Cart
+@using MudBlazor
+
+<MudCard Elevation="1" Class="cart-item-card mb-3">
+    <MudCardContent>
+        <MudGrid Spacing="2" Class="align-center">
+
+            <!-- Checkbox de selección -->
+            <MudItem xs="1" sm="1" md="1" Class="d-flex justify-center">
+                <MudCheckBox T="bool"
+                             Checked="_isSelected"
+                             CheckedChanged="OnSelectionChanged"
+                             Size="Size.Medium"
+                             Color="Color.Primary" />
+            </MudItem>
+
+            <!-- Imagen del producto -->
+            <MudItem xs="3" sm="2" md="2">
+                <img src="@GetImage()" 
+                     alt="@GetItemName()" 
+                     class="cart-item-image rounded-lg" 
+                     style="width: 100%; height: 80px; object-fit: cover;" />
+            </MudItem>
+
+            <!-- Información del producto -->
+            <MudItem xs="8" sm="5" md="4">
+                <div class="d-flex flex-column gap-y-1">
+                    <MudText Typo="Typo.subtitle2" Class="font-weight-bold">
+                        @GetItemName()
+                    </MudText>
+                    <MudChip T="string" Size="Size.Small" Variant="Variant.Text" Color="Color.Primary" Class="px-0">
+                        @GetCategory()
+                    </MudChip>
+                    <MudText Typo="Typo.body2" Class="font-weight-bold text-primary">
+                        $@GetUnitPrice().ToString("N2")
+                    </MudText>
+                </div>
+            </MudItem>
+
+            <!-- Cantidad y controles -->
+            <MudItem xs="6" sm="2" md="2">
+                <div class="d-flex align-center gap-x-1">
+                    <MudIconButton Icon="@Icons.Material.Filled.Remove" 
+                                  Size="Size.Small"
+                                  OnClick="DecreaseQuantity"
+                                  Disabled="@(_quantity <= 1)" />
+                    <input type="number"
+                           @bind-value="_quantity"
+                           @bind-value:event="onchange"
+                           min="1"
+                           class="cart-item-quantity-input" />
+                    <MudIconButton Icon="@Icons.Material.Filled.Add" 
+                                  Size="Size.Small"
+                                  OnClick="IncreaseQuantity" />
+                </div>
+            </MudItem>
+
+            <!-- Subtotal y eliminar -->
+            <MudItem xs="6" sm="2" md="2">
+                <div class="d-flex flex-column align-end gap-y-1">
+                    <MudText Typo="Typo.body2" Class="font-weight-bold">
+                        $@GetSubTotal().ToString("N2")
+                    </MudText>
+                    <MudIconButton Icon="@Icons.Material.Filled.Delete" 
+                                  Size="Size.Small"
+                                  Color="Color.Error"
+                                  OnClick="Remove" />
+                </div>
+            </MudItem>
+
+        </MudGrid>
+    </MudCardContent>
+</MudCard>
+
+<style>
+    .cart-item-card {
+        border-left: 4px solid #667eea;
+        transition: all 0.3s ease;
+    }
+
+    .cart-item-card:hover {
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    }
+
+    .cart-item-image {
+        object-position: center;
+    }
+
+    .cart-item-quantity-input {
+        width: 50px;
+        padding: 6px;
+        border: 1px solid #e0e0e0;
+        border-radius: 4px;
+        text-align: center;
+        font-weight: bold;
+    }
+
+    .cart-item-quantity-input:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+</style>
+
+@code {
+    [Parameter]
+    public object? Item { get; set; }
+
+    [Parameter]
+    public string ItemType { get; set; } = "product";
+
+    [Parameter]
+    public EventCallback<(int, string)> OnRemove { get; set; }
+
+    [Parameter]
+    public EventCallback<(int, int, string)> OnQuantityChange { get; set; }
+
+    [Parameter]
+    public EventCallback<(int, bool, string)> OnSelectionChange { get; set; }
+
+    private bool _isSelected = false;
+    private int _quantity = 1;
+
+    protected override void OnInitialized()
+    {
+        if (Item is CartItemDisplayDto product)
+        {
+            _quantity = product.Quantity;
+            _isSelected = product.IsSelected;
+        }
+        else if (Item is CartComboDisplayDto combo)
+        {
+            _quantity = combo.Quantity;
+            _isSelected = combo.IsSelected;
+        }
+    }
+
+    private string GetItemName()
+    {
+        return Item switch
+        {
+            CartItemDisplayDto product => product.ProductName,
+            CartComboDisplayDto combo => combo.ComboName,
+            _ => "Artículo"
+        };
+    }
+
+    private string GetCategory()
+    {
+        return Item switch
+        {
+            CartItemDisplayDto product => product.Category,
+            CartComboDisplayDto combo => combo.Category,
+            _ => "Producto"
+        };
+    }
+
+    private string? GetImage()
+    {
+        return Item switch
+        {
+            CartItemDisplayDto product => product.ProductImage,
+            CartComboDisplayDto combo => combo.ComboImage,
+            _ => null
+        };
+    }
+
+    private decimal GetUnitPrice()
+    {
+        return Item switch
+        {
+            CartItemDisplayDto product => product.UnitPrice,
+            CartComboDisplayDto combo => combo.UnitPrice,
+            _ => 0
+        };
+    }
+
+    private decimal GetSubTotal()
+    {
+        return Item switch
+        {
+            CartItemDisplayDto product => product.SubTotal,
+            CartComboDisplayDto combo => combo.SubTotal,
+            _ => 0
+        };
+    }
+
+    private int GetItemId()
+    {
+        return Item switch
+        {
+            CartItemDisplayDto product => product.CartItemId,
+            CartComboDisplayDto combo => combo.CartComboId,
+            _ => 0
+        };
+    }
+
+    private async Task IncreaseQuantity()
+    {
+        _quantity++;
+        await OnQuantityChange.InvokeAsync((GetItemId(), _quantity, ItemType));
+    }
+
+    private async Task DecreaseQuantity()
+    {
+        if (_quantity > 1)
+        {
+            _quantity--;
+            await OnQuantityChange.InvokeAsync((GetItemId(), _quantity, ItemType));
+        }
+    }
+
+    private async Task QuantityChanged(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out int newQuantity) && newQuantity > 0)
+        {
+            _quantity = newQuantity;
+            await OnQuantityChange.InvokeAsync((GetItemId(), _quantity, ItemType));
+        }
+    }
+
+    private async Task Remove()
+    {
+        await OnRemove.InvokeAsync((GetItemId(), ItemType));
+    }
+
+    private async Task OnSelectionChanged(bool value)
+    {
+        _isSelected = value;
+        await OnSelectionChange.InvokeAsync((GetItemId(), value, ItemType));
+    }
+}

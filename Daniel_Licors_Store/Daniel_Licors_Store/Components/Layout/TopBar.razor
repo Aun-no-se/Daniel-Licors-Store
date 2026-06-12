@@ -43,7 +43,8 @@
                                 <MudMenuItem OnClick="@(() => Nav.NavigateTo("/admin/combos"))" Icon="@Icons.Material.Filled.LocalMall">
                                     Combos
                                 </MudMenuItem>
-                                <MudMenuItem Icon="@Icons.Material.Filled.ShoppingCart">
+                                <MudMenuItem OnClick="@(() => Nav.NavigateTo("/carrito"))"
+                                             Icon="@Icons.Material.Filled.ShoppingCart">
                                     Carrito
                                 </MudMenuItem>
                             </Authorized>
@@ -118,7 +119,10 @@
                         </ChildContent>
                     </MudMenu>
 
-                    <MudButton Variant="Variant.Text" Class="btn-licol-text" StartIcon="@Icons.Material.Filled.ShoppingCart">
+                    <MudButton Variant="Variant.Text"
+                               Class="btn-licol-text"
+                               StartIcon="@Icons.Material.Filled.ShoppingCart"
+                               OnClick="@(() => Nav.NavigateTo("/carrito"))">
                         Carrito
                     </MudButton>
 
@@ -149,7 +153,10 @@
                         </ChildContent>
                     </MudMenu>
 
-                    <MudButton Variant="Variant.Text" Class="btn-licol-text" StartIcon="@Icons.Material.Filled.ShoppingCart">
+                    <MudButton Variant="Variant.Text"
+                               Class="btn-licol-text"
+                               StartIcon="@Icons.Material.Filled.ShoppingCart"
+                               OnClick="@(() => Nav.NavigateTo("/carrito"))">
                         Carrito
                     </MudButton>
 
@@ -187,7 +194,10 @@
                         </ChildContent>
                     </MudMenu>
 
-                    <MudButton Variant="Variant.Text" Class="btn-licol-text" StartIcon="@Icons.Material.Filled.ShoppingCart">
+                    <MudButton Variant="Variant.Text"
+                               Class="btn-licol-text"
+                               StartIcon="@Icons.Material.Filled.ShoppingCart"
+                               OnClick="@(() => Nav.NavigateTo("/carrito"))">
                         Carrito
                     </MudButton>
 

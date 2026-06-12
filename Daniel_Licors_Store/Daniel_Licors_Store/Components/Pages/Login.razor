@@ -132,6 +132,7 @@
 
     private async Task LoginUsers()
     {
+
         error = null;
         isLoading = true;
 
@@ -143,12 +144,21 @@
             if (response.IsSuccessStatusCode)
             {
                 var result = await response.Content.ReadFromJsonAsync<LoginResponse>();
-                var roles = result?.roles ?? new List<string>();
+
+                Console.WriteLine($"LOGIN USER ID: {result.userId}");
+
+                if (result == null)
+                {
+                    error = "Respuesta inválida del servidor.";
+                    return;
+                }
+
+                var roles = result.roles ?? new List<string>();
                 var customAuth = (CustomAuthStateProvider)AuthStateProvider;
 
                 var session = new UserSession
                 {
-                    UserId = "",
+                    UserId = result.userId,
                     Email = model.Email,
                     Roles = roles,
                     LastActivity = DateTime.Now
@@ -190,6 +200,7 @@
 
     public class LoginResponse
     {
+        public string userId { get; set; } = string.Empty;
         public List<string> roles { get; set; } = new();
     }
 }

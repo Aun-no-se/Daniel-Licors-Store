@@ -51,5 +51,49 @@ namespace Daniel_Licors_Store.Components.Pages
             if (promo.HasSpecialPrice) return Color.Warning;
             return Color.Info;
         }
+
+        private async Task AddToCart(int productId)
+        {
+            try
+            {
+                var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+                var userId = authState.User.FindFirst(c => c.Type == System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+
+                if (string.IsNullOrEmpty(userId))
+                {
+                    Nav.NavigateTo("/login");
+                    return;
+                }
+
+                await CartService.AddProductToCartAsync(userId, productId, 1, 1);
+                Snackbar.Add("Producto agregado al carrito ✓", Severity.Success);
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Error: {ex.Message}", Severity.Error);
+            }
+        }
+
+        private async Task AddComboToCart(int comboId)
+        {
+            try
+            {
+                var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+                var userId = authState.User.FindFirst(c => c.Type == System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+
+                if (string.IsNullOrEmpty(userId))
+                {
+                    Nav.NavigateTo("/login");
+                    return;
+                }
+
+                await CartService.AddComboToCartAsync(userId, comboId, 1, 1);
+                Snackbar.Add("Combo agregado al carrito ✓", Severity.Success);
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Error: {ex.Message}", Severity.Error);
+            }
+        }
     }
 }

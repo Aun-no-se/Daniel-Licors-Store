@@ -28,6 +28,9 @@ public class ApplicationDbContext : DbContext
     public DbSet<ComboProduct> ComboProducts => Set<ComboProduct>();
     public DbSet<Promotion> Promotions => Set<Promotion>();
     public DbSet<PromotionProduct> PromotionProducts => Set<PromotionProduct>();
+    public DbSet<Cart> Carts => Set<Cart>();
+    public DbSet<CartItem> CartItems => Set<CartItem>();
+    public DbSet<CartCombo> CartCombos => Set<CartCombo>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -263,6 +266,104 @@ public class ApplicationDbContext : DbContext
             entity.HasOne(cp => cp.Product)
                   .WithMany()
                   .HasForeignKey(cp => cp.ProductId)
+                  .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // ============================
+        // CART
+        // ============================
+        modelBuilder.Entity<Cart>(entity =>
+        {
+            entity.ToTable("Carts");
+
+            entity.HasKey(c => c.CartId);
+
+            entity.Property(c => c.UserId)
+                  .IsRequired();
+
+            entity.Property(c => c.CartStatus)
+                  .HasMaxLength(50)
+                  .IsRequired();
+
+            entity.Property(c => c.CreatedAt)
+                  .HasColumnType("datetime")
+                  .HasDefaultValueSql("GETDATE()");
+
+            entity.Property(c => c.UpdatedAt)
+                  .HasColumnType("datetime");
+
+            entity.HasOne(c => c.User)
+                  .WithMany()
+                  .HasForeignKey(c => c.UserId)
+                  .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(c => c.Store)
+                  .WithMany(s => s.Carts)
+                  .HasForeignKey(c => c.StoreId)
+                  .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasMany(c => c.CartItems)
+                  .WithOne(ci => ci.Cart)
+                  .HasForeignKey(ci => ci.CartId)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasMany(c => c.CartCombos)
+                  .WithOne(cc => cc.Cart)
+                  .HasForeignKey(cc => cc.CartId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+
+        // ============================
+        // CART ITEM (PRODUCT)
+        // ============================
+        modelBuilder.Entity<CartItem>(entity =>
+        {
+            entity.ToTable("CartItems");
+
+            entity.HasKey(ci => ci.CartItemId);
+
+            entity.Property(ci => ci.Quantity)
+                  .IsRequired();
+
+            entity.Property(ci => ci.UnitPrice)
+                  .HasColumnType("decimal(10,2)")
+                  .IsRequired();
+
+            entity.Property(ci => ci.SubTotal)
+                  .HasColumnType("decimal(10,2)")
+                  .IsRequired();
+
+            entity.HasOne(ci => ci.Product)
+                  .WithMany()
+                  .HasForeignKey(ci => ci.ProductId)
+                  .OnDelete(DeleteBehavior.Restrict);
+        });
+
+
+        // ============================
+        // CART COMBO
+        // ============================
+        modelBuilder.Entity<CartCombo>(entity =>
+        {
+            entity.ToTable("CartCombos");
+
+            entity.HasKey(cc => cc.CartComboId);
+
+            entity.Property(cc => cc.Quantity)
+                  .IsRequired();
+
+            entity.Property(cc => cc.UnitPrice)
+                  .HasColumnType("decimal(10,2)")
+                  .IsRequired();
+
+            entity.Property(cc => cc.SubTotal)
+                  .HasColumnType("decimal(10,2)")
+                  .IsRequired();
+
+            entity.HasOne(cc => cc.Combo)
+                  .WithMany()
+                  .HasForeignKey(cc => cc.ComboId)
                   .OnDelete(DeleteBehavior.Restrict);
         });
     }

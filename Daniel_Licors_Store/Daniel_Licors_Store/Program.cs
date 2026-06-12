@@ -64,6 +64,8 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<AdminDashboardService>();
 builder.Services.AddScoped<IComboService, ComboService>();
 builder.Services.AddScoped<IPromotionService, PromotionService>();
+builder.Services.AddScoped<ICartService, CartService>();
+builder.Services.AddScoped<IWhatsAppService, WhatsAppService>();
 #endregion
 
 builder.Services.AddHttpContextAccessor();

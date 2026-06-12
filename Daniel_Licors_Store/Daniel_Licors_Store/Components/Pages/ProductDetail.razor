@@ -1,8 +1,13 @@
 ﻿@page "/producto/{ProductId:int}"
 
+@using Daniel_Licors_Store.Data.Services
 @using Daniel_Licors_Store.Models.Product
 @using Daniel_Licors_Store.Models.Combo
+@using Microsoft.AspNetCore.Components.Authorization
 @inject NavigationManager Nav
+@inject ICartService CartService
+@inject ISnackbar Snackbar
+@inject AuthenticationStateProvider AuthStateProvider
 
 <MudContainer MaxWidth="MaxWidth.Large" Class="mt-6 mb-12">
 
@@ -86,6 +91,7 @@
                                    FullWidth="true"
                                    StartIcon="@Icons.Material.Filled.ShoppingCart"
                                    Disabled="@(Product.Stock <= 0)"
+                                   OnClick="@(() => AddToCart(Product.ProductId))"
                                    Class="py-3 btn-add-cart">
                             @(Product.Stock <= 0 ? "Sin existencias" : "Agregar al carrito")
                         </MudButton>
@@ -138,9 +144,14 @@
                                     <!-- Descripción -->
                                     @if (!string.IsNullOrWhiteSpace(combo.Description))
                                     {
-                                        <MudText Typo="Typo.body2" Class="muted-text mb-2">
-                                            @combo.Description
-                                        </MudText>
+                                        <MudButton Variant="Variant.Text"
+                                                   Color="Color.Error"
+                                                   Size="Size.Small"
+                                                   EndIcon="@Icons.Material.Filled.ShoppingCart"
+                                                   OnClick="@(() => AddComboToCart(combo.ComboId))"
+                                                   Class="text-transform-none font-weight-bold">
+                                            Agregar al carrito
+                                        </MudButton>
                                     }
 
                                     <!-- CTA -->

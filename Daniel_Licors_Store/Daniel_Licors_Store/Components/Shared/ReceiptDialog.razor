@@ -1,0 +1,161 @@
+@using Daniel_Licors_Store.Models.Cart
+@using MudBlazor
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6" Class="font-weight-bold">
+            <MudIcon Icon="@Icons.Material.Filled.Receipt" Class="mr-2" />
+            Tu Recibo
+        </MudText>
+    </TitleContent>
+
+    <DialogContent>
+
+        <div class="receipt-container">
+            <div class="receipt-header">
+                <MudText Typo="Typo.h5" Class="font-weight-bold text-center mb-2">
+                    🛍️ RECIBO DE COMPRA
+                </MudText>
+                <MudDivider />
+            </div>
+
+            <div class="receipt-details mt-3">
+                <div class="receipt-row">
+                    <MudText Typo="Typo.body2" Class="muted-text">Nro. Recibo:</MudText>
+                    <MudText Typo="Typo.body2" Class="font-weight-bold">@Receipt.ReceiptNumber</MudText>
+                </div>
+                <div class="receipt-row">
+                    <MudText Typo="Typo.body2" Class="muted-text">Cliente:</MudText>
+                    <MudText Typo="Typo.body2" Class="font-weight-bold">@Receipt.CustomerName</MudText>
+                </div>
+                <div class="receipt-row">
+                    <MudText Typo="Typo.body2" Class="muted-text">Tienda:</MudText>
+                    <MudText Typo="Typo.body2" Class="font-weight-bold">@Receipt.StoreLocation</MudText>
+                </div>
+                <div class="receipt-row">
+                    <MudText Typo="Typo.body2" Class="muted-text">Fecha:</MudText>
+                    <MudText Typo="Typo.body2" Class="font-weight-bold">
+                        @Receipt.CreatedAt.ToString("dd/MM/yyyy HH:mm")
+                    </MudText>
+                </div>
+            </div>
+
+            <MudDivider Class="my-3" />
+
+            <div class="receipt-items">
+                <MudText Typo="Typo.body2" Class="font-weight-bold mb-2">DETALLE:</MudText>
+
+                @foreach (var item in Receipt.Items)
+                {
+                    <div class="receipt-item mb-2">
+                        <div class="d-flex justify-space-between">
+                            <MudText Typo="Typo.body2" Class="font-weight-bold">
+                                @item.ItemName
+                            </MudText>
+                            <MudText Typo="Typo.body2" Class="font-weight-bold">
+                                $@item.SubTotal.ToString("N2")
+                            </MudText>
+                        </div>
+                        <MudText Typo="Typo.caption" Class="muted-text">
+                            @item.Category • @item.Quantity ud. x $@item.UnitPrice.ToString("N2")
+                        </MudText>
+                    </div>
+                }
+            </div>
+
+            <MudDivider Class="my-3" />
+
+            <div class="receipt-total">
+                <div class="d-flex justify-space-between align-center">
+                    <MudText Typo="Typo.h6" Class="font-weight-bold">TOTAL A PAGAR:</MudText>
+                    <MudText Typo="Typo.h5" Class="font-weight-black" Color="Color.Success">
+                        $@Receipt.TotalAmount.ToString("N2")
+                    </MudText>
+                </div>
+            </div>
+
+            <MudAlert Severity="Severity.Success" Variant="Variant.Outlined" Class="mt-4">
+                ✅ Compra completada exitosamente. ¡Gracias por tu compra!
+            </MudAlert>
+        </div>
+
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton Variant="Variant.Text" OnClick="Close">
+            Cerrar
+        </MudButton>
+        <MudButton Variant="Variant.Filled"
+                   Color="Color.Success"
+                   StartIcon="@Icons.Custom.Brands.WhatsApp"
+                   Href="@WhatsAppLink"
+                   Target="_blank">
+            Enviar por WhatsApp
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+<style>
+    .receipt-container {
+        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        padding: 24px;
+        border-radius: 12px;
+        font-family: 'Courier New', monospace;
+    }
+
+    .receipt-header {
+        text-align: center;
+    }
+
+    .receipt-details {
+        background: white;
+        padding: 12px;
+        border-radius: 8px;
+        margin-bottom: 12px;
+    }
+
+    .receipt-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 6px 0;
+        border-bottom: 1px dotted #e0e0e0;
+    }
+
+    .receipt-items {
+        background: white;
+        padding: 12px;
+        border-radius: 8px;
+        max-height: 300px;
+        overflow-y: auto;
+    }
+
+    .receipt-item {
+        padding: 8px;
+        border-left: 3px solid #667eea;
+        background: #f9f9f9;
+        border-radius: 4px;
+    }
+
+    .receipt-total {
+        background: white;
+        padding: 16px;
+        border-radius: 8px;
+    }
+
+    .muted-text {
+        color: #757575;
+    }
+</style>
+
+@code {
+    [Parameter]
+    public ReceiptDto Receipt { get; set; } = null!;
+
+    [Parameter]
+    public string WhatsAppLink { get; set; } = "";
+
+    private void Close()
+    {
+        DialogResult.Ok(true);
+    }
+}
