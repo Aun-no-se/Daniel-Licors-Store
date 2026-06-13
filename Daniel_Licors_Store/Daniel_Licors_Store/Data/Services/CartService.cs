@@ -34,19 +34,27 @@ public class CartService : ICartService
 
     public async Task<CartViewDto> GetCartAsync(string userId, int storeId)
     {
+        // Cambiamos el throw por una validación que no rompa la ejecución
+        if (string.IsNullOrWhiteSpace(userId))
+        {
+            _logger.LogWarning("Intento de acceso al carrito con UserId nulo o vacío.");
+            return new CartViewDto();
+        }
+
         try
         {
             var cart = await _context.Carts
                 .Include(c => c.CartItems).ThenInclude(ci => ci.Product)
                 .Include(c => c.CartCombos).ThenInclude(cc => cc.Combo)
+                .Include(c => c.Store)  // ✅ AGREGAR ESTO
                 .FirstOrDefaultAsync(c => c.UserId == userId && c.StoreId == storeId && c.CartStatus == "Active");
 
             if (cart == null)
             {
-                cart = new Cart 
-                { 
-                    UserId = userId, 
-                    StoreId = storeId, 
+                cart = new Cart
+                {
+                    UserId = userId,
+                    StoreId = storeId,
                     CartStatus = "Active",
                     CreatedAt = DateTime.UtcNow,
                     UpdatedAt = DateTime.UtcNow
@@ -59,13 +67,17 @@ public class CartService : ICartService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error getting cart for user {UserId}", userId);
-            throw;
+            _logger.LogError(ex, "Error crítico recuperando el carrito para {UserId}", userId);
+            throw; // Solo lanzamos si hay un error de base de datos real
         }
     }
 
+
     public async Task<CartViewDto> AddProductToCartAsync(string userId, int productId, int quantity, int storeId)
     {
+        if (string.IsNullOrWhiteSpace(userId))
+            throw new Exception("UserId inválido en CartService");
+
         try
         {
             var product = await _context.Products.FindAsync(productId);
@@ -130,6 +142,9 @@ public class CartService : ICartService
 
     public async Task<CartViewDto> AddComboToCartAsync(string userId, int comboId, int quantity, int storeId)
     {
+        if (string.IsNullOrWhiteSpace(userId))
+            throw new Exception("UserId inválido en CartService");
+
         try
         {
             var combo = await _context.Combos.FindAsync(comboId);
@@ -188,6 +203,9 @@ public class CartService : ICartService
 
     public async Task<CartViewDto> AddPromotionToCartAsync(string userId, int promotionId, int quantity, int storeId)
     {
+        if (string.IsNullOrWhiteSpace(userId))
+            throw new Exception("UserId inválido en CartService");
+
         // Nota: Las promociones se manejan como items especiales
         // Por ahora, retornamos una promoción como un combo especial
         // Esto puede ser expandido si tienes una tabla CartPromotion
@@ -196,6 +214,9 @@ public class CartService : ICartService
 
     public async Task<CartViewDto> RemoveItemAsync(string userId, int cartItemId, string itemType)
     {
+        if (string.IsNullOrWhiteSpace(userId))
+            throw new Exception("UserId inválido en CartService");
+
         try
         {
             var cart = await _context.Carts
@@ -237,6 +258,9 @@ public class CartService : ICartService
 
     public async Task<CartViewDto> UpdateItemQuantityAsync(string userId, int cartItemId, int newQuantity, string itemType)
     {
+        if (string.IsNullOrWhiteSpace(userId))
+            throw new Exception("UserId inválido en CartService");
+
         try
         {
             if (newQuantity <= 0)
@@ -283,6 +307,9 @@ public class CartService : ICartService
 
     public async Task<CartViewDto> UpdateItemSelectionAsync(string userId, int cartItemId, bool isSelected, string itemType)
     {
+        if (string.IsNullOrWhiteSpace(userId))
+            throw new Exception("UserId inválido en CartService");
+
         // Esta funcionalidad se maneja en el frontend con binding de datos
         // El servicio mantiene el estado en memoria durante la sesión
         // Para persistencia, necesitarías agregar un campo IsSelected a las entidades
@@ -291,6 +318,9 @@ public class CartService : ICartService
 
     public async Task<CartViewDto> SelectAllAsync(string userId)
     {
+        if (string.IsNullOrWhiteSpace(userId))
+            throw new Exception("UserId inválido en CartService");
+
         var cart = await GetCartAsync(userId, 1);
         cart.Products.ForEach(p => p.IsSelected = true);
         cart.Combos.ForEach(c => c.IsSelected = true);
@@ -300,6 +330,9 @@ public class CartService : ICartService
 
     public async Task<CartViewDto> DeselectAllAsync(string userId)
     {
+        if (string.IsNullOrWhiteSpace(userId))
+            throw new Exception("UserId inválido en CartService");
+
         var cart = await GetCartAsync(userId, 1);
         cart.Products.ForEach(p => p.IsSelected = false);
         cart.Combos.ForEach(c => c.IsSelected = false);
@@ -309,6 +342,9 @@ public class CartService : ICartService
 
     public async Task<CartViewDto> ClearCartAsync(string userId)
     {
+        if (string.IsNullOrWhiteSpace(userId))
+            throw new Exception("UserId inválido en CartService");
+
         try
         {
             var cart = await _context.Carts
@@ -335,13 +371,15 @@ public class CartService : ICartService
 
     public async Task<ReceiptDto> GenerateReceiptAsync(string userId, bool selectedOnly = false)
     {
+        if (string.IsNullOrWhiteSpace(userId))
+            throw new Exception("UserId inválido en CartService");
+
         try
         {
             var cart = await _context.Carts
                 .Include(c => c.CartItems).ThenInclude(ci => ci.Product)
                 .Include(c => c.CartCombos).ThenInclude(cc => cc.Combo)
-                .Include(c => c.User)
-                .Include(c => c.Store)
+                .Include(c => c.Store)  // Solo Store
                 .FirstOrDefaultAsync(c => c.UserId == userId && c.CartStatus == "Active");
 
             if (cart == null)
@@ -353,7 +391,7 @@ public class CartService : ICartService
             {
                 ReceiptNumber = $"REC-{DateTime.UtcNow:yyyyMMddHHmmss}-{userId.Substring(0, 4)}",
                 CreatedAt = DateTime.UtcNow,
-                CustomerName = cart.User?.FullName ?? "Cliente",
+                CustomerName = userId,
                 StoreLocation = cart.Store.Name
             };
 
@@ -395,6 +433,10 @@ public class CartService : ICartService
 
     public async Task<bool> CheckoutAsync(string userId, List<int> selectedItemIds, string itemType)
     {
+
+        if (string.IsNullOrWhiteSpace(userId))
+            throw new Exception("UserId inválido en CartService");
+
         try
         {
             var cart = await _context.Carts

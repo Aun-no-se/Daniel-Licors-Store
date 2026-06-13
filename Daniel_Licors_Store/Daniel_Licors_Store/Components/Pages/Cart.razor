@@ -11,6 +11,7 @@
 @inject IDialogService DialogService
 @inject ISnackbar Snackbar
 @inject NavigationManager Nav
+@inject ILogger<Cart> Logger
 
 <MudContainer MaxWidth="MaxWidth.Large" Class="mt-6 mb-12">
 
@@ -250,39 +251,69 @@
 
     protected override async Task OnInitializedAsync()
     {
-        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
-        var user = authState.User;
-
-        Console.WriteLine($"USER AUTH: {user.Identity?.IsAuthenticated}");
-
-        _currentUserId =
-            user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
-            ?? user.FindFirst("sub")?.Value
-            ?? user.FindFirst("id")?.Value
-            ?? user.FindFirst("userId")?.Value
-            ?? "";
-
-        Console.WriteLine($"USER ID: {_currentUserId}");
-
-        if (!user.Identity?.IsAuthenticated ?? true || string.IsNullOrEmpty(_currentUserId))
+        try
         {
-            Nav.NavigateTo("/login");
-            return;
-        }
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            var user = authState.User;
 
-        await LoadCart();
-        _loading = false;
+            if (user.Identity == null || !user.Identity.IsAuthenticated)
+            {
+                Nav.NavigateTo("/login");
+                return;
+            }
+
+            // Buscamos el ID en los claims estándar de JWT o Identity
+            _currentUserId = user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+                ?? user.FindFirst("sub")?.Value
+                ?? user.FindFirst("userId")?.Value
+                ?? string.Empty;
+
+            if (string.IsNullOrEmpty(_currentUserId))
+            {
+                // Si el usuario está autenticado pero no tiene ID, es un error de token
+                Logger.LogWarning("Usuario autenticado pero sin ID en los claims");
+                Nav.NavigateTo("/login");
+                return;
+            }
+
+            await LoadCart();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error en OnInitializedAsync");
+            Snackbar.Add($"Error al cargar: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _loading = false;
+        }
     }
 
     private async Task LoadCart()
     {
         try
         {
+            // Validación preventiva
+            if (string.IsNullOrWhiteSpace(_currentUserId))
+            {
+                Snackbar.Add("Error: No se pudo obtener tu ID de usuario. Por favor, inicia sesión de nuevo.", Severity.Error);
+                await Task.Delay(1000);
+                Nav.NavigateTo("/login");
+                return;
+            }
+
             _cartView = await CartService.GetCartAsync(_currentUserId, _storeId);
+            
+            if (_cartView == null)
+            {
+                _cartView = new CartViewDto();
+            }
+            
             FilterItems();
         }
         catch (Exception ex)
         {
+            Logger.LogError(ex, "Error crítico al cargar carrito para usuario {UserId}", _currentUserId);
             Snackbar.Add($"Error al cargar carrito: {ex.Message}", Severity.Error);
         }
     }
@@ -302,57 +333,131 @@
 
     private async Task RemoveItem(int itemId, string itemType)
     {
-        _cartView = await CartService.RemoveItemAsync(_currentUserId, itemId, itemType);
-        FilterItems();
-        Snackbar.Add("Artículo eliminado del carrito", Severity.Info);
+        if (string.IsNullOrWhiteSpace(_currentUserId))
+        {
+            Snackbar.Add("Sesión expirada. Por favor, inicia sesión de nuevo.", Severity.Warning);
+            Nav.NavigateTo("/login");
+            return;
+        }
+
+        try
+        {
+            _cartView = await CartService.RemoveItemAsync(_currentUserId, itemId, itemType);
+            FilterItems();
+            Snackbar.Add("Artículo eliminado del carrito", Severity.Info);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error al eliminar item {ItemId} tipo {ItemType}", itemId, itemType);
+            Snackbar.Add($"Error al eliminar: {ex.Message}", Severity.Error);
+        }
     }
 
     private async Task UpdateQuantity(int itemId, int newQuantity, string itemType)
     {
-        _cartView = await CartService.UpdateItemQuantityAsync(_currentUserId, itemId, newQuantity, itemType);
-        FilterItems();
+        if (string.IsNullOrWhiteSpace(_currentUserId))
+        {
+            Snackbar.Add("Sesión expirada. Por favor, inicia sesión de nuevo.", Severity.Warning);
+            Nav.NavigateTo("/login");
+            return;
+        }
+
+        try
+        {
+            if (newQuantity <= 0)
+            {
+                Snackbar.Add("La cantidad debe ser mayor a 0", Severity.Warning);
+                return;
+            }
+
+            _cartView = await CartService.UpdateItemQuantityAsync(_currentUserId, itemId, newQuantity, itemType);
+            FilterItems();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error al actualizar cantidad item {ItemId}", itemId);
+            Snackbar.Add($"Error al actualizar cantidad: {ex.Message}", Severity.Error);
+        }
     }
 
     private void UpdateSelection(int itemId, bool isSelected, string itemType)
     {
-        if (itemType == "product")
+        try
         {
-            var item = _cartView?.Products.FirstOrDefault(p => p.CartItemId == itemId);
-            if (item != null) item.IsSelected = isSelected;
+            if (itemType == "product")
+            {
+                var item = _cartView?.Products.FirstOrDefault(p => p.CartItemId == itemId);
+                if (item != null) item.IsSelected = isSelected;
+            }
+            else if (itemType == "combo")
+            {
+                var item = _cartView?.Combos.FirstOrDefault(c => c.CartComboId == itemId);
+                if (item != null) item.IsSelected = isSelected;
+            }
         }
-        else if (itemType == "combo")
+        catch (Exception ex)
         {
-            var item = _cartView?.Combos.FirstOrDefault(c => c.CartComboId == itemId);
-            if (item != null) item.IsSelected = isSelected;
+            Logger.LogError(ex, "Error al actualizar selección de item {ItemId}", itemId);
         }
     }
 
     private void SelectAll()
     {
-        _cartView?.Products.ForEach(p => p.IsSelected = true);
-        _cartView?.Combos.ForEach(c => c.IsSelected = true);
+        try
+        {
+            _cartView?.Products.ForEach(p => p.IsSelected = true);
+            _cartView?.Combos.ForEach(c => c.IsSelected = true);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error al seleccionar todo");
+            Snackbar.Add("Error al seleccionar", Severity.Error);
+        }
     }
 
     private void DeselectAll()
     {
-        _cartView?.Products.ForEach(p => p.IsSelected = false);
-        _cartView?.Combos.ForEach(c => c.IsSelected = false);
+        try
+        {
+            _cartView?.Products.ForEach(p => p.IsSelected = false);
+            _cartView?.Combos.ForEach(c => c.IsSelected = false);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error al deseleccionar todo");
+            Snackbar.Add("Error al deseleccionar", Severity.Error);
+        }
     }
 
     private async Task ClearCart()
     {
-        var parameters = new DialogParameters { };
-        var dialog = await DialogService.ShowAsync<ConfirmDialog>(
-            "Vaciar carrito",
-            parameters);
-        
-        var result = await dialog.Result;
+        if (string.IsNullOrWhiteSpace(_currentUserId))
+        {
+            Snackbar.Add("Sesión expirada. Por favor, inicia sesión de nuevo.", Severity.Warning);
+            Nav.NavigateTo("/login");
+            return;
+        }
 
-        if (result.Canceled) return;
+        try
+        {
+            var parameters = new DialogParameters { };
+            var dialog = await DialogService.ShowAsync<ConfirmDialog>(
+                "Vaciar carrito",
+                parameters);
+            
+            var result = await dialog.Result;
 
-        _cartView = await CartService.ClearCartAsync(_currentUserId);
-        FilterItems();
-        Snackbar.Add("Carrito vaciado", Severity.Success);
+            if (result.Canceled) return;
+
+            _cartView = await CartService.ClearCartAsync(_currentUserId);
+            FilterItems();
+            Snackbar.Add("Carrito vaciado", Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error al vaciar carrito");
+            Snackbar.Add($"Error al vaciar carrito: {ex.Message}", Severity.Error);
+        }
     }
 
     private async Task CheckoutAll()
@@ -367,10 +472,23 @@
 
     private async Task PerformCheckout(bool selectedOnly)
     {
+        if (string.IsNullOrWhiteSpace(_currentUserId))
+        {
+            Snackbar.Add("Sesión expirada. Por favor, inicia sesión de nuevo.", Severity.Warning);
+            Nav.NavigateTo("/login");
+            return;
+        }
+
         try
         {
             // Generar recibo
             var receipt = await CartService.GenerateReceiptAsync(_currentUserId, selectedOnly);
+
+            if (receipt == null)
+            {
+                Snackbar.Add("No hay artículos para comprar", Severity.Warning);
+                return;
+            }
 
             // Usar un teléfono por defecto o pedirlo
             var defaultPhone = "+1234567890"; // Cambiar por teléfono real si lo tienes
@@ -399,6 +517,7 @@
         }
         catch (Exception ex)
         {
+            Logger.LogError(ex, "Error en PerformCheckout para usuario {UserId}", _currentUserId);
             Snackbar.Add($"Error en la compra: {ex.Message}", Severity.Error);
         }
     }

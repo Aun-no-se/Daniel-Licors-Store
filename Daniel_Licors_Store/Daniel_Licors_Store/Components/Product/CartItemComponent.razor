@@ -45,8 +45,8 @@
                                   OnClick="DecreaseQuantity"
                                   Disabled="@(_quantity <= 1)" />
                     <input type="number"
-                           @bind-value="_quantity"
-                           @bind-value:event="onchange"
+                           value="@_quantity"
+                           @onchange="QuantityChanged"
                            min="1"
                            class="cart-item-quantity-input" />
                     <MudIconButton Icon="@Icons.Material.Filled.Add" 
@@ -123,14 +123,21 @@
 
     protected override void OnInitialized()
     {
+        if (Item == null)
+        {
+            _isSelected = false;
+            _quantity = 1;
+            return;
+        }
+
         if (Item is CartItemDisplayDto product)
         {
-            _quantity = product.Quantity;
+            _quantity = product.Quantity > 0 ? product.Quantity : 1;
             _isSelected = product.IsSelected;
         }
         else if (Item is CartComboDisplayDto combo)
         {
-            _quantity = combo.Quantity;
+            _quantity = combo.Quantity > 0 ? combo.Quantity : 1;
             _isSelected = combo.IsSelected;
         }
     }

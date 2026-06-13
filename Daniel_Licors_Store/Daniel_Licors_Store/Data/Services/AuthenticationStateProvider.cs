@@ -39,27 +39,20 @@ namespace Daniel_Licors_Store.Data.Services
 
         public async Task MarkUserAsAuthenticated(UserSession session)
         {
-            if (session == null)
-                throw new ArgumentNullException(nameof(session));
+            if (string.IsNullOrWhiteSpace(session.UserId))
+                throw new Exception("UserId no puede ser vacío al autenticar");
 
-            // Guardar en localStorage
             await _localStorage.SetItemAsync("userSession", session);
 
-            // Construir claims
-            var claims = new List<Claim>();
+            var claims = new List<Claim>
+    {
+        new Claim(ClaimTypes.NameIdentifier, session.UserId),
+        new Claim(ClaimTypes.Name, session.Email)
+    };
 
-            if (!string.IsNullOrWhiteSpace(session.UserId))
-                claims.Add(new Claim(ClaimTypes.NameIdentifier, session.UserId));
-
-            if (!string.IsNullOrWhiteSpace(session.Email))
-                claims.Add(new Claim(ClaimTypes.Name, session.Email));
-
-            if (session.Roles != null)
+            foreach (var role in session.Roles)
             {
-                foreach (var role in session.Roles.Where(r => !string.IsNullOrWhiteSpace(r)))
-                {
-                    claims.Add(new Claim(ClaimTypes.Role, role));
-                }
+                claims.Add(new Claim(ClaimTypes.Role, role));
             }
 
             var identity = new ClaimsIdentity(claims, "customAuth");

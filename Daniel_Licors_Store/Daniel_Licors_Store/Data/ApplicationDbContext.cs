@@ -275,11 +275,11 @@ public class ApplicationDbContext : DbContext
         modelBuilder.Entity<Cart>(entity =>
         {
             entity.ToTable("Carts");
-
             entity.HasKey(c => c.CartId);
 
             entity.Property(c => c.UserId)
-                  .IsRequired();
+                  .IsRequired()
+                  .HasMaxLength(450);  // ✅ IMPORTANTE
 
             entity.Property(c => c.CartStatus)
                   .HasMaxLength(50)
@@ -291,26 +291,6 @@ public class ApplicationDbContext : DbContext
 
             entity.Property(c => c.UpdatedAt)
                   .HasColumnType("datetime");
-
-            entity.HasOne(c => c.User)
-                  .WithMany()
-                  .HasForeignKey(c => c.UserId)
-                  .OnDelete(DeleteBehavior.Restrict);
-
-            entity.HasOne(c => c.Store)
-                  .WithMany(s => s.Carts)
-                  .HasForeignKey(c => c.StoreId)
-                  .OnDelete(DeleteBehavior.Restrict);
-
-            entity.HasMany(c => c.CartItems)
-                  .WithOne(ci => ci.Cart)
-                  .HasForeignKey(ci => ci.CartId)
-                  .OnDelete(DeleteBehavior.Cascade);
-
-            entity.HasMany(c => c.CartCombos)
-                  .WithOne(cc => cc.Cart)
-                  .HasForeignKey(cc => cc.CartId)
-                  .OnDelete(DeleteBehavior.Cascade);
         });
 
 

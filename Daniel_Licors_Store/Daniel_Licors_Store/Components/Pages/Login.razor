@@ -132,7 +132,6 @@
 
     private async Task LoginUsers()
     {
-
         error = null;
         isLoading = true;
 
@@ -145,20 +144,20 @@
             {
                 var result = await response.Content.ReadFromJsonAsync<LoginResponse>();
 
-                Console.WriteLine($"LOGIN USER ID: {result.userId}");
-
-                if (result == null)
+                // Validación de integridad de respuesta
+                if (result == null || string.IsNullOrEmpty(result.GetUserId()))
                 {
-                    error = "Respuesta inválida del servidor.";
+                    error = "El servidor respondió correctamente pero no se encontró el identificador de usuario.";
                     return;
                 }
 
+                var userId = result.GetUserId();
                 var roles = result.roles ?? new List<string>();
                 var customAuth = (CustomAuthStateProvider)AuthStateProvider;
 
                 var session = new UserSession
                 {
-                    UserId = result.userId,
+                    UserId = userId,
                     Email = model.Email,
                     Roles = roles,
                     LastActivity = DateTime.Now
@@ -166,18 +165,10 @@
 
                 await customAuth.MarkUserAsAuthenticated(session);
 
-                if (roles.Contains("Admin"))
-                {
-                    Nav.NavigateTo("/admin/dashboard", forceLoad: true);
-                }
-                else if (roles.Contains("Empleado"))
-                {
-                    Nav.NavigateTo("/dashboard", forceLoad: true);
-                }
-                else
-                {
-                    Nav.NavigateTo("/", forceLoad: true);
-                }
+                // Redirección basada en roles
+                if (roles.Contains("Admin")) Nav.NavigateTo("/admin/dashboard", forceLoad: true);
+                else if (roles.Contains("Empleado")) Nav.NavigateTo("/dashboard", forceLoad: true);
+                else Nav.NavigateTo("/", forceLoad: true);
             }
             else if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
             {
@@ -185,7 +176,7 @@
             }
             else
             {
-                error = "Ocurrió un error inesperado en el servidor.";
+                error = "Ocurrió un error inesperado al conectar con el servidor.";
             }
         }
         catch (Exception ex)
@@ -200,7 +191,12 @@
 
     public class LoginResponse
     {
-        public string userId { get; set; } = string.Empty;
+        public string? userId { get; set; }
+        public string? id { get; set; }
+        public string? user_Id { get; set; }
         public List<string> roles { get; set; } = new();
+
+        public string GetUserId()
+            => userId ?? id ?? user_Id ?? string.Empty;
     }
 }
