@@ -1,134 +1,303 @@
 @using Daniel_Licors_Store.Models.Cart
 @using MudBlazor
 
-<MudCard Elevation="1" Class="cart-item-card mb-3">
-    <MudCardContent>
-        <MudGrid Spacing="2" Class="align-center">
+<MudCard Elevation="1"
+         Class="@CardClass"
+         @onclick="ToggleSelection">
+    <MudCardContent Class="pa-3">
+        <div class="cart-item-layout">
 
-            <!-- Checkbox de selección -->
-            <MudItem xs="1" sm="1" md="1" Class="d-flex justify-center">
-                <MudCheckBox T="bool"
-                             Checked="_isSelected"
-                             CheckedChanged="OnSelectionChanged"
-                             Size="Size.Medium"
-                             Color="Color.Primary" />
-            </MudItem>
+            <div class="cart-image-container">
+                <img src="@(GetImage() ?? "images/placeholder-bottle.png")"
+                     alt="@GetItemName()"
+                     class="cart-image" />
 
-            <!-- Imagen del producto -->
-            <MudItem xs="3" sm="2" md="2">
-                <img src="@GetImage()" 
-                     alt="@GetItemName()" 
-                     class="cart-item-image rounded-lg" 
-                     style="width: 100%; height: 80px; object-fit: cover;" />
-            </MudItem>
+                <span class="custom-badge @GetBadgeClass()">
+                    @GetItemTypeLabel()
+                </span>
+            </div>
 
-            <!-- Información del producto -->
-            <MudItem xs="8" sm="5" md="4">
-                <div class="d-flex flex-column gap-y-1">
-                    <MudText Typo="Typo.subtitle2" Class="font-weight-bold">
-                        @GetItemName()
-                    </MudText>
-                    <MudChip T="string" Size="Size.Small" Variant="Variant.Text" Color="Color.Primary" Class="px-0">
-                        @GetCategory()
-                    </MudChip>
-                    <MudText Typo="Typo.body2" Class="font-weight-bold text-primary">
-                        $@GetUnitPrice().ToString("N2")
-                    </MudText>
+            <div class="cart-info-block">
+
+                <div class="d-flex justify-space-between align-start width-100 gap-2">
+                    <div class="flex-grow-1 min-width-0">
+                        <MudText Typo="Typo.subtitle1" Class="font-weight-bold text-truncate-custom line-height-tight">
+                            @GetItemName()
+                        </MudText>
+                        <MudText Typo="Typo.caption" Class="text-muted d-block mt-0">
+                            @GetCategory()
+                        </MudText>
+                    </div>
+
+                    <div @onclick:stopPropagation="true">
+                        <MudCheckBox T="bool"
+                                     Checked="_isSelected"
+                                     CheckedChanged="OnSelectionChanged"
+                                     Color="Color.Primary"
+                                     Dense="true"
+                                     Class="ma-0 pa-0" />
+                    </div>
                 </div>
-            </MudItem>
 
-            <!-- Cantidad y controles -->
-            <MudItem xs="6" sm="2" md="2">
-                <div class="d-flex align-center gap-x-1">
-                    <MudIconButton Icon="@Icons.Material.Filled.Remove" 
-                                  Size="Size.Small"
-                                  OnClick="DecreaseQuantity"
-                                  Disabled="@(_quantity <= 1)" />
-                    <input type="number"
-                           value="@_quantity"
-                           @onchange="QuantityChanged"
-                           min="1"
-                           class="cart-item-quantity-input" />
-                    <MudIconButton Icon="@Icons.Material.Filled.Add" 
-                                  Size="Size.Small"
-                                  OnClick="IncreaseQuantity" />
+                <div class="cart-meta-actions mt-auto pt-3">
+
+                    <div class="qty-selector-container" @onclick:stopPropagation="true">
+                        <button type="button" class="qty-btn"
+                                disabled="@(_quantity <= 1)"
+                                @onclick="DecreaseQuantity">
+                            <MudIcon Icon="@Icons.Material.Filled.Remove" Size="Size.Small" />
+                        </button>
+
+                        <input type="number"
+                               value="@_quantity"
+                               @onchange="QuantityChanged"
+                               min="1"
+                               class="qty-numeric-input" />
+
+                        <button type="button" class="qty-btn" @onclick="IncreaseQuantity">
+                            <MudIcon Icon="@Icons.Material.Filled.Add" Size="Size.Small" />
+                        </button>
+                    </div>
+
+                    <div class="d-flex align-center gap-3 ml-auto" @onclick:stopPropagation="true">
+                        <div class="text-right">
+                            <MudText Typo="Typo.caption" Class="text-muted d-block font-size-xs">
+                                @_quantity x $@GetUnitPrice().ToString("N2")
+                            </MudText>
+                            <MudText Typo="Typo.body1" Class="font-weight-bold price-highlight">
+                                $@GetSubTotal().ToString("N2")
+                            </MudText>
+                        </div>
+
+                        <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                       Size="Size.Medium"
+                                       Color="Color.Error"
+                                       OnClick="Remove"
+                                       Class="delete-action-btn pa-2" />
+                    </div>
+
                 </div>
-            </MudItem>
 
-            <!-- Subtotal y eliminar -->
-            <MudItem xs="6" sm="2" md="2">
-                <div class="d-flex flex-column align-end gap-y-1">
-                    <MudText Typo="Typo.body2" Class="font-weight-bold">
-                        $@GetSubTotal().ToString("N2")
-                    </MudText>
-                    <MudIconButton Icon="@Icons.Material.Filled.Delete" 
-                                  Size="Size.Small"
-                                  Color="Color.Error"
-                                  OnClick="Remove" />
-                </div>
-            </MudItem>
+            </div>
 
-        </MudGrid>
+        </div>
     </MudCardContent>
 </MudCard>
 
 <style>
-    .cart-item-card {
-        border-left: 4px solid #667eea;
-        transition: all 0.3s ease;
+    /* Estilos globales de la Tarjeta */
+    .cart-item-card-modern {
+        cursor: pointer;
+        transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+        border-radius: 16px;
+        border: 1px solid rgba(0, 0, 0, 0.06);
+        background-color: #ffffff;
     }
 
-    .cart-item-card:hover {
-        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        .cart-item-card-modern:hover {
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        }
+
+        .cart-item-card-modern.selected {
+            border: 2px solid #667eea;
+            background-color: rgba(102, 126, 234, 0.03);
+        }
+
+    /* Layout Responsive: Mobile-First */
+    .cart-item-layout {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
     }
 
-    .cart-item-image {
-        object-position: center;
+    @@media (min-width: 600px) {
+        .cart-item-layout
+
+    {
+        flex-direction: row;
+        gap: 16px;
+        align-items: stretch;
     }
 
-    .cart-item-quantity-input {
-        width: 50px;
-        padding: 6px;
-        border: 1px solid #e0e0e0;
-        border-radius: 4px;
+    }
+
+    /* Imagen fija y responsiva */
+    .cart-image-container {
+        position: relative;
+        width: 100%;
+        height: 140px;
+        border-radius: 12px;
+        overflow: hidden;
+        background-color: #f8f9fa;
+        flex-shrink: 0;
+    }
+
+    @@media (min-width: 600px) {
+        .cart-image-container
+
+    {
+        width: 105px;
+        height: 105px;
+    }
+
+    }
+
+    .cart-image {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    /* Bloque derecho de contenido */
+    .cart-info-block {
+        display: flex;
+        flex-direction: column;
+        flex-grow: 1;
+        min-width: 0;
+    }
+
+    .line-height-tight {
+        line-height: 1.25;
+    }
+
+    .text-truncate-custom {
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    /* Badges del Negocio */
+    .custom-badge {
+        position: absolute;
+        top: 8px;
+        left: 8px;
+        padding: 3px 8px;
+        border-radius: 6px;
+        font-size: 0.7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: #ffffff;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+    }
+
+    .badge-product {
+        background-color: #1e88e5;
+    }
+
+    .badge-combo {
+        background-color: #ffb300;
+        color: #212121;
+    }
+
+    .badge-promo {
+        background-color: #e53935;
+    }
+
+    /* Meta y acciones inferiores */
+    .cart-meta-actions {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 12px;
+        justify-content: space-between;
+        width: 100%;
+    }
+
+    /* Selector numérico Premium */
+    .qty-selector-container {
+        display: flex;
+        align-items: center;
+        border: 1px solid rgba(0, 0, 0, 0.12);
+        border-radius: 10px;
+        overflow: hidden;
+        background-color: #fdfdfd;
+        height: 36px;
+    }
+
+    .qty-btn {
+        background: transparent;
+        border: none;
+        width: 34px;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        color: #555;
+        transition: background 0.2s;
+    }
+
+        .qty-btn:hover:not(:disabled) {
+            background-color: rgba(0, 0, 0, 0.04);
+        }
+
+        .qty-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+    .qty-numeric-input {
+        width: 42px;
+        height: 100%;
         text-align: center;
-        font-weight: bold;
+        border: none;
+        border-left: 1px solid rgba(0, 0, 0, 0.08);
+        border-right: 1px solid rgba(0, 0, 0, 0.08);
+        font-weight: 700;
+        font-size: 0.9rem;
+        color: #212121;
+        -moz-appearance: textfield;
     }
 
-    .cart-item-quantity-input:focus {
-        outline: none;
-        border-color: #667eea;
-        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        .qty-numeric-input::-webkit-outer-spin-button,
+        .qty-numeric-input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+    .price-highlight {
+        color: #764ba2;
+        font-size: 1.1rem;
     }
+
+    .text-muted {
+        color: #757575;
+    }
+
+    .font-size-xs {
+        font-size: 0.75rem;
+    }
+
+    .delete-action-btn {
+        background-color: rgba(229, 57, 53, 0.05);
+        border-radius: 10px;
+        transition: background-color 0.2s;
+    }
+
+        .delete-action-btn:hover {
+            background-color: rgba(229, 57, 53, 0.12);
+        }
 </style>
 
 @code {
-    [Parameter]
-    public object? Item { get; set; }
-
-    [Parameter]
-    public string ItemType { get; set; } = "product";
-
-    [Parameter]
-    public EventCallback<(int, string)> OnRemove { get; set; }
-
-    [Parameter]
-    public EventCallback<(int, int, string)> OnQuantityChange { get; set; }
-
-    [Parameter]
-    public EventCallback<(int, bool, string)> OnSelectionChange { get; set; }
+    [Parameter] public object? Item { get; set; }
+    [Parameter] public string ItemType { get; set; } = "product";
+    [Parameter] public EventCallback<(int, string)> OnRemove { get; set; }
+    [Parameter] public EventCallback<(int, int, string)> OnQuantityChange { get; set; }
+    [Parameter] public EventCallback<(int, bool, string)> OnSelectionChange { get; set; }
 
     private bool _isSelected = false;
     private int _quantity = 1;
 
+    private string CardClass => _isSelected
+        ? "cart-item-card-modern mb-3 selected"
+        : "cart-item-card-modern mb-3";
+
     protected override void OnInitialized()
     {
-        if (Item == null)
-        {
-            _isSelected = false;
-            _quantity = 1;
-            return;
-        }
+        if (Item == null) return;
 
         if (Item is CartItemDisplayDto product)
         {
@@ -142,65 +311,69 @@
         }
     }
 
-    private string GetItemName()
+    private async Task ToggleSelection()
     {
-        return Item switch
-        {
-            CartItemDisplayDto product => product.ProductName,
-            CartComboDisplayDto combo => combo.ComboName,
-            _ => "Artículo"
-        };
+        _isSelected = !_isSelected;
+        await OnSelectionChange.InvokeAsync((GetItemId(), _isSelected, ItemType));
     }
 
-    private string GetCategory()
+    private string GetItemName() => Item switch
     {
-        return Item switch
-        {
-            CartItemDisplayDto product => product.Category,
-            CartComboDisplayDto combo => combo.Category,
-            _ => "Producto"
-        };
-    }
+        CartItemDisplayDto product => product.ProductName,
+        CartComboDisplayDto combo => combo.ComboName,
+        _ => "Artículo"
+    };
 
-    private string? GetImage()
+    private string GetCategory() => Item switch
     {
-        return Item switch
-        {
-            CartItemDisplayDto product => product.ProductImage,
-            CartComboDisplayDto combo => combo.ComboImage,
-            _ => null
-        };
-    }
+        CartItemDisplayDto product => product.Category,
+        CartComboDisplayDto combo => combo.Category,
+        _ => "General"
+    };
 
-    private decimal GetUnitPrice()
+    private string? GetImage() => Item switch
     {
-        return Item switch
-        {
-            CartItemDisplayDto product => product.UnitPrice,
-            CartComboDisplayDto combo => combo.UnitPrice,
-            _ => 0
-        };
-    }
+        CartItemDisplayDto product => product.ProductImage,
+        CartComboDisplayDto combo => combo.ComboImage,
+        _ => null
+    };
 
-    private decimal GetSubTotal()
+    private decimal GetUnitPrice() => Item switch
     {
-        return Item switch
-        {
-            CartItemDisplayDto product => product.SubTotal,
-            CartComboDisplayDto combo => combo.SubTotal,
-            _ => 0
-        };
-    }
+        CartItemDisplayDto product => product.UnitPrice,
+        CartComboDisplayDto combo => combo.UnitPrice,
+        _ => 0
+    };
 
-    private int GetItemId()
+    private decimal GetSubTotal() => Item switch
     {
-        return Item switch
-        {
-            CartItemDisplayDto product => product.CartItemId,
-            CartComboDisplayDto combo => combo.CartComboId,
-            _ => 0
-        };
-    }
+        CartItemDisplayDto product => product.SubTotal,
+        CartComboDisplayDto combo => combo.SubTotal,
+        _ => 0
+    };
+
+    private int GetItemId() => Item switch
+    {
+        CartItemDisplayDto product => product.CartItemId,
+        CartComboDisplayDto combo => combo.CartComboId,
+        _ => 0
+    };
+
+    // Lógica dinámica para los Badges del Negocio
+    private string GetItemTypeLabel() => Item switch
+    {
+        CartItemDisplayDto product => "Producto",
+        CartComboDisplayDto combo => "Combo",
+        _ => "Promoción"
+    };
+
+    private string GetBadgeClass() => Item switch
+    {
+        CartItemDisplayDto => "badge-product",
+        CartComboDisplayDto combo when combo.ComboName.Contains("Promo", StringComparison.OrdinalIgnoreCase) => "badge-promo",
+        CartComboDisplayDto => "badge-combo",
+        _ => "badge-product"
+    };
 
     private async Task IncreaseQuantity()
     {
@@ -226,10 +399,7 @@
         }
     }
 
-    private async Task Remove()
-    {
-        await OnRemove.InvokeAsync((GetItemId(), ItemType));
-    }
+    private async Task Remove() => await OnRemove.InvokeAsync((GetItemId(), ItemType));
 
     private async Task OnSelectionChanged(bool value)
     {

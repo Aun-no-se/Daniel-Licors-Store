@@ -82,19 +82,62 @@
                 @if (_filteredProducts.Count > 0)
                 {
                     <div class="section-separator mb-6">
+
                         <MudText Typo="Typo.h6" Class="font-weight-bold mb-3">
                             <MudIcon Icon="@Icons.Material.Filled.LocalBar" Size="Size.Small" Class="mr-2" />
                             PRODUCTOS (@_filteredProducts.Count)
                         </MudText>
 
-                        @foreach (var product in _filteredProducts)
-                        {
-                            <CartItemComponent Item="product" 
-                                              ItemType="product"
-                                              OnRemove="RemoveItem"
-                                              OnQuantityChange="UpdateQuantity"
-                                              OnSelectionChange="UpdateSelection" />
-                        }
+                        <div class="amazon-list">
+
+                            @foreach (var product in _filteredProducts)
+                            {
+                                <div class="amazon-card @(product.IsSelected ? "selected" : "")"
+                                     @onclick="@(() => UpdateSelection(product.CartItemId, !product.IsSelected, "product"))">
+
+                                    <!-- CHECK -->
+                                    <div class="amazon-check">
+                                        <MudCheckBox T="bool"
+                                                     Checked="product.IsSelected"
+                                                     CheckedChanged="@((bool v) => UpdateSelection(product.CartItemId, v, "product"))"
+                                                     @onclick:stopPropagation="true" />
+                                    </div>
+
+                                    <!-- IMAGE -->
+                                    <div class="amazon-img">
+                                        <img src="@product.ProductImage" />
+                                    </div>
+
+                                    <!-- INFO -->
+                                    <div class="amazon-info">
+                                        <div class="title">@product.ProductName</div>
+                                        <div class="category">@product.Category</div>
+
+                                        <div class="price-row">
+                                            <span class="price">$@product.UnitPrice.ToString("N2")</span>
+                                            <span class="subtotal">Subtotal: $@product.SubTotal.ToString("N2")</span>
+                                        </div>
+
+                                        <div class="stock">Disponible</div>
+                                    </div>
+
+                                    <!-- ACTIONS -->
+                                    <div class="amazon-actions" @onclick:stopPropagation="true">
+                                        <div class="qty">
+                                            <button @onclick='() => UpdateQuantity(product.CartItemId, product.Quantity - 1, "product")'>-</button>
+                                            <span>@product.Quantity</span>
+                                            <button @onclick='() => UpdateQuantity(product.CartItemId, product.Quantity + 1, "product")'>+</button>
+                                        </div>
+
+                                        <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                                       Color="Color.Error"
+                                                       OnClick='() => RemoveItem(product.CartItemId, "product")' />
+                                    </div>
+
+                                </div>
+                            }
+
+                        </div>
                     </div>
                 }
 
@@ -102,19 +145,56 @@
                 @if (_filteredCombos.Count > 0)
                 {
                     <div class="section-separator mb-6">
+
                         <MudText Typo="Typo.h6" Class="font-weight-bold mb-3">
                             <MudIcon Icon="@Icons.Material.Filled.LocalFireDepartment" Size="Size.Small" Class="mr-2" />
                             COMBOS (@_filteredCombos.Count)
                         </MudText>
 
-                        @foreach (var combo in _filteredCombos)
-                        {
-                            <CartItemComponent Item="combo" 
-                                              ItemType="combo"
-                                              OnRemove="RemoveItem"
-                                              OnQuantityChange="UpdateQuantity"
-                                              OnSelectionChange="UpdateSelection" />
-                        }
+                        <div class="amazon-list">
+
+                            @foreach (var combo in _filteredCombos)
+                            {
+                                <div class="amazon-card @(combo.IsSelected ? "selected" : "")"
+                                     @onclick="@(() => UpdateSelection(combo.CartComboId, !combo.IsSelected, "combo"))">
+
+                                    <div class="amazon-check">
+                                        <MudCheckBox T="bool"
+                                                     Checked="combo.IsSelected"
+                                                     CheckedChanged="@((bool v) => UpdateSelection(combo.CartComboId, v, "combo"))"
+                                                     @onclick:stopPropagation="true" />
+                                    </div>
+
+                                    <div class="amazon-img">
+                                        <img src="@combo.ComboImage" />
+                                    </div>
+
+                                    <div class="amazon-info">
+                                        <div class="title">@combo.ComboName</div>
+                                        <div class="category">@combo.Category</div>
+
+                                        <div class="price-row">
+                                            <span class="price">$@combo.UnitPrice.ToString("N2")</span>
+                                            <span class="subtotal">Subtotal: $@combo.SubTotal.ToString("N2")</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="amazon-actions" @onclick:stopPropagation="true">
+                                        <div class="qty">
+                                            <button @onclick='() => UpdateQuantity(combo.CartComboId, combo.Quantity - 1, "combo")'>-</button>
+                                            <span>@combo.Quantity</span>
+                                            <button @onclick='() => UpdateQuantity(combo.CartComboId, combo.Quantity + 1, "combo")'>+</button>
+                                        </div>
+
+                                        <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                                       Color="Color.Error"
+                                                       OnClick='() => RemoveItem(combo.CartComboId, "combo")' />
+                                    </div>
+
+                                </div>
+                            }
+
+                        </div>
                     </div>
                 }
 
