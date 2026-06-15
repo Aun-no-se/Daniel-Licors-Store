@@ -75,7 +75,7 @@
                                                                Variant="Variant.Text"
                                                                Class="action-btn btn-anadir"
                                                                Title="Añadir al carrito"
-                                                               OnClick="@(() => AgregarAlCarrito(product.ProductId))" />
+                                                               OnClick="@(async () => await AgregarAlCarrito(product.ProductId))" />
                                             </Authorized>
                                         </AuthorizeView>
                                     </div>

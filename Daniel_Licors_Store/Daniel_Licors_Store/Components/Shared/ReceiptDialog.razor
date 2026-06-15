@@ -1,161 +1,191 @@
 @using Daniel_Licors_Store.Models.Cart
+@using System.Net.Http
+@using Microsoft.AspNetCore.Components
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Components.Forms
 @using MudBlazor
 
 <MudDialog>
     <TitleContent>
-        <MudText Typo="Typo.h6" Class="font-weight-bold">
-            <MudIcon Icon="@Icons.Material.Filled.Receipt" Class="mr-2" />
-            Tu Recibo
-        </MudText>
+        <div class="d-flex justify-space-between align-center px-2">
+            <MudText Typo="Typo.h5" Class="receipt-black-text font-weight-bold">Tu Recibo</MudText>
+            <MudIconButton Icon="@Icons.Material.Filled.Close"
+                           Color="Color.Default"
+                           OnClick="@CloseDialog"
+                           Class="cursor-pointer receipt-black-text" />
+        </div>
     </TitleContent>
 
     <DialogContent>
+        @if (Receipt != null)
+        {
+            <div class="receipt-container">
 
-        <div class="receipt-container">
-            <div class="receipt-header">
-                <MudText Typo="Typo.h5" Class="font-weight-bold text-center mb-2">
-                    🛍️ RECIBO DE COMPRA
-                </MudText>
-                <MudDivider />
-            </div>
-
-            <div class="receipt-details mt-3">
-                <div class="receipt-row">
-                    <MudText Typo="Typo.body2" Class="muted-text">Nro. Recibo:</MudText>
-                    <MudText Typo="Typo.body2" Class="font-weight-bold">@Receipt.ReceiptNumber</MudText>
+                <div class="receipt-header text-center mb-4">
+                    <MudText Typo="Typo.h5" Class="font-weight-black receipt-black-text tracking-wide">DANIEL LICORS STORE</MudText>
+                    <MudText Typo="Typo.body2" Class="receipt-black-text font-weight-medium">@Receipt.StoreLocation</MudText>
+                    <div class="receipt-dashed-line my-3"></div>
                 </div>
-                <div class="receipt-row">
-                    <MudText Typo="Typo.body2" Class="muted-text">Cliente:</MudText>
-                    <MudText Typo="Typo.body2" Class="font-weight-bold">@Receipt.CustomerName</MudText>
-                </div>
-                <div class="receipt-row">
-                    <MudText Typo="Typo.body2" Class="muted-text">Tienda:</MudText>
-                    <MudText Typo="Typo.body2" Class="font-weight-bold">@Receipt.StoreLocation</MudText>
-                </div>
-                <div class="receipt-row">
-                    <MudText Typo="Typo.body2" Class="muted-text">Fecha:</MudText>
-                    <MudText Typo="Typo.body2" Class="font-weight-bold">
-                        @Receipt.CreatedAt.ToString("dd/MM/yyyy HH:mm")
-                    </MudText>
-                </div>
-            </div>
 
-            <MudDivider Class="my-3" />
+                <div class="receipt-info mb-4">
+                    <div class="d-flex justify-space-between mb-2">
+                        <MudText Typo="Typo.body2" Class="receipt-black-text">Recibo:</MudText>
+                        <MudText Typo="Typo.body2" Class="font-weight-bold receipt-black-text">#@Receipt.ReceiptNumber</MudText>
+                    </div>
+                    <div class="d-flex justify-space-between mb-2">
+                        <MudText Typo="Typo.body2" Class="receipt-black-text">Cliente:</MudText>
+                        <MudText Typo="Typo.body2" Class="font-weight-bold receipt-black-text">@Receipt.CustomerName</MudText>
+                    </div>
+                    <div class="d-flex justify-space-between mb-2">
+                        <MudText Typo="Typo.body2" Class="receipt-black-text">Fecha:</MudText>
+                        <MudText Typo="Typo.body2" Class="font-weight-bold receipt-black-text">@Receipt.CreatedAt.ToString("dd/MM/yyyy hh:mm tt")</MudText>
+                    </div>
+                </div>
 
-            <div class="receipt-items">
-                <MudText Typo="Typo.body2" Class="font-weight-bold mb-2">DETALLE:</MudText>
+                <div class="receipt-dashed-line my-3"></div>
 
-                @foreach (var item in Receipt.Items)
-                {
-                    <div class="receipt-item mb-2">
-                        <div class="d-flex justify-space-between">
-                            <MudText Typo="Typo.body2" Class="font-weight-bold">
-                                @item.ItemName
-                            </MudText>
-                            <MudText Typo="Typo.body2" Class="font-weight-bold">
+                <div class="receipt-items mb-4">
+                    <MudText Typo="Typo.subtitle1" Class="font-weight-black receipt-black-text mb-2">DETALLE DE COMPRA</MudText>
+
+                    @foreach (var item in Receipt.Items)
+                    {
+                        <div class="receipt-item d-flex justify-space-between align-center py-2">
+                            <div class="item-info">
+                                <MudText Typo="Typo.body1" Class="font-weight-bold receipt-black-text">
+                                    @item.ItemName
+                                </MudText>
+                                <MudText Typo="Typo.body2" Class="receipt-black-text opacity-75">
+                                    @item.Category - Cantidad: @item.Quantity
+                                </MudText>
+                            </div>
+                            <MudText Typo="Typo.body1" Class="font-weight-bold receipt-black-text">
                                 $@item.SubTotal.ToString("N2")
                             </MudText>
                         </div>
-                        <MudText Typo="Typo.caption" Class="muted-text">
-                            @item.Category • @item.Quantity ud. x $@item.UnitPrice.ToString("N2")
-                        </MudText>
-                    </div>
-                }
-            </div>
+                    }
+                </div>
 
-            <MudDivider Class="my-3" />
+                <div class="receipt-dashed-line my-3"></div>
 
-            <div class="receipt-total">
-                <div class="d-flex justify-space-between align-center">
-                    <MudText Typo="Typo.h6" Class="font-weight-bold">TOTAL A PAGAR:</MudText>
-                    <MudText Typo="Typo.h5" Class="font-weight-black" Color="Color.Success">
+                <div class="receipt-total d-flex justify-space-between align-center my-4">
+                    <MudText Typo="Typo.h6" Class="font-weight-black receipt-black-text">TOTAL NETO:</MudText>
+                    <MudText Typo="Typo.h5" Class="font-weight-black receipt-black-text">
                         $@Receipt.TotalAmount.ToString("N2")
                     </MudText>
                 </div>
+
+                <div class="receipt-dashed-line my-3"></div>
+
+                <div class="receipt-footer text-center mt-4">
+                    <MudText Typo="Typo.body1" Class="font-weight-bold receipt-black-text mb-1">¡Gracias por tu preferencia!</MudText>
+                    <MudText Typo="Typo.body2" Class="receipt-black-text opacity-75">
+                        Tu detalle completo ha sido enviado.
+                    </MudText>
+                </div>
+
             </div>
-
-            <MudAlert Severity="Severity.Success" Variant="Variant.Outlined" Class="mt-4">
-                ✅ Compra completada exitosamente. ¡Gracias por tu compra!
+        }
+        else
+        {
+            <MudAlert Severity="Severity.Error" Variant="Variant.Filled" Class="rounded-lg">
+                Error: No se pudo procesar la información del recibo.
             </MudAlert>
-        </div>
-
+        }
     </DialogContent>
 
     <DialogActions>
-        <MudButton Variant="Variant.Text" OnClick="Close">
-            Cerrar
-        </MudButton>
-        <MudButton Variant="Variant.Filled"
-                   Color="Color.Success"
-                   StartIcon="@Icons.Custom.Brands.WhatsApp"
-                   Href="@WhatsAppLink"
-                   Target="_blank">
-            Enviar por WhatsApp
-        </MudButton>
+        <div class="d-flex justify-center gap-3 px-6 pb-6 w-100">
+            <MudButton Variant="Variant.Filled"
+                       Color="Color.Success"
+                       StartIcon="@Icons.Custom.Brands.WhatsApp"
+                       Href="@WhatsAppLink"
+                       Target="_blank"
+                       Class="rounded-pill px-4 py-2 font-weight-bold text-transform-none">
+                Enviar por WhatsApp
+            </MudButton>
+
+            <MudButton Variant="Variant.Outlined"
+                       Color="Color.Error"
+                       OnClick="@CloseDialog"
+                       Class="rounded-pill px-4 py-2 font-weight-bold text-transform-none">
+                Cerrar
+            </MudButton>
+        </div>
     </DialogActions>
 </MudDialog>
 
 <style>
+    /* El contenedor exterior que te gusta se queda, mejorando la tipografía interna */
     .receipt-container {
-        background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        background: #ffffff;
         padding: 24px;
         border-radius: 12px;
-        font-family: 'Courier New', monospace;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        max-width: 420px;
+        margin: 0 auto;
     }
 
-    .receipt-header {
-        text-align: center;
+    /* Forzar el color negro estricto a las letras interiores */
+    .receipt-black-text {
+        color: #111111 !important;
     }
 
-    .receipt-details {
-        background: white;
-        padding: 12px;
-        border-radius: 8px;
-        margin-bottom: 12px;
+    /* Opacidad sutil para descripciones sin perder el color negro */
+    .opacity-75 {
+        opacity: 0.75;
     }
 
-    .receipt-row {
-        display: flex;
-        justify-content: space-between;
-        padding: 6px 0;
-        border-bottom: 1px dotted #e0e0e0;
+    .tracking-wide {
+        letter-spacing: 1px;
     }
 
-    .receipt-items {
-        background: white;
-        padding: 12px;
-        border-radius: 8px;
-        max-height: 300px;
-        overflow-y: auto;
+    /* Separador estilo ticket real */
+    .receipt-dashed-line {
+        border-top: 2px dashed #222222;
+        height: 0;
+        width: 100%;
     }
 
     .receipt-item {
-        padding: 8px;
-        border-left: 3px solid #667eea;
-        background: #f9f9f9;
-        border-radius: 4px;
+        border-bottom: 1px solid #eeeeee;
     }
 
+        .receipt-item:last-child {
+            border-bottom: none;
+        }
+
+    .item-info {
+        flex: 1;
+    }
+
+    /* Resaltador del total limpio sin fondos grises opacos */
     .receipt-total {
-        background: white;
+        background: #f9f9f9;
         padding: 16px;
         border-radius: 8px;
-    }
-
-    .muted-text {
-        color: #757575;
+        border: 1px solid #111111;
     }
 </style>
 
 @code {
     [Parameter]
-    public ReceiptDto Receipt { get; set; } = null!;
+    public ReceiptDto? Receipt { get; set; }
 
     [Parameter]
-    public string WhatsAppLink { get; set; } = "";
+    public string WhatsAppLink { get; set; } = string.Empty;
 
-    private void Close()
+    // 🚀 CORREGIDO PARA MUDBLAZOR v8: Usamos IMudDialogInstance
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    private void CloseDialog()
     {
-        DialogResult.Ok(true);
+        // Se ejecuta el cierre nativo de la v8 perfectamente
+        MudDialog.Close();
+    }
+
+    private void ShareReceipt()
+    {
+        // lógica futura
     }
 }

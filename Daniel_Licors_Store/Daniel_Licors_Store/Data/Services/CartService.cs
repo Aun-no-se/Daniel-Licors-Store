@@ -372,10 +372,26 @@ public class CartService : ICartService
     public async Task<ReceiptDto> GenerateReceiptAsync(string userId, bool selectedOnly = false)
     {
         if (string.IsNullOrWhiteSpace(userId))
-            throw new Exception("UserId inválido en CartService");
+        {
+            _logger.LogWarning("Intento de generar recibo con UserId nulo o vacío.");
+            return null!;
+        }
 
         try
         {
+            // 1. Buscamos el email usando 'UserId'
+            var userEmail = await _context.Users
+                .Where(u => u.UserId == userId)
+                .Select(u => u.Email)
+                .FirstOrDefaultAsync();
+
+            string customerDisplayName = userEmail ?? "Cliente Registrado";
+
+            // 2. SOLUCIÓN DEFINITIVA: Forzar UTC-4 exacto matemáticamente (Evita cambios por horario de verano)
+            DateTimeOffset utcNow = DateTimeOffset.UtcNow;
+            DateTimeOffset drOffset = utcNow.ToOffset(TimeSpan.FromHours(-4));
+            DateTime localDateTime = drOffset.DateTime; // Esta es la hora exacta fija de RD (contiene nativamente AM/PM)
+
             var cart = await _context.Carts
                 .Include(c => c.CartItems).ThenInclude(ci => ci.Product)
                 .Include(c => c.CartCombos).ThenInclude(cc => cc.Combo)
@@ -386,12 +402,13 @@ public class CartService : ICartService
                 throw new InvalidOperationException("Carrito no encontrado");
 
             var cartView = MapToCartViewDto(cart);
-            
+
             var receipt = new ReceiptDto
             {
-                ReceiptNumber = $"REC-{DateTime.UtcNow:yyyyMMddHHmmss}-{userId.Substring(0, 4)}",
-                CreatedAt = DateTime.UtcNow,
-                CustomerName = userId,
+                // Usamos la hora fija de UTC-4 tanto para el número como para la fecha expuesta
+                ReceiptNumber = $"REC-{localDateTime:yyyyMMddHHmmss}-{userId.Substring(0, 4)}",
+                CreatedAt = localDateTime, // El DTO recibe la hora local con su AM/PM correspondiente
+                CustomerName = customerDisplayName,
                 StoreLocation = cart.Store.Name
             };
 
@@ -467,38 +484,44 @@ public class CartService : ICartService
     {
         var result = new CartViewDto { CartId = cart.CartId };
 
-        // Mapear productos
+        // ✅ EXPANDIR PRODUCTOS: Si Quantity > 1, crear múltiples items
         foreach (var item in cart.CartItems)
         {
-            result.Products.Add(new CartItemDisplayDto
+            for (int i = 0; i < item.Quantity; i++)  // ✅ Crear uno por cada unidad
             {
-                CartItemId = item.CartItemId,
-                ProductId = item.ProductId,
-                ProductName = item.Product.Name,
-                ProductImage = item.Product.ImageUrl,
-                Category = "Producto",
-                Quantity = item.Quantity,
-                UnitPrice = item.UnitPrice,
-                SubTotal = item.SubTotal,
-                IsSelected = false
-            });
+                result.Products.Add(new CartItemDisplayDto
+                {
+                    CartItemId = item.CartItemId,  // Mismo ID, pero múltiples filas
+                    ProductId = item.ProductId,
+                    ProductName = item.Product.Name,
+                    ProductImage = item.Product.ImageUrl,
+                    Category = "Producto",
+                    Quantity = 1,  // ✅ Cada item tiene cantidad 1
+                    UnitPrice = item.UnitPrice,
+                    SubTotal = item.UnitPrice,  // SubTotal de 1 unidad
+                    IsSelected = false
+                });
+            }
         }
 
-        // Mapear combos
+        // ✅ EXPANDIR COMBOS: Igual que productos
         foreach (var item in cart.CartCombos)
         {
-            result.Combos.Add(new CartComboDisplayDto
+            for (int i = 0; i < item.Quantity; i++)
             {
-                CartComboId = item.CartComboId,
-                ComboId = item.ComboId,
-                ComboName = item.Combo.Name,
-                ComboImage = item.Combo.ImageUrl,
-                Category = "Combo",
-                Quantity = item.Quantity,
-                UnitPrice = item.UnitPrice,
-                SubTotal = item.SubTotal,
-                IsSelected = false
-            });
+                result.Combos.Add(new CartComboDisplayDto
+                {
+                    CartComboId = item.CartComboId,
+                    ComboId = item.ComboId,
+                    ComboName = item.Combo.Name,
+                    ComboImage = item.Combo.ImageUrl,
+                    Category = "Combo",
+                    Quantity = 1,  // ✅ Cada item tiene cantidad 1
+                    UnitPrice = item.UnitPrice,
+                    SubTotal = item.UnitPrice,
+                    IsSelected = false
+                });
+            }
         }
 
         return result;

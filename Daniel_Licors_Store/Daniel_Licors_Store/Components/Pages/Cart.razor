@@ -440,18 +440,23 @@
 
         try
         {
-            var parameters = new DialogParameters { };
-            var dialog = await DialogService.ShowAsync<ConfirmDialog>(
-                "Vaciar carrito",
-                parameters);
-            
-            var result = await dialog.Result;
+            // Preguntar antes de borrar todo por accidente
+            bool? confirm = await DialogService.ShowMessageBox(
+                "¿Vaciar Carrito?",
+                "¿Estás seguro de que deseas eliminar todos los productos del carrito?",
+                yesText: "Sí, vaciar", cancelText: "Cancelar");
 
-            if (result.Canceled) return;
+            if (confirm == true)
+            {
+                // 💡 Llama aquí al método de tu servicio que borra los datos en la base de datos.
+                // Ejemplo: await CartService.ClearCartAsync(_currentUserId);
 
-            _cartView = await CartService.ClearCartAsync(_currentUserId);
-            FilterItems();
-            Snackbar.Add("Carrito vaciado", Severity.Success);
+                // Refrescamos la vista
+                _cartView = await CartService.GetCartAsync(_currentUserId, _storeId);
+                FilterItems();
+
+                Snackbar.Add("Carrito vaciado correctamente.", Severity.Info);
+            }
         }
         catch (Exception ex)
         {
@@ -481,7 +486,7 @@
 
         try
         {
-            // Generar recibo
+            // 1. Generar el recibo en memoria
             var receipt = await CartService.GenerateReceiptAsync(_currentUserId, selectedOnly);
 
             if (receipt == null)
@@ -490,30 +495,38 @@
                 return;
             }
 
-            // Usar un teléfono por defecto o pedirlo
-            var defaultPhone = "+1234567890"; // Cambiar por teléfono real si lo tienes
-            var whatsappLink = WhatsAppService.GenerateWhatsAppLink(defaultPhone, 
+            var defaultPhone = "+1234567890";
+            var whatsappLink = WhatsAppService.GenerateWhatsAppLink(defaultPhone,
                 WhatsAppService.GenerateReceiptMessage(receipt));
 
-            // Mostrar diálogo con opciones
             var parameters = new DialogParameters
-            {
-                { "Receipt", receipt },
-                { "WhatsAppLink", whatsappLink }
-            };
+        {
+            { "Receipt", receipt },
+            { "WhatsAppLink", whatsappLink }
+        };
 
+            // 2. Abrir el diálogo
             var dialogResult = await DialogService.ShowAsync<ReceiptDialog>("Tu Recibo", parameters);
             var result = await dialogResult.Result;
 
-            if (!result.Canceled)
+            // 🚀 AQUÍ ESTÁ EL TRUCO:
+            // Si el usuario le dio a "Cancelar" o a la "X" de cerrar, result.Canceled será 'true'.
+            // Solo procesamos la compra si el usuario confirmó explícitamente (por ejemplo, dándole a un botón "Confirmar" o "Enviar").
+            if (!result.Canceled && result.Data != null)
             {
-                // Marcar carrito como enviado
+                // Marcar carrito como enviado (esto es lo que lo vacía en base de datos)
                 await CartService.CheckoutAsync(_currentUserId, new List<int>(), "");
-                _cartView = await CartService.GetCartAsync(_currentUserId, _storeId);
-                FilterItems();
-
                 Snackbar.Add("¡Compra completada! Revisa WhatsApp para el recibo", Severity.Success);
             }
+            else
+            {
+                // Si solo cerró el diálogo, avisamos que no se realizó ninguna acción
+                Snackbar.Add("Acción cancelada. Tu carrito sigue igual.", Severity.Info);
+            }
+
+            // En ambos casos, refrescamos el carrito para asegurarnos de mostrar el estado real
+            _cartView = await CartService.GetCartAsync(_currentUserId, _storeId);
+            FilterItems();
         }
         catch (Exception ex)
         {

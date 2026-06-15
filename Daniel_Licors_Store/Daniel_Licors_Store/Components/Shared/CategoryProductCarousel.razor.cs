@@ -6,6 +6,8 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
 using MudBlazor;
 using Daniel_Licors_Store.Components.Shared;
+using Microsoft.AspNetCore.Components.Authorization;
+using Daniel_Licors_Store.Data.Services;
 
 namespace Daniel_Licors_Store.Components.Shared
 {
@@ -24,13 +26,59 @@ namespace Daniel_Licors_Store.Components.Shared
         [Inject] private IProductService ProductService { get; set; } = default!;
         [Inject] private ProductStateService ProductState { get; set; } = default!;
 
+        [Inject] private ICartService CartService { get; set; } = default!;
+        [Inject] private AuthenticationStateProvider AuthStateProvider { get; set; } = default!;
+        [Inject] private ISnackbar Snackbar { get; set; } = default!;
+
         private ElementReference swiperElement;
         private bool _swiperInicializado = false;
         private int _previousProductsCount = -1;
         private bool _disposed = false;
 
         protected void VerProducto(int productId) => Nav.NavigateTo($"/producto/{productId}");
-        protected void AgregarAlCarrito(int productId) { /* futuro carrito */ }
+        protected async Task AgregarAlCarrito(int productId)
+        {
+            try
+            {
+                var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+                var user = authState.User;
+
+                if (user.Identity == null || !user.Identity.IsAuthenticated)
+                {
+                    Snackbar.Add("Debes iniciar sesión para añadir productos al carrito", Severity.Warning);
+                    Nav.NavigateTo("/login");
+                    return;
+                }
+
+                var userId =
+                    user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+                    ?? user.FindFirst("sub")?.Value
+                    ?? user.FindFirst("userId")?.Value
+                    ?? string.Empty;
+
+                if (string.IsNullOrWhiteSpace(userId))
+                {
+                    Snackbar.Add("No se pudo identificar tu usuario", Severity.Error);
+                    return;
+                }
+
+                // Store fijo por ahora (igual que en Cart.razor)
+                int storeId = 1;
+
+                await CartService.AddProductToCartAsync(
+                    userId,
+                    productId,
+                    1,          // cantidad inicial
+                    storeId
+                );
+
+                Snackbar.Add("Producto añadido al carrito", Severity.Success);
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Error al añadir al carrito: {ex.Message}", Severity.Error);
+            }
+        }
 
         protected override async Task OnParametersSetAsync()
         {
@@ -118,7 +166,6 @@ namespace Daniel_Licors_Store.Components.Shared
             }
             catch
             {
-                // Si el circuit ya cerró, no hay nada que hacer
             }
         }
     }
