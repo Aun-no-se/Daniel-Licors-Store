@@ -1,0 +1,501 @@
+/* ═══════════════════════════════════════════
+   STOCK GENERAL - ESTILOS
+   Daniel Liquor Store · MudBlazor
+════════════════════════════════════════════ */
+
+/* ── HERO ─────────────────────────────────── */
+.sg-hero {
+    background: linear-gradient(135deg, #1a0a0a 0%, #2d0a0a 50%, #1a0a0a 100%);
+    border-bottom: 2px solid rgba(255,23,68,0.4);
+    padding: 20px 24px 18px;
+    margin-bottom: 0;
+}
+
+.sg-hero-inner {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.sg-hero-icon {
+    width: 50px;
+    height: 50px;
+    background: rgba(255,23,68,0.15);
+    border: 1px solid rgba(255,23,68,0.3);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.sg-title {
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: #fff;
+    margin: 0;
+    line-height: 1.2;
+}
+
+.sg-subtitle {
+    font-size: 0.78rem;
+    color: rgba(255,255,255,0.5);
+    margin: 2px 0 0;
+}
+
+/* ── LOADER ───────────────────────────────── */
+.sg-loader {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 80px 20px;
+    gap: 16px;
+}
+
+.sg-loader-txt {
+    color: rgba(255,255,255,0.5);
+    font-size: 0.9rem;
+}
+
+/* ── KPI CARDS ────────────────────────────── */
+.sg-kpis {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    padding: 16px 16px 8px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.sg-kpi-card {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 12px;
+    padding: 14px 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    transition: transform .2s, border-color .2s;
+}
+
+.sg-kpi-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(255,23,68,0.35);
+}
+
+.sg-kpi-card.sg-kpi-warn {
+    border-color: rgba(255,23,68,0.4);
+    background: rgba(255,23,68,0.07);
+}
+
+.sg-kpi-icon {
+    font-size: 1.6rem !important;
+}
+
+.sg-kpi-value {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: #fff;
+    line-height: 1.1;
+}
+
+.sg-kpi-label {
+    font-size: 0.68rem;
+    color: rgba(255,255,255,0.5);
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    text-align: center;
+}
+
+/* ── TABS WRAP ────────────────────────────── */
+.sg-tabs-wrap {
+    max-width: 1200px;
+    margin: 12px auto 0;
+    padding: 0 12px 24px;
+}
+
+.sg-tab-panel {
+    padding-top: 16px !important;
+    background: transparent !important;
+}
+
+/* ── FILTERS ──────────────────────────────── */
+.sg-filters {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+}
+
+.sg-search {
+    flex: 1;
+    min-width: 180px;
+}
+
+.sg-cat-select {
+    width: 160px;
+    flex-shrink: 0;
+}
+
+/* ── DESKTOP TABLE ────────────────────────── */
+.sg-table-wrap {
+    overflow-x: auto;
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.08);
+}
+
+.sg-table {
+    background: rgba(255,255,255,0.03) !important;
+}
+
+.sg-thumb {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    object-fit: cover;
+    border: 1px solid rgba(255,255,255,0.1);
+}
+
+.sg-thumb-placeholder {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.08);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.sg-prod-name {
+    font-weight: 600;
+    color: #f0f0f0;
+    font-size: 0.88rem;
+}
+
+.sg-aging {
+    font-size: 0.72rem;
+    color: rgba(255,193,7,0.85);
+    background: rgba(255,193,7,0.1);
+    border-radius: 4px;
+    padding: 1px 5px;
+    margin-left: 5px;
+}
+
+.sg-brand {
+    color: rgba(255,255,255,0.55);
+    font-size: 0.82rem;
+}
+
+.sg-price {
+    font-weight: 700;
+    color: #4CAF50;
+    font-size: 0.9rem;
+}
+
+.sg-stock-cell {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 42px;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-weight: 700;
+    font-size: 0.9rem;
+}
+
+.sg-stock-ok   { background: rgba(76,175,80,0.15); color: #4CAF50; border: 1px solid rgba(76,175,80,0.3); }
+.sg-stock-low  { background: rgba(255,152,0,0.15); color: #FF9800; border: 1px solid rgba(255,152,0,0.3); }
+.sg-stock-zero { background: rgba(255,23,68,0.15);  color: #FF1744; border: 1px solid rgba(255,23,68,0.3); }
+
+/* row tinting */
+::deep .sg-row-agotado td { background: rgba(255,23,68,0.04) !important; }
+::deep .sg-row-low td     { background: rgba(255,152,0,0.04) !important; }
+
+/* ── MOBILE CARDS ─────────────────────────── */
+.sg-mobile-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.sg-mobile-card {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 12px;
+    display: flex;
+    gap: 12px;
+    padding: 12px;
+    transition: border-color .2s;
+}
+
+.sg-mobile-card:hover { border-color: rgba(255,23,68,0.3); }
+
+.sg-card-agotado {
+    border-color: rgba(255,23,68,0.25) !important;
+    background: rgba(255,23,68,0.04) !important;
+}
+
+.sg-mc-left { flex-shrink: 0; }
+
+.sg-mc-img {
+    width: 56px;
+    height: 56px;
+    border-radius: 10px;
+    object-fit: cover;
+    border: 1px solid rgba(255,255,255,0.1);
+    display: block;
+}
+
+.sg-mc-placeholder {
+    background: rgba(255,255,255,0.05);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.sg-mc-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+.sg-mc-name {
+    font-weight: 700;
+    color: #f0f0f0;
+    font-size: 0.9rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.sg-mc-meta {
+    font-size: 0.75rem;
+    color: rgba(255,255,255,0.45);
+}
+
+.sg-mc-brand { margin-left: 4px; }
+
+.sg-mc-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 4px;
+}
+
+.sg-mc-price {
+    font-weight: 700;
+    color: #4CAF50;
+    font-size: 0.9rem;
+}
+
+.sg-mc-stock {
+    font-size: 0.78rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 6px;
+}
+
+/* ── PROMOTIONS GRID ──────────────────────── */
+.sg-promo-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 14px;
+}
+
+.sg-promo-card {
+    background: rgba(156,33,176,0.07);
+    border: 1px solid rgba(156,33,176,0.22);
+    border-radius: 14px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    transition: transform .2s, border-color .2s;
+}
+
+.sg-promo-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(156,33,176,0.45);
+}
+
+.sg-promo-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.sg-promo-title-wrap { flex: 1; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+
+.sg-promo-title {
+    font-weight: 700;
+    color: #e0e0e0;
+    font-size: 0.95rem;
+}
+
+.sg-promo-desc {
+    font-size: 0.8rem;
+    color: rgba(255,255,255,0.5);
+    margin: 0;
+    line-height: 1.4;
+}
+
+.sg-promo-dates {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.78rem;
+    color: rgba(255,255,255,0.45);
+    flex-wrap: wrap;
+}
+
+.sg-promo-products {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    border-top: 1px solid rgba(255,255,255,0.06);
+    padding-top: 10px;
+}
+
+.sg-promo-prod-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.82rem;
+    color: rgba(255,255,255,0.7);
+}
+
+.sg-promo-special-price {
+    margin-left: auto;
+    font-weight: 700;
+    color: #9C27B0;
+    font-size: 0.85rem;
+}
+
+/* ── COMBOS GRID ──────────────────────────── */
+.sg-combo-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 14px;
+}
+
+.sg-combo-card {
+    background: rgba(33,150,243,0.06);
+    border: 1px solid rgba(33,150,243,0.2);
+    border-radius: 14px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    transition: transform .2s, border-color .2s;
+}
+
+.sg-combo-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(33,150,243,0.4);
+}
+
+.sg-combo-img-wrap {
+    height: 130px;
+    overflow: hidden;
+}
+
+.sg-combo-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.sg-combo-img-placeholder {
+    height: 110px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(33,150,243,0.08);
+}
+
+.sg-combo-body {
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+}
+
+.sg-combo-name {
+    font-weight: 700;
+    color: #f0f0f0;
+    font-size: 0.95rem;
+}
+
+.sg-combo-desc {
+    font-size: 0.79rem;
+    color: rgba(255,255,255,0.5);
+    margin: 0;
+    line-height: 1.4;
+}
+
+.sg-combo-price-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.sg-combo-price {
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: #4CAF50;
+}
+
+.sg-combo-expiry {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.76rem;
+    color: rgba(255,255,255,0.4);
+}
+
+.sg-combo-items {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    border-top: 1px solid rgba(255,255,255,0.06);
+    padding-top: 8px;
+}
+
+.sg-combo-item {
+    display: flex;
+    align-items: center;
+    font-size: 0.79rem;
+    color: rgba(255,255,255,0.65);
+}
+
+/* ── EMPTY STATE ──────────────────────────── */
+.sg-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
+    gap: 12px;
+    color: rgba(255,255,255,0.4);
+    font-size: 0.9rem;
+}
+
+/* ── RESPONSIVE ───────────────────────────── */
+@media (min-width: 600px) {
+    .sg-kpis {
+        grid-template-columns: repeat(6, 1fr);
+    }
+    .sg-hero { padding: 24px 32px 20px; }
+    .sg-tabs-wrap { padding: 0 20px 32px; }
+    .sg-kpis { padding: 20px 20px 10px; }
+}
+
+@media (min-width: 960px) {
+    .sg-title { font-size: 1.6rem; }
+}

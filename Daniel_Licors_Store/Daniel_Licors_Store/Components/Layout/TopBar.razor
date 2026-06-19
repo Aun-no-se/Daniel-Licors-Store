@@ -62,6 +62,12 @@
                                              Icon="@Icons.Material.Filled.LocalOffer">
                                     Promociones
                                 </MudMenuItem>
+
+                                <!-- ★ STOCK GENERAL (móvil) -->
+                                <MudMenuItem OnClick="@(() => Nav.NavigateTo("/admin/stock"))"
+                                             Icon="@Icons.Material.Filled.Inventory2">
+                                    Stock General
+                                </MudMenuItem>
                             </Authorized>
                         </AuthorizeView>
 
@@ -150,6 +156,12 @@
                             <MudMenuItem OnClick="@(() => Nav.NavigateTo("/admin/promociones"))">
                                 Promociones
                             </MudMenuItem>
+                            <!-- ★ STOCK GENERAL (desktop - empleado) -->
+                            <MudDivider />
+                            <MudMenuItem OnClick="@(() => Nav.NavigateTo("/admin/stock"))"
+                                         Icon="@Icons.Material.Filled.Inventory2">
+                                Stock General
+                            </MudMenuItem>
                         </ChildContent>
                     </MudMenu>
 
@@ -190,6 +202,12 @@
                             </MudMenuItem>
                             <MudMenuItem OnClick="@(() => Nav.NavigateTo("/admin/promociones"))">
                                 Promociones
+                            </MudMenuItem>
+                            <!-- ★ STOCK GENERAL (desktop - admin) -->
+                            <MudDivider />
+                            <MudMenuItem OnClick="@(() => Nav.NavigateTo("/admin/stock"))"
+                                         Icon="@Icons.Material.Filled.Inventory2">
+                                Stock General
                             </MudMenuItem>
                         </ChildContent>
                     </MudMenu>

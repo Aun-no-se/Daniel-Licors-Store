@@ -1,0 +1,418 @@
+@page "/admin/stock"
+@using Daniel_Licors_Store.Data.Services
+@using Daniel_Licors_Store.Models.Product
+@using MudBlazor
+@attribute [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin,Empleado")]
+@inject StockGeneralService StockSvc
+
+<PageTitle>Stock General · Daniel Liquor Store</PageTitle>
+
+<!-- ═══════════════════════════════════════════
+     HERO HEADER
+════════════════════════════════════════════════ -->
+<div class="sg-hero">
+    <div class="sg-hero-inner">
+        <div class="sg-hero-icon">
+            <MudIcon Icon="@Icons.Material.Filled.Inventory2" Style="font-size:2.2rem; color:#FF1744;" />
+        </div>
+        <div>
+            <h1 class="sg-title">Stock General</h1>
+            <p class="sg-subtitle">Vista completa del inventario · Sucursal Haina</p>
+        </div>
+        <MudSpacer />
+        <MudIconButton Icon="@Icons.Material.Filled.Refresh"
+                       Style="color:rgba(255,255,255,0.7)"
+                       Title="Actualizar"
+                       OnClick="RecargarTodo" />
+    </div>
+</div>
+
+@if (_loading)
+{
+    <div class="sg-loader">
+        <MudProgressCircular Color="Color.Error" Indeterminate="true" Size="Size.Large" />
+        <p class="sg-loader-txt">Cargando inventario…</p>
+    </div>
+}
+else
+{
+    <!-- ═══════════════════════════════
+         KPI CARDS
+    ════════════════════════════════════ -->
+    <div class="sg-kpis">
+        <div class="sg-kpi-card">
+            <MudIcon Icon="@Icons.Material.Filled.Liquor" Class="sg-kpi-icon" Style="color:#FF1744" />
+            <span class="sg-kpi-value">@_summary.TotalProductos</span>
+            <span class="sg-kpi-label">Productos</span>
+        </div>
+        <div class="sg-kpi-card">
+            <MudIcon Icon="@Icons.Material.Filled.Inventory" Class="sg-kpi-icon" Style="color:#FF9800" />
+            <span class="sg-kpi-value">@_summary.TotalUnidades</span>
+            <span class="sg-kpi-label">Unidades</span>
+        </div>
+        <div class="sg-kpi-card @(_summary.ProductosSinStock > 0 ? "sg-kpi-warn" : "")">
+            <MudIcon Icon="@Icons.Material.Filled.RemoveShoppingCart" Class="sg-kpi-icon"
+                     Style="@(_summary.ProductosSinStock > 0 ? "color:#FF1744" : "color:#4CAF50")" />
+            <span class="sg-kpi-value">@_summary.ProductosSinStock</span>
+            <span class="sg-kpi-label">Sin Stock</span>
+        </div>
+        <div class="sg-kpi-card">
+            <MudIcon Icon="@Icons.Material.Filled.LocalOffer" Class="sg-kpi-icon" Style="color:#9C27B0" />
+            <span class="sg-kpi-value">@_summary.TotalPromociones</span>
+            <span class="sg-kpi-label">Promociones</span>
+        </div>
+        <div class="sg-kpi-card">
+            <MudIcon Icon="@Icons.Material.Filled.CardGiftcard" Class="sg-kpi-icon" Style="color:#2196F3" />
+            <span class="sg-kpi-value">@_summary.TotalCombos</span>
+            <span class="sg-kpi-label">Combos</span>
+        </div>
+        <div class="sg-kpi-card">
+            <MudIcon Icon="@Icons.Material.Filled.Category" Class="sg-kpi-icon" Style="color:#00BCD4" />
+            <span class="sg-kpi-value">@_summary.CategoriasActivas</span>
+            <span class="sg-kpi-label">Categorías</span>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════
+         TABS
+    ════════════════════════════════════ -->
+    <div class="sg-tabs-wrap">
+        <MudTabs @bind-ActivePanelIndex="_tabIndex"
+                 Color="Color.Error"
+                 Rounded="true"
+                 Border="true"
+                 ApplyEffectsToContainer="true"
+                 PanelClass="sg-tab-panel">
+
+            <!-- ── PRODUCTOS ──────────────────── -->
+            <MudTabPanel Text="Bebidas" Icon="@Icons.Material.Filled.Liquor">
+
+                <!-- Filtros -->
+                <div class="sg-filters">
+                    <MudTextField @bind-Value="_search"
+                                  Placeholder="Buscar producto o marca…"
+                                  Adornment="Adornment.Start"
+                                  AdornmentIcon="@Icons.Material.Filled.Search"
+                                  Variant="Variant.Outlined"
+                                  Margin="Margin.Dense"
+                                  Class="sg-search"
+                                  Clearable="true"
+                                  DebounceInterval="300"
+                                  OnDebounceIntervalElapsed="FiltrarProductos" />
+
+                    <MudSelect T="int?"
+                               Value="_catFilter"
+                               ValueChanged="OnCatChanged"
+                               Label="Categoría"
+                               Variant="Variant.Outlined"
+                               Margin="Margin.Dense"
+                               Class="sg-cat-select"
+                               Clearable="true">
+                        <MudSelectItem T="int?" Value="null">Todas</MudSelectItem>
+                        @foreach (var cat in _categorias)
+                        {
+                            <MudSelectItem T="int?" Value="cat.Id">@cat.Name</MudSelectItem>
+                        }
+                    </MudSelect>
+                </div>
+
+                <!-- Tabla productos -->
+                @if (_productosFiltered.Count == 0)
+                {
+                    <div class="sg-empty">
+                        <MudIcon Icon="@Icons.Material.Filled.SearchOff" Style="font-size:3rem;color:#555" />
+                        <p>No se encontraron productos.</p>
+                    </div>
+                }
+                else
+                {
+                    <!-- DESKTOP TABLE -->
+                    <MudHidden Breakpoint="Breakpoint.SmAndDown">
+                        <div class="sg-table-wrap">
+                            <MudTable Items="_productosFiltered"
+                                      Dense="true"
+                                      Hover="true"
+                                      Breakpoint="Breakpoint.None"
+                                      Class="sg-table"
+                                      RowClassFunc="@RowClass"
+                                      SortLabel="Ordenar">
+                                <HeaderContent>
+                                    <MudTh><MudTableSortLabel SortBy="new Func<StockProductRow,object>(x=>x.Name)">Producto</MudTableSortLabel></MudTh>
+                                    <MudTh>Categoría</MudTh>
+                                    <MudTh>Marca</MudTh>
+                                    <MudTh><MudTableSortLabel SortBy="new Func<StockProductRow,object>(x=>x.Price)">Precio</MudTableSortLabel></MudTh>
+                                    <MudTh><MudTableSortLabel SortBy="new Func<StockProductRow,object>(x=>x.Stock)">Stock</MudTableSortLabel></MudTh>
+                                    <MudTh>Estado</MudTh>
+                                    <MudTh>Premium</MudTh>
+                                </HeaderContent>
+                                <RowTemplate>
+                                    <MudTd>
+                                        <div style="display:flex;align-items:center;gap:10px">
+                                            @if (!string.IsNullOrEmpty(context.ImageUrl))
+                                            {
+                                                <img src="@context.ImageUrl" class="sg-thumb" alt="@context.Name" />
+                                            }
+                                            else
+                                            {
+                                                <div class="sg-thumb-placeholder">
+                                                    <MudIcon Icon="@Icons.Material.Filled.Liquor" Style="color:#555;font-size:1.2rem" />
+                                                </div>
+                                            }
+                                            <span class="sg-prod-name">@context.Name
+                                                @if (context.AgingYears.HasValue)
+                                                {
+                                                    <span class="sg-aging"> @context.AgingYears años</span>
+                                                }
+                                            </span>
+                                        </div>
+                                    </MudTd>
+                                    <MudTd><MudChip T="string" Size="Size.Small" Variant="Variant.Outlined" Color="Color.Default">@context.Category</MudChip></MudTd>
+                                    <MudTd><span class="sg-brand">@(context.Brand ?? "—")</span></MudTd>
+                                    <MudTd><span class="sg-price">RD$@context.Price.ToString("N2")</span></MudTd>
+                                    <MudTd>
+                                        <div class="sg-stock-cell @(context.Stock == 0 ? "sg-stock-zero" : context.Stock <= 5 ? "sg-stock-low" : "sg-stock-ok")">
+                                            @context.Stock
+                                        </div>
+                                    </MudTd>
+                                    <MudTd>
+                                        @if (context.IsAvailable)
+                                        {
+                                            <MudChip T="string" Size="Size.Small" Color="Color.Success" Icon="@Icons.Material.Filled.CheckCircle">Disponible</MudChip>
+                                        }
+                                        else
+                                        {
+                                            <MudChip T="string" Size="Size.Small" Color="Color.Error" Icon="@Icons.Material.Filled.Cancel">Agotado</MudChip>
+                                        }
+                                    </MudTd>
+                                    <MudTd>
+                                        @if (context.IsPremium)
+                                        {
+                                            <MudIcon Icon="@Icons.Material.Filled.Star" Style="color:#FFD700" Title="Premium" />
+                                        }
+                                    </MudTd>
+                                </RowTemplate>
+                                <PagerContent>
+                                    <MudTablePager PageSizeOptions="new int[]{10,25,50}" />
+                                </PagerContent>
+                            </MudTable>
+                        </div>
+                    </MudHidden>
+
+                    <!-- MOBILE CARDS -->
+                    <MudHidden Breakpoint="Breakpoint.MdAndUp">
+                        <div class="sg-mobile-list">
+                            @foreach (var p in _productosFiltered)
+                            {
+                                <div class="sg-mobile-card @(p.Stock == 0 ? "sg-card-agotado" : "")">
+                                    <div class="sg-mc-left">
+                                        @if (!string.IsNullOrEmpty(p.ImageUrl))
+                                        {
+                                            <img src="@p.ImageUrl" class="sg-mc-img" alt="@p.Name" />
+                                        }
+                                        else
+                                        {
+                                            <div class="sg-mc-img sg-mc-placeholder">
+                                                <MudIcon Icon="@Icons.Material.Filled.Liquor" Style="color:#444;font-size:1.5rem" />
+                                            </div>
+                                        }
+                                    </div>
+                                    <div class="sg-mc-body">
+                                        <div class="sg-mc-name">
+                                            @p.Name
+                                            @if (p.IsPremium)
+                                            {
+                                                <MudIcon Icon="@Icons.Material.Filled.Star" Style="color:#FFD700;font-size:1rem;margin-left:4px" />
+                                            }
+                                        </div>
+                                        <div class="sg-mc-meta">
+                                            <span class="sg-mc-cat">@p.Category</span>
+                                            @if (!string.IsNullOrEmpty(p.Brand))
+                                            {
+                                                <span class="sg-mc-brand">· @p.Brand</span>
+                                            }
+                                        </div>
+                                        <div class="sg-mc-footer">
+                                            <span class="sg-mc-price">RD$@p.Price.ToString("N2")</span>
+                                            <span class="sg-mc-stock @(p.Stock == 0 ? "sg-stock-zero" : p.Stock <= 5 ? "sg-stock-low" : "sg-stock-ok")">
+                                                @(p.Stock == 0 ? "Agotado" : $"{p.Stock} uds")
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </MudHidden>
+                }
+            </MudTabPanel>
+
+            <!-- ── PROMOCIONES ─────────────────── -->
+            <MudTabPanel Text="Promociones" Icon="@Icons.Material.Filled.LocalOffer">
+                @if (_promos.Count == 0)
+                {
+                    <div class="sg-empty">
+                        <MudIcon Icon="@Icons.Material.Filled.LocalOffer" Style="font-size:3rem;color:#555" />
+                        <p>No hay promociones activas.</p>
+                    </div>
+                }
+                else
+                {
+                    <div class="sg-promo-grid">
+                        @foreach (var promo in _promos)
+                        {
+                            <div class="sg-promo-card">
+                                <div class="sg-promo-header">
+                                    <MudIcon Icon="@Icons.Material.Filled.LocalOffer" Style="color:#9C27B0;font-size:1.4rem" />
+                                    <div class="sg-promo-title-wrap">
+                                        <span class="sg-promo-title">@promo.Title</span>
+                                        @if (!string.IsNullOrEmpty(promo.PromotionType))
+                                        {
+                                            <MudChip T="string" Size="Size.Small" Color="Color.Secondary" Class="ml-1">@promo.PromotionType</MudChip>
+                                        }
+                                    </div>
+                                </div>
+                                @if (!string.IsNullOrEmpty(promo.Description))
+                                {
+                                    <p class="sg-promo-desc">@promo.Description</p>
+                                }
+                                <div class="sg-promo-dates">
+                                    <MudIcon Icon="@Icons.Material.Filled.DateRange" Style="font-size:0.9rem;color:#888" />
+                                    <span>@promo.StartDate.ToString("dd MMM") – @promo.EndDate.ToString("dd MMM yyyy")</span>
+                                    @if (promo.EndDate < DateTime.Now)
+                                    {
+                                        <MudChip T="string" Size="Size.Small" Color="Color.Warning">Vencida</MudChip>
+                                    }
+                                </div>
+                                @if (promo.Products.Any())
+                                {
+                                    <div class="sg-promo-products">
+                                        @foreach (var pp in promo.Products)
+                                        {
+                                            <div class="sg-promo-prod-item">
+                                                <MudIcon Icon="@Icons.Material.Filled.Liquor" Style="font-size:0.9rem;color:#9C27B0" />
+                                                <span>@pp.Name</span>
+                                                @if (pp.SpecialPrice.HasValue)
+                                                {
+                                                    <span class="sg-promo-special-price">RD$@pp.SpecialPrice.Value.ToString("N2")</span>
+                                                }
+                                            </div>
+                                        }
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
+                }
+            </MudTabPanel>
+
+            <!-- ── COMBOS ──────────────────────── -->
+            <MudTabPanel Text="Combos" Icon="@Icons.Material.Filled.CardGiftcard">
+                @if (_combos.Count == 0)
+                {
+                    <div class="sg-empty">
+                        <MudIcon Icon="@Icons.Material.Filled.CardGiftcard" Style="font-size:3rem;color:#555" />
+                        <p>No hay combos activos.</p>
+                    </div>
+                }
+                else
+                {
+                    <div class="sg-combo-grid">
+                        @foreach (var combo in _combos)
+                        {
+                            <div class="sg-combo-card">
+                                @if (!string.IsNullOrEmpty(combo.ImageUrl))
+                                {
+                                    <div class="sg-combo-img-wrap">
+                                        <img src="@combo.ImageUrl" class="sg-combo-img" alt="@combo.Name" />
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="sg-combo-img-placeholder">
+                                        <MudIcon Icon="@Icons.Material.Filled.CardGiftcard" Style="font-size:2.5rem;color:#2196F3" />
+                                    </div>
+                                }
+                                <div class="sg-combo-body">
+                                    <span class="sg-combo-name">@combo.Name</span>
+                                    @if (!string.IsNullOrEmpty(combo.Description))
+                                    {
+                                        <p class="sg-combo-desc">@combo.Description</p>
+                                    }
+                                    <div class="sg-combo-price-row">
+                                        <MudIcon Icon="@Icons.Material.Filled.AttachMoney" Style="color:#4CAF50;font-size:1rem" />
+                                        <span class="sg-combo-price">RD$@combo.ComboPrice.ToString("N2")</span>
+                                    </div>
+                                    @if (combo.EndDate.HasValue)
+                                    {
+                                        <div class="sg-combo-expiry">
+                                            <MudIcon Icon="@Icons.Material.Filled.Timer" Style="font-size:0.8rem;color:#888" />
+                                            <span>Hasta @combo.EndDate.Value.ToString("dd MMM yyyy")</span>
+                                        </div>
+                                    }
+                                    @if (combo.ProductNames.Any())
+                                    {
+                                        <div class="sg-combo-items">
+                                            @foreach (var name in combo.ProductNames)
+                                            {
+                                                <div class="sg-combo-item">
+                                                    <MudIcon Icon="@Icons.Material.Filled.FiberManualRecord" Style="font-size:0.5rem;color:#2196F3;margin-right:5px" />
+                                                    @name
+                                                </div>
+                                            }
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+            </MudTabPanel>
+
+        </MudTabs>
+    </div>
+}
+
+@code {
+    bool _loading = true;
+    int _tabIndex = 0;
+    string? _search;
+    int? _catFilter;
+
+    StockSummary _summary = new();
+    List<StockProductRow> _productos = new();
+    List<StockProductRow> _productosFiltered = new();
+    List<StockPromoRow> _promos = new();
+    List<StockComboRow> _combos = new();
+    List<(string Name, int Id)> _categorias = new();
+
+    protected override async Task OnInitializedAsync() => await RecargarTodo();
+
+    async Task RecargarTodo()
+    {
+        _loading = true;
+        StateHasChanged();
+
+        _summary    = await StockSvc.GetSummaryAsync();
+        _productos  = await StockSvc.GetProductsAsync();
+        _promos     = await StockSvc.GetPromotionsAsync();
+        _combos     = await StockSvc.GetCombosAsync();
+        _categorias = await StockSvc.GetCategoriesAsync();
+
+        _productosFiltered = _productos;
+        _loading = false;
+    }
+
+    void FiltrarProductos()
+    {
+        _productosFiltered = _productos
+            .Where(p => (string.IsNullOrWhiteSpace(_search) ||
+                         p.Name.Contains(_search, StringComparison.OrdinalIgnoreCase) ||
+                         (p.Brand != null && p.Brand.Contains(_search, StringComparison.OrdinalIgnoreCase)))
+                     && (!_catFilter.HasValue || p.CategoryId == _catFilter.Value))
+            .ToList();
+    }
+
+    void OnCatChanged(int? val) { _catFilter = val; FiltrarProductos(); }
+
+    string RowClass(StockProductRow row, int _)
+        => row.Stock == 0 ? "sg-row-agotado" : row.Stock <= 5 ? "sg-row-low" : "";
+}

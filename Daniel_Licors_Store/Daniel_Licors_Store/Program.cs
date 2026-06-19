@@ -64,11 +64,13 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<AdminDashboardService>();
 builder.Services.AddScoped<IComboService, ComboService>();
 builder.Services.AddScoped<IPromotionService, PromotionService>();
+builder.Services.AddScoped<StockGeneralService>();
 builder.Services.AddScoped<ICartService, CartService>();
 builder.Services.AddScoped<IWhatsAppService, WhatsAppService>();
+builder.Services.AddHttpContextAccessor();
 #endregion
 
-builder.Services.AddHttpContextAccessor();
+
 
 #region ===================== LOCAL STORAGE =====================
 builder.Services.AddBlazoredLocalStorage();
