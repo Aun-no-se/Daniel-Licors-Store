@@ -357,7 +357,6 @@ public class CartService : ICartService
         }
     }
 
-    // ── FIX: se agregan ItemId e ItemType a cada ReceiptItemDto ──
     public async Task<ReceiptDto> GenerateReceiptAsync(string userId, bool selectedOnly = false)
     {
         if (string.IsNullOrWhiteSpace(userId))
@@ -375,7 +374,6 @@ public class CartService : ICartService
 
             string customerDisplayName = userEmail ?? "Cliente Registrado";
 
-            // Hora fija UTC-4 (República Dominicana)
             DateTimeOffset utcNow = DateTimeOffset.UtcNow;
             DateTimeOffset drOffset = utcNow.ToOffset(TimeSpan.FromHours(-4));
             DateTime localDateTime = drOffset.DateTime;
@@ -389,6 +387,7 @@ public class CartService : ICartService
             if (cart == null)
                 throw new InvalidOperationException("Carrito no encontrado");
 
+            // Usamos MapToCartViewDto que ahora devuelve UNA card por item con Quantity real
             var cartView = MapToCartViewDto(cart);
 
             var receipt = new ReceiptDto
@@ -399,13 +398,14 @@ public class CartService : ICartService
                 StoreLocation = cart.Store.Name
             };
 
-            // FIX: se poblan ItemId e ItemType para que Cart.razor pueda filtrar por selección
-            foreach (var product in cartView.Products.Where(p => !selectedOnly || p.IsSelected))
+            // selectedOnly se maneja en el frontend con IsSelected;
+            // el servicio genera el recibo COMPLETO y el frontend filtra
+            foreach (var product in cartView.Products)
             {
                 receipt.Items.Add(new ReceiptItemDto
                 {
-                    ItemId = product.CartItemId,  // ← nuevo
-                    ItemType = "product",            // ← nuevo
+                    ItemId = product.CartItemId,
+                    ItemType = "product",
                     ItemName = product.ProductName,
                     Category = "Producto",
                     Quantity = product.Quantity,
@@ -414,12 +414,12 @@ public class CartService : ICartService
                 });
             }
 
-            foreach (var combo in cartView.Combos.Where(c => !selectedOnly || c.IsSelected))
+            foreach (var combo in cartView.Combos)
             {
                 receipt.Items.Add(new ReceiptItemDto
                 {
-                    ItemId = combo.CartComboId,   // ← nuevo
-                    ItemType = "combo",             // ← nuevo
+                    ItemId = combo.CartComboId,
+                    ItemType = "combo",
                     ItemName = combo.ComboName,
                     Category = "Combo",
                     Quantity = combo.Quantity,
@@ -428,7 +428,7 @@ public class CartService : ICartService
                 });
             }
 
-            receipt.TotalAmount = selectedOnly ? cartView.SelectedPrice : cartView.TotalPrice;
+            receipt.TotalAmount = cartView.TotalPrice;
 
             return receipt;
         }
@@ -467,46 +467,41 @@ public class CartService : ICartService
         }
     }
 
+    // FIX PRINCIPAL: UNA card por item con Quantity real — sin expandir duplicados
     private CartViewDto MapToCartViewDto(Cart cart)
     {
         var result = new CartViewDto { CartId = cart.CartId };
 
         foreach (var item in cart.CartItems)
         {
-            for (int i = 0; i < item.Quantity; i++)
+            result.Products.Add(new CartItemDisplayDto
             {
-                result.Products.Add(new CartItemDisplayDto
-                {
-                    CartItemId = item.CartItemId,
-                    ProductId = item.ProductId,
-                    ProductName = item.Product.Name,
-                    ProductImage = item.Product.ImageUrl,
-                    Category = "Producto",
-                    Quantity = 1,
-                    UnitPrice = item.UnitPrice,
-                    SubTotal = item.UnitPrice,
-                    IsSelected = false
-                });
-            }
+                CartItemId = item.CartItemId,
+                ProductId = item.ProductId,
+                ProductName = item.Product.Name,
+                ProductImage = item.Product.ImageUrl,
+                Category = "Producto",
+                Quantity = item.Quantity,          // ← cantidad real, no siempre 1
+                UnitPrice = item.UnitPrice,
+                SubTotal = item.SubTotal,          // ← subtotal real (precio × cantidad)
+                IsSelected = false
+            });
         }
 
         foreach (var item in cart.CartCombos)
         {
-            for (int i = 0; i < item.Quantity; i++)
+            result.Combos.Add(new CartComboDisplayDto
             {
-                result.Combos.Add(new CartComboDisplayDto
-                {
-                    CartComboId = item.CartComboId,
-                    ComboId = item.ComboId,
-                    ComboName = item.Combo.Name,
-                    ComboImage = item.Combo.ImageUrl,
-                    Category = "Combo",
-                    Quantity = 1,
-                    UnitPrice = item.UnitPrice,
-                    SubTotal = item.UnitPrice,
-                    IsSelected = false
-                });
-            }
+                CartComboId = item.CartComboId,
+                ComboId = item.ComboId,
+                ComboName = item.Combo.Name,
+                ComboImage = item.Combo.ImageUrl,
+                Category = "Combo",
+                Quantity = item.Quantity,           // ← cantidad real
+                UnitPrice = item.UnitPrice,
+                SubTotal = item.SubTotal,           // ← subtotal real
+                IsSelected = false
+            });
         }
 
         return result;

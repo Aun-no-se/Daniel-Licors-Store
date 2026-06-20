@@ -188,7 +188,7 @@
                     </div>
                 }
 
-                <!-- Sección COMBOS (cuando no hay filtro promo activo) -->
+                <!-- Sección COMBOS -->
                 @if (_filteredCombos.Count > 0 && _filterCategory != "promo")
                 {
                     <div class="section-block mb-6">
@@ -249,7 +249,6 @@
                         </MudText>
                     </div>
 
-                    <!-- Total general -->
                     <div class="summary-card mb-3">
                         <MudText Typo="Typo.caption" Style="color:rgba(255,255,255,0.7); text-transform:uppercase; letter-spacing:0.8px;">
                             Total en carrito
@@ -265,7 +264,6 @@
                         </div>
                     </div>
 
-                    <!-- Seleccionados (contadores locales, sin tocar el DTO) -->
                     <div class="summary-card summary-card-selected mb-4">
                         <MudText Typo="Typo.caption" Style="color:rgba(255,255,255,0.7); text-transform:uppercase; letter-spacing:0.8px;">
                             Seleccionados
@@ -283,7 +281,6 @@
 
                     <div style="border-top: 1px solid rgba(255,255,255,0.2); margin-bottom:16px;"></div>
 
-                    <!-- Botones de compra -->
                     <div class="d-flex flex-column gap-2">
 
                         <MudButton Variant="Variant.Filled"
@@ -325,7 +322,6 @@
 
 </MudContainer>
 
-@* Helper de render para combos — evita repetir el HTML dos veces *@
 @code {
     private RenderFragment RenderComboCard(CartComboDisplayDto combo) =>
         @<div>
@@ -707,15 +703,14 @@
     private string _currentUserId = "";
     private int _storeId = 1;
 
-    // Contadores locales — evitan asignar propiedades de solo lectura del DTO
     private int _selectedCount = 0;
     private decimal _selectedPrice = 0;
 
     private void RecalcSelected()
     {
         if (_cartView == null) { _selectedCount = 0; _selectedPrice = 0; return; }
-        _selectedCount = _cartView.Products.Count(p => p.IsSelected)
-                       + _cartView.Combos.Count(c => c.IsSelected);
+        _selectedCount = _cartView.Products.Where(p => p.IsSelected).Sum(p => p.Quantity)
+                       + _cartView.Combos.Where(c => c.IsSelected).Sum(c => c.Quantity);
         _selectedPrice = _cartView.Products.Where(p => p.IsSelected).Sum(p => p.SubTotal)
                        + _cartView.Combos.Where(c => c.IsSelected).Sum(c => c.SubTotal);
     }
@@ -966,21 +961,27 @@
 
         try
         {
-            var receipt = await CartService.GenerateReceiptAsync(_currentUserId, selectedOnly);
+            // El servicio ahora devuelve siempre el recibo completo (todos los items)
+            var receipt = await CartService.GenerateReceiptAsync(_currentUserId, false);
 
-            if (receipt == null)
+            if (receipt == null || !receipt.Items.Any())
             {
                 Snackbar.Add("No hay artículos para comprar.", Severity.Warning);
                 return;
             }
 
-            // Filtrar el recibo por selección local usando ItemId e ItemType del ReceiptItemDto
+            // FIX: si es selectedOnly, filtramos aquí en el frontend usando IsSelected del _cartView
             if (selectedOnly && _cartView != null)
             {
                 var selectedProductIds = _cartView.Products
-                    .Where(p => p.IsSelected).Select(p => p.CartItemId).ToHashSet();
+                    .Where(p => p.IsSelected)
+                    .Select(p => p.CartItemId)
+                    .ToHashSet();
+
                 var selectedComboIds = _cartView.Combos
-                    .Where(c => c.IsSelected).Select(c => c.CartComboId).ToHashSet();
+                    .Where(c => c.IsSelected)
+                    .Select(c => c.CartComboId)
+                    .ToHashSet();
 
                 receipt.Items = receipt.Items
                     .Where(i => (i.ItemType == "product" && selectedProductIds.Contains(i.ItemId)) ||
@@ -988,6 +989,12 @@
                     .ToList();
 
                 receipt.TotalAmount = receipt.Items.Sum(i => i.SubTotal);
+            }
+
+            if (!receipt.Items.Any())
+            {
+                Snackbar.Add("No hay artículos seleccionados para comprar.", Severity.Warning);
+                return;
             }
 
             var defaultPhone = "+1234567890";
