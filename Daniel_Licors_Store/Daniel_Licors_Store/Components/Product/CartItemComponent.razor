@@ -85,7 +85,6 @@
 </MudCard>
 
 <style>
-    /* Estilos globales de la Tarjeta */
     .cart-item-card-modern {
         cursor: pointer;
         transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
@@ -103,7 +102,6 @@
             background-color: rgba(102, 126, 234, 0.03);
         }
 
-    /* Layout Responsive: Mobile-First */
     .cart-item-layout {
         display: flex;
         flex-direction: column;
@@ -111,17 +109,13 @@
     }
 
     @@media (min-width: 600px) {
-        .cart-item-layout
-
-    {
-        flex-direction: row;
-        gap: 16px;
-        align-items: stretch;
+        .cart-item-layout {
+            flex-direction: row;
+            gap: 16px;
+            align-items: stretch;
+        }
     }
 
-    }
-
-    /* Imagen fija y responsiva */
     .cart-image-container {
         position: relative;
         width: 100%;
@@ -133,13 +127,10 @@
     }
 
     @@media (min-width: 600px) {
-        .cart-image-container
-
-    {
-        width: 105px;
-        height: 105px;
-    }
-
+        .cart-image-container {
+            width: 105px;
+            height: 105px;
+        }
     }
 
     .cart-image {
@@ -148,7 +139,6 @@
         object-fit: cover;
     }
 
-    /* Bloque derecho de contenido */
     .cart-info-block {
         display: flex;
         flex-direction: column;
@@ -167,7 +157,6 @@
         overflow: hidden;
     }
 
-    /* Badges del Negocio */
     .custom-badge {
         position: absolute;
         top: 8px;
@@ -195,7 +184,6 @@
         background-color: #e53935;
     }
 
-    /* Meta y acciones inferiores */
     .cart-meta-actions {
         display: flex;
         flex-wrap: wrap;
@@ -205,7 +193,6 @@
         width: 100%;
     }
 
-    /* Selector numérico Premium */
     .qty-selector-container {
         display: flex;
         align-items: center;
@@ -359,11 +346,10 @@
         _ => 0
     };
 
-    // Lógica dinámica para los Badges del Negocio
     private string GetItemTypeLabel() => Item switch
     {
-        CartItemDisplayDto product => "Producto",
-        CartComboDisplayDto combo => "Combo",
+        CartItemDisplayDto => "Producto",
+        CartComboDisplayDto => "Combo",
         _ => "Promoción"
     };
 

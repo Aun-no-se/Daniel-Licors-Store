@@ -34,7 +34,6 @@ public class CartService : ICartService
 
     public async Task<CartViewDto> GetCartAsync(string userId, int storeId)
     {
-        // Cambiamos el throw por una validación que no rompa la ejecución
         if (string.IsNullOrWhiteSpace(userId))
         {
             _logger.LogWarning("Intento de acceso al carrito con UserId nulo o vacío.");
@@ -46,7 +45,7 @@ public class CartService : ICartService
             var cart = await _context.Carts
                 .Include(c => c.CartItems).ThenInclude(ci => ci.Product)
                 .Include(c => c.CartCombos).ThenInclude(cc => cc.Combo)
-                .Include(c => c.Store)  // ✅ AGREGAR ESTO
+                .Include(c => c.Store)
                 .FirstOrDefaultAsync(c => c.UserId == userId && c.StoreId == storeId && c.CartStatus == "Active");
 
             if (cart == null)
@@ -68,10 +67,9 @@ public class CartService : ICartService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error crítico recuperando el carrito para {UserId}", userId);
-            throw; // Solo lanzamos si hay un error de base de datos real
+            throw;
         }
     }
-
 
     public async Task<CartViewDto> AddProductToCartAsync(string userId, int productId, int quantity, int storeId)
     {
@@ -96,10 +94,10 @@ public class CartService : ICartService
 
             if (cart == null)
             {
-                cart = new Cart 
-                { 
-                    UserId = userId, 
-                    StoreId = storeId, 
+                cart = new Cart
+                {
+                    UserId = userId,
+                    StoreId = storeId,
                     CartStatus = "Active",
                     CreatedAt = DateTime.UtcNow,
                     UpdatedAt = DateTime.UtcNow
@@ -109,7 +107,7 @@ public class CartService : ICartService
             }
 
             var existingItem = cart.CartItems.FirstOrDefault(ci => ci.ProductId == productId);
-            
+
             if (existingItem != null)
             {
                 existingItem.Quantity += quantity;
@@ -157,10 +155,10 @@ public class CartService : ICartService
 
             if (cart == null)
             {
-                cart = new Cart 
-                { 
-                    UserId = userId, 
-                    StoreId = storeId, 
+                cart = new Cart
+                {
+                    UserId = userId,
+                    StoreId = storeId,
                     CartStatus = "Active",
                     CreatedAt = DateTime.UtcNow,
                     UpdatedAt = DateTime.UtcNow
@@ -170,7 +168,7 @@ public class CartService : ICartService
             }
 
             var existingItem = cart.CartCombos.FirstOrDefault(cc => cc.ComboId == comboId);
-            
+
             if (existingItem != null)
             {
                 existingItem.Quantity += quantity;
@@ -206,9 +204,6 @@ public class CartService : ICartService
         if (string.IsNullOrWhiteSpace(userId))
             throw new Exception("UserId inválido en CartService");
 
-        // Nota: Las promociones se manejan como items especiales
-        // Por ahora, retornamos una promoción como un combo especial
-        // Esto puede ser expandido si tienes una tabla CartPromotion
         throw new NotImplementedException("Funcionalidad de promociones en carrito será implementada");
     }
 
@@ -231,17 +226,13 @@ public class CartService : ICartService
             {
                 var item = cart.CartItems.FirstOrDefault(ci => ci.CartItemId == cartItemId);
                 if (item != null)
-                {
                     _context.CartItems.Remove(item);
-                }
             }
             else if (itemType.ToLower() == "combo")
             {
                 var item = cart.CartCombos.FirstOrDefault(cc => cc.CartComboId == cartItemId);
                 if (item != null)
-                {
                     _context.CartCombos.Remove(item);
-                }
             }
 
             cart.UpdatedAt = DateTime.UtcNow;
@@ -310,10 +301,7 @@ public class CartService : ICartService
         if (string.IsNullOrWhiteSpace(userId))
             throw new Exception("UserId inválido en CartService");
 
-        // Esta funcionalidad se maneja en el frontend con binding de datos
-        // El servicio mantiene el estado en memoria durante la sesión
-        // Para persistencia, necesitarías agregar un campo IsSelected a las entidades
-        return await GetCartAsync(userId, 1); // StoreId por defecto
+        return await GetCartAsync(userId, 1);
     }
 
     public async Task<CartViewDto> SelectAllAsync(string userId)
@@ -369,6 +357,7 @@ public class CartService : ICartService
         }
     }
 
+    // ── FIX: se agregan ItemId e ItemType a cada ReceiptItemDto ──
     public async Task<ReceiptDto> GenerateReceiptAsync(string userId, bool selectedOnly = false)
     {
         if (string.IsNullOrWhiteSpace(userId))
@@ -379,7 +368,6 @@ public class CartService : ICartService
 
         try
         {
-            // 1. Buscamos el email usando 'UserId'
             var userEmail = await _context.Users
                 .Where(u => u.UserId == userId)
                 .Select(u => u.Email)
@@ -387,15 +375,15 @@ public class CartService : ICartService
 
             string customerDisplayName = userEmail ?? "Cliente Registrado";
 
-            // 2. SOLUCIÓN DEFINITIVA: Forzar UTC-4 exacto matemáticamente (Evita cambios por horario de verano)
+            // Hora fija UTC-4 (República Dominicana)
             DateTimeOffset utcNow = DateTimeOffset.UtcNow;
             DateTimeOffset drOffset = utcNow.ToOffset(TimeSpan.FromHours(-4));
-            DateTime localDateTime = drOffset.DateTime; // Esta es la hora exacta fija de RD (contiene nativamente AM/PM)
+            DateTime localDateTime = drOffset.DateTime;
 
             var cart = await _context.Carts
                 .Include(c => c.CartItems).ThenInclude(ci => ci.Product)
                 .Include(c => c.CartCombos).ThenInclude(cc => cc.Combo)
-                .Include(c => c.Store)  // Solo Store
+                .Include(c => c.Store)
                 .FirstOrDefaultAsync(c => c.UserId == userId && c.CartStatus == "Active");
 
             if (cart == null)
@@ -405,18 +393,19 @@ public class CartService : ICartService
 
             var receipt = new ReceiptDto
             {
-                // Usamos la hora fija de UTC-4 tanto para el número como para la fecha expuesta
                 ReceiptNumber = $"REC-{localDateTime:yyyyMMddHHmmss}-{userId.Substring(0, 4)}",
-                CreatedAt = localDateTime, // El DTO recibe la hora local con su AM/PM correspondiente
+                CreatedAt = localDateTime,
                 CustomerName = customerDisplayName,
                 StoreLocation = cart.Store.Name
             };
 
-            // Agregar items del carrito
+            // FIX: se poblan ItemId e ItemType para que Cart.razor pueda filtrar por selección
             foreach (var product in cartView.Products.Where(p => !selectedOnly || p.IsSelected))
             {
                 receipt.Items.Add(new ReceiptItemDto
                 {
+                    ItemId = product.CartItemId,  // ← nuevo
+                    ItemType = "product",            // ← nuevo
                     ItemName = product.ProductName,
                     Category = "Producto",
                     Quantity = product.Quantity,
@@ -429,6 +418,8 @@ public class CartService : ICartService
             {
                 receipt.Items.Add(new ReceiptItemDto
                 {
+                    ItemId = combo.CartComboId,   // ← nuevo
+                    ItemType = "combo",             // ← nuevo
                     ItemName = combo.ComboName,
                     Category = "Combo",
                     Quantity = combo.Quantity,
@@ -450,7 +441,6 @@ public class CartService : ICartService
 
     public async Task<bool> CheckoutAsync(string userId, List<int> selectedItemIds, string itemType)
     {
-
         if (string.IsNullOrWhiteSpace(userId))
             throw new Exception("UserId inválido en CartService");
 
@@ -464,9 +454,6 @@ public class CartService : ICartService
             if (cart == null)
                 return false;
 
-            // Aquí iría la lógica de crear una orden
-            // Por ahora, solo registramos que se completó el checkout
-            
             cart.CartStatus = "Sent";
             cart.UpdatedAt = DateTime.UtcNow;
             await _context.SaveChangesAsync();
@@ -484,27 +471,25 @@ public class CartService : ICartService
     {
         var result = new CartViewDto { CartId = cart.CartId };
 
-        // ✅ EXPANDIR PRODUCTOS: Si Quantity > 1, crear múltiples items
         foreach (var item in cart.CartItems)
         {
-            for (int i = 0; i < item.Quantity; i++)  // ✅ Crear uno por cada unidad
+            for (int i = 0; i < item.Quantity; i++)
             {
                 result.Products.Add(new CartItemDisplayDto
                 {
-                    CartItemId = item.CartItemId,  // Mismo ID, pero múltiples filas
+                    CartItemId = item.CartItemId,
                     ProductId = item.ProductId,
                     ProductName = item.Product.Name,
                     ProductImage = item.Product.ImageUrl,
                     Category = "Producto",
-                    Quantity = 1,  // ✅ Cada item tiene cantidad 1
+                    Quantity = 1,
                     UnitPrice = item.UnitPrice,
-                    SubTotal = item.UnitPrice,  // SubTotal de 1 unidad
+                    SubTotal = item.UnitPrice,
                     IsSelected = false
                 });
             }
         }
 
-        // ✅ EXPANDIR COMBOS: Igual que productos
         foreach (var item in cart.CartCombos)
         {
             for (int i = 0; i < item.Quantity; i++)
@@ -516,7 +501,7 @@ public class CartService : ICartService
                     ComboName = item.Combo.Name,
                     ComboImage = item.Combo.ImageUrl,
                     Category = "Combo",
-                    Quantity = 1,  // ✅ Cada item tiene cantidad 1
+                    Quantity = 1,
                     UnitPrice = item.UnitPrice,
                     SubTotal = item.UnitPrice,
                     IsSelected = false
