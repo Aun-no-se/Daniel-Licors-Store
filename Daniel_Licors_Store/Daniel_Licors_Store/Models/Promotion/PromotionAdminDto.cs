@@ -11,8 +11,10 @@ public class PromotionAdminDto
     public DateTime EndDate { get; set; }
     public bool IsActive { get; set; }
     public int ProductCount { get; set; }
-
     public string ProductsSummary { get; set; } = string.Empty;
+
+    /// <summary>Ruta relativa de la imagen, ej: /images/promociones/promo_abc123.jpg</summary>
+    public string? ImageUrl { get; set; }
 
     public bool IsVigente => IsActive && StartDate <= DateTime.Now && EndDate >= DateTime.Now;
 }

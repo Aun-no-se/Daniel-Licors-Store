@@ -24,6 +24,7 @@
 		<Folder Include="Data\Repositories\Specific\" />
 		<Folder Include="wwwroot\images\Carrusel\" />
 		<Folder Include="wwwroot\images\Combos\" />
+		<Folder Include="wwwroot\images\promociones\" />
 		<Folder Include="wwwroot\images\products\" />
 	</ItemGroup>
 

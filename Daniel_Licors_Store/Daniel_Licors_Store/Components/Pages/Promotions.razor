@@ -6,197 +6,253 @@
 @using Microsoft.AspNetCore.Components.Forms
 @using Daniel_Licors_Store.Models.Promotion
 @using Daniel_Licors_Store.Models.Product
+@using MudBlazor
 
-<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-6">
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="promo-page mt-6 mb-12">
 
-    <MudText Typo="Typo.h4" Class="font-weight-bold mb-1">
-        Administración de Promociones
-    </MudText>
-    <MudText Typo="Typo.body2" Class="muted-text mb-5">
-        Crea y gestiona descuentos, precios especiales y ofertas tipo "Lleva X Paga Y".
-    </MudText>
+    <!-- ── Encabezado ── -->
+    <div class="promo-page-header mb-8">
+        <div class="header-accent"></div>
+        <div class="header-content">
+            <MudText Typo="Typo.h4" Class="promo-page-title">Promociones</MudText>
+            <MudText Typo="Typo.body2" Class="promo-page-sub">
+                Descuentos, precios especiales y ofertas tipo «Lleva X Paga Y»
+            </MudText>
+        </div>
+        <div class="header-actions">
+            <MudButton Color="Color.Warning"
+                       Variant="Variant.Filled"
+                       StartIcon="@Icons.Material.Filled.Add"
+                       OnClick="ShowCreateSection"
+                       Class="btn-new-promo">
+                Nueva Promoción
+            </MudButton>
+        </div>
+    </div>
 
     @if (_loading)
     {
-        <div class="d-flex justify-center my-12">
+        <div class="d-flex justify-center align-center flex-column py-16">
             <MudProgressCircular Indeterminate Size="Size.Large" Color="Color.Warning" />
+            <MudText Typo="Typo.body2" Class="mt-4 muted-text">Cargando promociones...</MudText>
+        </div>
+    }
+    else if (!_promos.Any())
+    {
+        <div class="empty-promos-state">
+            <MudIcon Icon="@Icons.Material.Filled.LocalOffer" Class="empty-icon" />
+            <MudText Typo="Typo.h6" Class="font-weight-bold mt-3 mb-1">Sin promociones aún</MudText>
+            <MudText Typo="Typo.body2" Class="muted-text mb-4">Crea tu primera promoción para empezar a vender más.</MudText>
+            <MudButton Color="Color.Warning" Variant="Variant.Filled" OnClick="ShowCreateSection">
+                Crear promoción
+            </MudButton>
         </div>
     }
     else
     {
-        <!-- ===== TABLA DE PROMOCIONES ===== -->
-        <MudPaper Elevation="1" Class="pa-4 rounded-lg">
+        <!-- ── Grid de cards de promociones ── -->
+        <div class="promos-grid">
+            @foreach (var promo in _promos)
+            {
+                <div class="promo-card @(promo.IsVigente ? "promo-card--active" : "")">
 
-            <MudTable Items="_promos" Dense Hover Bordered>
-                <HeaderContent>
-                    <MudTh>Título</MudTh>
-                    <MudTh>Tipo</MudTh>
-                    <MudTh>Productos</MudTh>
-                    <MudTh>Vigencia</MudTh>
-                    <MudTh>Estado</MudTh>
-                    <MudTh Align="Align.Center">Acciones</MudTh>
-                </HeaderContent>
-
-                <RowTemplate>
-                    <MudTd>
-                        <MudText Typo="Typo.subtitle2" Class="font-weight-bold">
-                            @context.Title
-                        </MudText>
-                        @if (!string.IsNullOrWhiteSpace(context.Description))
+                    <!-- Imagen de la promo -->
+                    <div class="promo-card-img">
+                        @if (!string.IsNullOrWhiteSpace(promo.ImageUrl))
                         {
-                            <MudText Typo="Typo.caption" Class="muted-text d-block desc-clamp">
-                                @context.Description
-                            </MudText>
-                        }
-                    </MudTd>
-
-                    <MudTd>
-                        <MudChip T="string"
-                                 Color="@GetTypeColor(context.PromotionType)"
-                                 Size="Size.Small"
-                                 Class="font-weight-bold">
-                            @GetTypeLabel(context.PromotionType)
-                        </MudChip>
-                    </MudTd>
-
-                    <MudTd>
-                        <MudText Typo="Typo.body2">
-                            @context.ProductCount producto@(context.ProductCount != 1 ? "s" : "")
-                        </MudText>
-                        <MudText Typo="Typo.caption" Class="muted-text desc-clamp">
-                            @context.ProductsSummary
-                        </MudText>
-                    </MudTd>
-
-                    <MudTd>
-                        <MudText Typo="Typo.caption">
-                            @context.StartDate.ToString("dd MMM") — @context.EndDate.ToString("dd MMM yyyy")
-                        </MudText>
-                    </MudTd>
-
-                    <MudTd>
-                        @if (context.IsVigente)
-                        {
-                            <MudChip T="string" Color="Color.Success" Size="Size.Small">Activa</MudChip>
-                        }
-                        else if (!context.IsActive)
-                        {
-                            <MudChip T="string" Color="Color.Default" Size="Size.Small">Inactiva</MudChip>
+                            <img src="@promo.ImageUrl" alt="@promo.Title" class="promo-img-real" />
                         }
                         else
                         {
-                            <MudChip T="string" Color="Color.Warning" Size="Size.Small">Vencida</MudChip>
+                            <div class="promo-img-placeholder">
+                                <MudIcon Icon="@Icons.Material.Filled.LocalOffer"
+                                         Style="font-size:40px; color:rgba(255,165,0,0.3);" />
+                            </div>
                         }
-                    </MudTd>
+                        <!-- Badge tipo -->
+                        <span class="promo-type-badge promo-type-@(promo.PromotionType?.ToLower() ?? "default")">
+                            @GetTypeLabel(promo.PromotionType)
+                        </span>
+                        <!-- Estado -->
+                        @if (promo.IsVigente)
+                        {
+                            <span class="promo-status-badge promo-status--active">● Activa</span>
+                        }
+                        else if (!promo.IsActive)
+                        {
+                            <span class="promo-status-badge promo-status--inactive">Inactiva</span>
+                        }
+                        else
+                        {
+                            <span class="promo-status-badge promo-status--expired">Vencida</span>
+                        }
+                    </div>
 
-                    <MudTd Align="Align.Center">
+                    <!-- Cuerpo -->
+                    <div class="promo-card-body">
+                        <div class="promo-card-title">@promo.Title</div>
+                        @if (!string.IsNullOrWhiteSpace(promo.Description))
+                        {
+                            <div class="promo-card-desc">@promo.Description</div>
+                        }
+
+                        <div class="promo-card-meta">
+                            <MudIcon Icon="@Icons.Material.Filled.Inventory2"
+                                     Size="Size.Small" Class="mr-1 muted-text" />
+                            <span class="muted-text" style="font-size:12px;">
+                                @promo.ProductCount producto@(promo.ProductCount != 1 ? "s" : "")
+                                @if (!string.IsNullOrWhiteSpace(promo.ProductsSummary))
+                                {
+                                    <span> · @promo.ProductsSummary</span>
+                                }
+                            </span>
+                        </div>
+
+                        <div class="promo-card-dates">
+                            <MudIcon Icon="@Icons.Material.Filled.DateRange"
+                                     Size="Size.Small" Class="mr-1" />
+                            <span>@promo.StartDate.ToString("dd MMM") — @promo.EndDate.ToString("dd MMM yyyy")</span>
+                        </div>
+                    </div>
+
+                    <!-- Acciones -->
+                    <div class="promo-card-actions">
                         <MudIconButton Icon="@Icons.Material.Filled.Edit"
                                        Color="Color.Warning"
-                                       OnClick="@(() => EditPromo(context.PromotionId))" />
+                                       Size="Size.Small"
+                                       Title="Editar"
+                                       OnClick="@(() => EditPromo(promo.PromotionId))" />
                         <MudIconButton Icon="@Icons.Material.Filled.Delete"
                                        Color="Color.Error"
-                                       OnClick="@(() => DeletePromo(context.PromotionId))" />
-                    </MudTd>
-                </RowTemplate>
+                                       Size="Size.Small"
+                                       Title="Eliminar"
+                                       OnClick="@(() => DeletePromo(promo.PromotionId))" />
+                    </div>
 
-                <NoRecordsContent>
-                    <MudText Class="pa-4 muted-text text-center">
-                        No hay promociones creadas aún.
-                    </MudText>
-                </NoRecordsContent>
-            </MudTable>
-
-        </MudPaper>
-
-        <div class="d-flex justify-end mt-4">
-            <MudButton Color="Color.Warning"
-                       Variant="Variant.Filled"
-                       StartIcon="@Icons.Material.Filled.Add"
-                       OnClick="ShowCreateSection">
-                Nueva Promoción
-            </MudButton>
+                </div>
+            }
         </div>
     }
 
-    <!-- ===== FORMULARIO CREAR / EDITAR ===== -->
+
+    <!-- ── FORMULARIO CREAR / EDITAR ── -->
     @if (_showForm)
     {
-        <MudPaper Elevation="2" Class="pa-5 mt-6 rounded-lg form-panel">
+        <div class="form-section mt-8">
 
-            <div class="d-flex align-center mb-4">
+            <div class="form-section-header">
                 <MudIcon Icon="@Icons.Material.Filled.LocalOffer" Color="Color.Warning" Class="mr-2" />
                 <MudText Typo="Typo.h5" Class="font-weight-bold">
-                    @(_isEditMode ? "Editar Promoción" : "Crear Nueva Promoción")
+                    @(_isEditMode ? "Editar Promoción" : "Nueva Promoción")
                 </MudText>
             </div>
 
-            <MudDivider Class="mb-5" />
+            <MudDivider Class="my-4" />
 
-            <!-- FILA 1: Título + Tipo -->
-            <MudGrid Class="mb-2">
+            <MudGrid>
 
-                <MudItem xs="12" sm="7">
-                    <MudTextField @bind-Value="_form.Title"
-                                  Label="Título de la promoción"
-                                  Variant="Variant.Outlined"
-                                  Required
-                                  Placeholder="Ej: Día de las Madres — 5% en Rones" />
+                <!-- Columna izquierda: datos principales -->
+                <MudItem xs="12" md="8">
+
+                    <MudGrid>
+                        <MudItem xs="12" sm="7">
+                            <MudTextField @bind-Value="_form.Title"
+                                          Label="Título"
+                                          Variant="Variant.Outlined"
+                                          Required
+                                          Placeholder="Ej: Día de las Madres — 5% en Rones" />
+                        </MudItem>
+                        <MudItem xs="12" sm="5">
+                            <MudSelect @bind-Value="_form.PromotionType"
+                                       Label="Tipo"
+                                       Variant="Variant.Outlined">
+                                <MudSelectItem Value="@("Discount")">% Descuento</MudSelectItem>
+                                <MudSelectItem Value="@("SpecialPrice")">Precio Especial</MudSelectItem>
+                                <MudSelectItem Value="@("PayXGetY")">Lleva X Paga Y</MudSelectItem>
+                            </MudSelect>
+                        </MudItem>
+                        <MudItem xs="12">
+                            <MudTextField @bind-Value="_form.Description"
+                                          Label="Descripción (opcional)"
+                                          Lines="2"
+                                          Variant="Variant.Outlined" />
+                        </MudItem>
+                        <MudItem xs="12" sm="4">
+                            <MudDatePicker @bind-Date="_startDate"
+                                           Label="Fecha inicio"
+                                           Variant="Variant.Outlined"
+                                           DateFormat="dd/MM/yyyy" />
+                        </MudItem>
+                        <MudItem xs="12" sm="4">
+                            <MudDatePicker @bind-Date="_endDate"
+                                           Label="Fecha fin"
+                                           Variant="Variant.Outlined"
+                                           DateFormat="dd/MM/yyyy" />
+                        </MudItem>
+                        <MudItem xs="12" sm="4" Class="d-flex align-center">
+                            <MudSwitch @bind-Value="_form.IsActive"
+                                       Color="Color.Success"
+                                       Label="@(_form.IsActive ? "Activa" : "Inactiva")" />
+                        </MudItem>
+                    </MudGrid>
+
                 </MudItem>
 
-                <MudItem xs="12" sm="5">
-                    <MudSelect @bind-Value="_form.PromotionType"
-                               Label="Tipo de promoción"
-                               Variant="Variant.Outlined">
-                        <MudSelectItem Value="@("Discount")">% Descuento</MudSelectItem>
-                        <MudSelectItem Value="@("SpecialPrice")">Precio Especial</MudSelectItem>
-                        <MudSelectItem Value="@("PayXGetY")">Lleva X Paga Y</MudSelectItem>
-                    </MudSelect>
-                </MudItem>
+                <!-- Columna derecha: imagen -->
+                <MudItem xs="12" md="4">
 
-                <MudItem xs="12">
-                    <MudTextField @bind-Value="_form.Description"
-                                  Label="Descripción (opcional)"
-                                  Lines="2"
-                                  Variant="Variant.Outlined"
-                                  Placeholder="Describe brevemente la promoción..." />
-                </MudItem>
+                    <div class="img-upload-panel">
+                        <div class="img-upload-preview @(string.IsNullOrWhiteSpace(_form.ImageUrl) ? "img-upload-empty" : "")">
+                            @if (!string.IsNullOrWhiteSpace(_form.ImageUrl))
+                            {
+                                <img src="@_form.ImageUrl" alt="Preview" class="img-upload-img" />
+                                <button class="img-upload-remove" @onclick="RemoveImage" title="Quitar imagen">✕</button>
+                            }
+                            else
+                            {
+                                <MudIcon Icon="@Icons.Material.Filled.AddPhotoAlternate"
+                                         Style="font-size:48px; color:rgba(255,165,0,0.4);" />
+                                <span class="img-upload-hint">Imagen de la promoción</span>
+                            }
+                        </div>
 
-            </MudGrid>
+                        <InputFile id="promo-img-input"
+                                   OnChange="HandleImageUpload"
+                                   accept="image/*"
+                                   style="display:none;" />
 
-            <!-- FILA 2: Fechas + Estado -->
-            <MudGrid Class="mb-2">
+                        <label for="promo-img-input" class="img-upload-btn">
+                            <MudIcon Icon="@Icons.Material.Filled.CloudUpload" Size="Size.Small" Class="mr-1" />
+                            @(string.IsNullOrWhiteSpace(_form.ImageUrl) ? "Subir imagen" : "Cambiar imagen")
+                        </label>
 
-                <MudItem xs="12" sm="4">
-                    <MudDatePicker @bind-Date="_startDate"
-                                   Label="Fecha de inicio"
-                                   Variant="Variant.Outlined"
-                                   DateFormat="dd/MM/yyyy" />
-                </MudItem>
+                        @if (_uploadingImage)
+                        {
+                            <div class="d-flex align-center gap-2 mt-2">
+                                <MudProgressCircular Size="Size.Small" Indeterminate Color="Color.Warning" />
+                                <MudText Typo="Typo.caption" Class="muted-text">Subiendo...</MudText>
+                            </div>
+                        }
 
-                <MudItem xs="12" sm="4">
-                    <MudDatePicker @bind-Date="_endDate"
-                                   Label="Fecha de fin"
-                                   Variant="Variant.Outlined"
-                                   DateFormat="dd/MM/yyyy" />
-                </MudItem>
+                        @if (!string.IsNullOrWhiteSpace(_uploadError))
+                        {
+                            <MudText Typo="Typo.caption" Color="Color.Error" Class="mt-1">@_uploadError</MudText>
+                        }
+                    </div>
 
-                <MudItem xs="12" sm="4" Class="d-flex align-center">
-                    <MudSwitch @bind-Value="_form.IsActive"
-                               Color="Color.Success"
-                               Label="@(_form.IsActive ? "Activa" : "Inactiva")" />
                 </MudItem>
 
             </MudGrid>
 
             <MudDivider Class="my-5" />
 
-            <!-- ===== SELECTOR DE PRODUCTOS ===== -->
+            <!-- ── Selector de productos ── -->
             <MudText Typo="Typo.subtitle1" Class="font-weight-bold mb-3">
                 <MudIcon Icon="@Icons.Material.Filled.Inventory2" Size="Size.Small" Class="mr-1" />
                 Productos en esta promoción
             </MudText>
 
-            <MudTable Items="_products" Dense Hover Bordered Class="mb-3">
+            <MudTable Items="_products" Dense Hover Bordered Class="mb-3 products-picker-table">
                 <HeaderContent>
                     <MudTh>Producto</MudTh>
                     <MudTh>Precio normal</MudTh>
@@ -207,9 +263,7 @@
                         <MudText Typo="Typo.body2" Class="font-weight-bold">@context.Name</MudText>
                     </MudTd>
                     <MudTd>
-                        <MudText Color="Color.Success" Class="font-weight-bold">
-                            $@context.Price.ToString("N2")
-                        </MudText>
+                        <MudText Color="Color.Success" Class="font-weight-bold">$@context.Price.ToString("N2")</MudText>
                     </MudTd>
                     <MudTd Align="Align.Center">
                         <MudIconButton Icon="@Icons.Material.Filled.AddCircleOutline"
@@ -219,13 +273,10 @@
                 </RowTemplate>
             </MudTable>
 
-            <!-- LÍNEAS AGREGADAS -->
+            <!-- Chips de productos agregados -->
             @if (_promoBuilder.Any())
             {
-                <MudText Typo="Typo.caption" Class="muted-text mb-2 d-block">
-                    Productos incluidos en la promoción:
-                </MudText>
-
+                <MudText Typo="Typo.caption" Class="muted-text mb-2 d-block">Incluidos en la promoción:</MudText>
                 <div class="d-flex flex-wrap gap-2 mb-4">
                     @foreach (var line in _promoBuilder)
                     {
@@ -240,14 +291,11 @@
                 </div>
             }
 
-            <!-- ===== ACCIONES ===== -->
+            <!-- Acciones del form -->
             <div class="d-flex justify-end gap-x-3 mt-2">
-                <MudButton Color="Color.Secondary"
-                           Variant="Variant.Outlined"
-                           OnClick="ResetForm">
+                <MudButton Color="Color.Secondary" Variant="Variant.Outlined" OnClick="ResetForm">
                     Cancelar
                 </MudButton>
-
                 <MudButton Color="Color.Warning"
                            Variant="Variant.Filled"
                            StartIcon="@Icons.Material.Filled.Save"
@@ -257,14 +305,14 @@
                 </MudButton>
             </div>
 
-        </MudPaper>
+        </div>
     }
 
-    <!-- ===== DIALOG: Configurar línea de producto ===== -->
+
+    <!-- ── Mini-dialog: configurar línea de producto ── -->
     @if (_showLineDialog && _lineDialogProduct != null)
     {
         <MudOverlay Visible="true" DarkBackground="true" ZIndex="9998" />
-
         <div class="line-dialog-wrapper">
             <MudPaper Elevation="24" Class="pa-5 rounded-xl line-dialog-card">
 
@@ -272,19 +320,14 @@
                 <MudText Typo="Typo.caption" Class="muted-text mb-4 d-block">
                     Precio normal: $@_lineDialogProduct.Price.ToString("N2")
                 </MudText>
-
                 <MudDivider Class="mb-4" />
 
                 @if (_form.PromotionType == "Discount")
                 {
-                    <MudNumericField @bind-Value="_lineDiscountPct"
-                                     T="decimal"
-                                     Label="Descuento (%)"
-                                     Min="0.01m" Max="99.99m"
+                    <MudNumericField @bind-Value="_lineDiscountPct" T="decimal"
+                                     Label="Descuento (%)" Min="0.01m" Max="99.99m"
                                      Variant="Variant.Outlined"
-                                     Adornment="Adornment.End"
-                                     AdornmentText="%" />
-
+                                     Adornment="Adornment.End" AdornmentText="%" />
                     @if (_lineDiscountPct > 0 && _lineDialogProduct != null)
                     {
                         var resultado = _lineDialogProduct.Price * (1 - _lineDiscountPct / 100);
@@ -295,47 +338,33 @@
                 }
                 else if (_form.PromotionType == "SpecialPrice")
                 {
-                    <MudNumericField @bind-Value="_lineSpecialPrice"
-                                     T="decimal"
-                                     Label="Precio especial ($)"
-                                     Min="0.01m"
+                    <MudNumericField @bind-Value="_lineSpecialPrice" T="decimal"
+                                     Label="Precio especial ($)" Min="0.01m"
                                      Variant="Variant.Outlined"
-                                     Adornment="Adornment.Start"
-                                     AdornmentText="$" />
+                                     Adornment="Adornment.Start" AdornmentText="$" />
                 }
                 else if (_form.PromotionType == "PayXGetY")
                 {
                     <MudGrid>
                         <MudItem xs="6">
-                            <MudNumericField @bind-Value="_lineReqQty"
-                                             T="int"
-                                             Label="Lleva (cantidad)"
-                                             Min="2"
+                            <MudNumericField @bind-Value="_lineReqQty" T="int"
+                                             Label="Lleva (cantidad)" Min="2"
                                              Variant="Variant.Outlined" />
                         </MudItem>
                         <MudItem xs="6">
-                            <MudNumericField @bind-Value="_linePayQty"
-                                             T="int"
-                                             Label="Paga (cantidad)"
-                                             Min="1"
+                            <MudNumericField @bind-Value="_linePayQty" T="int"
+                                             Label="Paga (cantidad)" Min="1"
                                              Variant="Variant.Outlined" />
                         </MudItem>
                     </MudGrid>
-
                     <MudText Typo="Typo.body2" Class="mt-2 text-success-custom font-weight-bold">
                         Ejemplo: Lleva @_lineReqQty, paga @_linePayQty
                     </MudText>
                 }
 
                 <div class="d-flex justify-end gap-x-2 mt-5">
-                    <MudButton Color="Color.Error" Variant="Variant.Outlined"
-                               OnClick="CloseLineDialog">
-                        Cancelar
-                    </MudButton>
-                    <MudButton Color="Color.Warning" Variant="Variant.Filled"
-                               OnClick="ConfirmLineDialog">
-                        Agregar
-                    </MudButton>
+                    <MudButton Color="Color.Error" Variant="Variant.Outlined" OnClick="CloseLineDialog">Cancelar</MudButton>
+                    <MudButton Color="Color.Warning" Variant="Variant.Filled" OnClick="ConfirmLineDialog">Agregar</MudButton>
                 </div>
 
             </MudPaper>
@@ -343,3 +372,404 @@
     }
 
 </MudContainer>
+
+<style>
+    /* ── Variables ── */
+    :root {
+        --promo-orange: #ff9800;
+        --promo-orange-dim: rgba(255,152,0,0.15);
+        --promo-orange-border: rgba(255,152,0,0.25);
+        --card-bg: rgba(255,255,255,0.03);
+        --card-border: rgba(255,255,255,0.08);
+        --radius-card: 16px;
+    }
+
+    /* ── Page header ── */
+    .promo-page-header {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        flex-wrap: wrap;
+    }
+
+    .header-accent {
+        width: 5px;
+        height: 48px;
+        background: linear-gradient(180deg, #ff9800, #ff5722);
+        border-radius: 3px;
+        flex-shrink: 0;
+    }
+
+    .header-content {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .promo-page-title {
+        font-weight: 800 !important;
+        letter-spacing: -0.5px;
+        color: #fff;
+    }
+
+    .promo-page-sub {
+        color: #a1a1aa !important;
+        margin-top: 2px;
+    }
+
+    .header-actions {
+        margin-left: auto;
+    }
+
+    .btn-new-promo {
+        font-weight: 700 !important;
+        border-radius: 10px !important;
+        text-transform: none !important;
+        letter-spacing: 0.2px;
+        box-shadow: 0 4px 16px rgba(255,152,0,0.3) !important;
+    }
+
+    /* ── Empty state ── */
+    .empty-promos-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 60px 20px;
+        border: 2px dashed rgba(255,152,0,0.2);
+        border-radius: 20px;
+        text-align: center;
+    }
+
+    .empty-icon {
+        font-size: 64px !important;
+        color: rgba(255,152,0,0.25) !important;
+    }
+
+    /* ── Grid de cards ── */
+    .promos-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 16px;
+    }
+
+    @@media (max-width: 600px) {
+        .promos-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    /* ── Card de promo ── */
+    .promo-card {
+        background: var(--card-bg);
+        border: 1.5px solid var(--card-border);
+        border-radius: var(--radius-card);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+    }
+
+        .promo-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+            border-color: var(--promo-orange-border);
+        }
+
+    .promo-card--active {
+        border-color: rgba(255,152,0,0.35) !important;
+        box-shadow: 0 0 0 2px rgba(255,152,0,0.12);
+    }
+
+    /* Imagen */
+    .promo-card-img {
+        position: relative;
+        width: 100%;
+        aspect-ratio: 16 / 9;
+        background: rgba(255,152,0,0.05);
+        overflow: hidden;
+        flex-shrink: 0;
+    }
+
+    .promo-img-real {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform 0.35s ease;
+    }
+
+    .promo-card:hover .promo-img-real {
+        transform: scale(1.05);
+    }
+
+    .promo-img-placeholder {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    /* Badges sobre la imagen */
+    .promo-type-badge {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        font-size: 10px;
+        font-weight: 700;
+        padding: 3px 9px;
+        border-radius: 20px;
+        text-transform: uppercase;
+        letter-spacing: 0.6px;
+        backdrop-filter: blur(8px);
+    }
+
+    .promo-type-discount {
+        background: rgba(229,57,53,0.85);
+        color: #fff;
+    }
+
+    .promo-type-specialprice {
+        background: rgba(255,152,0,0.85);
+        color: #1a1a1a;
+    }
+
+    .promo-type-payxgety {
+        background: rgba(76,175,80,0.85);
+        color: #fff;
+    }
+
+    .promo-type-default {
+        background: rgba(0,0,0,0.6);
+        color: #fff;
+    }
+
+    .promo-status-badge {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        font-size: 10px;
+        font-weight: 700;
+        padding: 3px 9px;
+        border-radius: 20px;
+        backdrop-filter: blur(8px);
+    }
+
+    .promo-status--active {
+        background: rgba(76,175,80,0.85);
+        color: #fff;
+    }
+
+    .promo-status--inactive {
+        background: rgba(100,100,100,0.75);
+        color: #ddd;
+    }
+
+    .promo-status--expired {
+        background: rgba(255,152,0,0.8);
+        color: #1a1a1a;
+    }
+
+    /* Cuerpo de la card */
+    .promo-card-body {
+        padding: 14px 16px 8px;
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+    }
+
+    .promo-card-title {
+        font-size: 15px;
+        font-weight: 700;
+        color: #fff;
+        line-height: 1.3;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .promo-card-desc {
+        font-size: 12px;
+        color: #a1a1aa;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .promo-card-meta,
+    .promo-card-dates {
+        display: flex;
+        align-items: center;
+        font-size: 11px;
+        color: #71717a;
+        margin-top: 2px;
+    }
+
+    /* Acciones footer de la card */
+    .promo-card-actions {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        padding: 6px 10px 10px;
+        gap: 4px;
+        border-top: 1px solid rgba(255,255,255,0.05);
+    }
+
+    /* ── Formulario ── */
+    .form-section {
+        border: 1px solid var(--promo-orange-border);
+        background: rgba(255,152,0,0.025);
+        border-radius: 20px;
+        padding: 28px;
+    }
+
+    .form-section-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 4px;
+    }
+
+    /* ── Upload de imagen ── */
+    .img-upload-panel {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+        padding: 16px;
+        border: 1.5px dashed var(--promo-orange-border);
+        border-radius: 14px;
+        background: rgba(255,152,0,0.03);
+        min-height: 200px;
+    }
+
+    .img-upload-preview {
+        width: 100%;
+        aspect-ratio: 16/9;
+        border-radius: 10px;
+        overflow: hidden;
+        background: rgba(255,255,255,0.04);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        border: 1px solid rgba(255,255,255,0.07);
+    }
+
+    .img-upload-empty {
+        border-style: dashed !important;
+    }
+
+    .img-upload-img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .img-upload-hint {
+        font-size: 12px;
+        color: #71717a;
+        margin-top: 8px;
+    }
+
+    .img-upload-remove {
+        position: absolute;
+        top: 6px;
+        right: 6px;
+        background: rgba(229,57,53,0.85);
+        color: #fff;
+        border: none;
+        cursor: pointer;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        font-size: 12px;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background 0.15s;
+    }
+
+        .img-upload-remove:hover {
+            background: #e53935;
+        }
+
+    .img-upload-btn {
+        display: inline-flex;
+        align-items: center;
+        background: rgba(255,152,0,0.15);
+        border: 1px solid var(--promo-orange-border);
+        color: var(--promo-orange);
+        font-size: 13px;
+        font-weight: 600;
+        padding: 8px 16px;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: background 0.15s;
+        text-decoration: none;
+        user-select: none;
+    }
+
+        .img-upload-btn:hover {
+            background: rgba(255,152,0,0.25);
+        }
+
+    /* ── Mini dialog ── */
+    .line-dialog-wrapper {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+        padding: 16px;
+    }
+
+    .line-dialog-card {
+        width: 100%;
+        max-width: 420px;
+        background: #1e1e2e !important;
+        border: 1px solid var(--promo-orange-border) !important;
+    }
+
+    /* ── Utilitarios ── */
+    .muted-text {
+        color: #a1a1aa !important;
+    }
+
+    .text-success-custom {
+        color: #66bb6a;
+    }
+
+    .gap-x-2 {
+        gap: 8px;
+    }
+
+    .gap-x-3 {
+        gap: 12px;
+    }
+
+    .gap-2 {
+        gap: 8px;
+    }
+
+    .desc-clamp {
+        display: -webkit-box;
+        -webkit-line-clamp: 1;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        max-width: 220px;
+    }
+
+    .products-picker-table .mud-table-head th {
+        font-size: 12px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+</style>

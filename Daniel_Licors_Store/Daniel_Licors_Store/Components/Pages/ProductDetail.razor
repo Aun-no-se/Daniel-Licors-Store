@@ -101,200 +101,189 @@
             </MudItem>
         </MudGrid>
 
-        <!-- ===== SECCIÓN INFERIOR: Combos + Promociones ===== -->
-        <MudGrid Class="mt-12">
+        <!-- ===== SECCIÓN INFERIOR REDISEÑADA: Combos + Promociones ===== -->
+        <div class="lower-section mt-14">
 
-            <!-- ===== COMBOS ===== -->
-            <MudItem xs="12" md="6">
-                <div class="section-header d-flex align-center mb-4">
-                    <MudIcon Icon="@Icons.Material.Filled.LocalFireDepartment" Color="Color.Error" Class="mr-2" />
-                    <MudText Typo="Typo.h5" Class="font-weight-bold">Combos con este producto</MudText>
+            <!-- ── Combos ── -->
+            <div class="lower-section-block">
+
+                <div class="lower-section-title">
+                    <div class="lower-title-icon lower-title-icon--red">
+                        <MudIcon Icon="@Icons.Material.Filled.LocalFireDepartment"
+                                 Style="font-size:20px; color:#ef5350;" />
+                    </div>
+                    <div>
+                        <div class="lower-title-text">Combos disponibles</div>
+                        <div class="lower-title-sub">Paquetes especiales que incluyen este producto</div>
+                    </div>
                 </div>
 
                 @if (Combos.Any())
                 {
-                    <div class="cards-list-container">
+                    <div class="combos-grid">
                         @foreach (var combo in Combos)
                         {
-                            <MudCard Elevation="2"
-                                     Class="combo-premium-card mb-3 border-left-accent cursor-pointer"
-                                     @onclick="@(() => Nav.NavigateTo($"/combo/{combo.ComboId}"))">
-                                <MudCardContent>
+                            <div class="combo-card" @onclick="@(() => Nav.NavigateTo($"/combo/{combo.ComboId}"))">
 
-                                    <!-- Fila superior: nombre + precio -->
-                                    <div class="d-flex justify-space-between align-center mb-2">
-                                        <div class="d-flex align-center gap-x-2">
+                                <!-- Imagen del combo -->
+                                <div class="combo-card-img-wrap">
+                                    @if (!string.IsNullOrWhiteSpace(combo.ImageUrl))
+                                    {
+                                        <img src="@combo.ImageUrl" alt="@combo.Name" class="combo-card-img" />
+                                    }
+                                    else
+                                    {
+                                        <div class="combo-card-img-placeholder">
                                             <MudIcon Icon="@Icons.Material.Filled.LocalBar"
-                                                     Color="Color.Error"
-                                                     Size="Size.Small"
-                                                     Class="mr-1" />
-                                            <MudText Typo="Typo.subtitle1"
-                                                     Class="font-weight-bold combo-name">
-                                                @combo.Name
-                                            </MudText>
+                                                     Style="font-size:36px; color:rgba(239,83,80,0.3);" />
                                         </div>
-                                        <MudChip T="string"
-                                                 Color="Color.Success"
-                                                 Size="Size.Small"
-                                                 Class="font-weight-black px-3">
-                                            $@combo.ComboPrice.ToString("N2")
-                                        </MudChip>
+                                    }
+                                    <div class="combo-card-price-pill">
+                                        $@combo.ComboPrice.ToString("N2")
                                     </div>
+                                </div>
 
-                                    <!-- Descripción -->
+                                <!-- Info -->
+                                <div class="combo-card-body">
+                                    <div class="combo-card-name">@combo.Name</div>
                                     @if (!string.IsNullOrWhiteSpace(combo.Description))
                                     {
-                                        <MudButton Variant="Variant.Text"
-                                                   Color="Color.Error"
-                                                   Size="Size.Small"
-                                                   EndIcon="@Icons.Material.Filled.ShoppingCart"
-                                                   OnClick="@(() => AddComboToCart(combo.ComboId))"
-                                                   Class="text-transform-none font-weight-bold">
-                                            Agregar al carrito
-                                        </MudButton>
+                                        <div class="combo-card-desc">@combo.Description</div>
                                     }
+                                </div>
 
-                                    <!-- CTA -->
-                                    <div class="d-flex justify-end">
-                                        <MudButton Variant="Variant.Text"
-                                                   Color="Color.Error"
-                                                   Size="Size.Small"
-                                                   EndIcon="@Icons.Material.Filled.ArrowForward"
-                                                   Class="text-transform-none font-weight-bold">
-                                            Ver combo
-                                        </MudButton>
-                                    </div>
+                                <!-- Acciones -->
+                                <div class="combo-card-footer" @onclick:stopPropagation="true">
+                                    <button class="combo-btn-cart"
+                                            @onclick="@(() => AddComboToCart(combo.ComboId))">
+                                        <MudIcon Icon="@Icons.Material.Filled.ShoppingCart"
+                                                 Size="Size.Small" Class="mr-1" />
+                                        Añadir al carrito
+                                    </button>
+                                    <button class="combo-btn-detail"
+                                            @onclick="@(() => Nav.NavigateTo($"/combo/{combo.ComboId}"))">
+                                        Ver detalle →
+                                    </button>
+                                </div>
 
-                                </MudCardContent>
-                            </MudCard>
+                            </div>
                         }
                     </div>
                 }
                 else
                 {
-                    <MudPaper Variant="Variant.Outlined"
-                              Class="d-flex align-center p-4 rounded-lg empty-state-box">
-                        <MudIcon Icon="@Icons.Material.Filled.Inbox" Class="mr-3 muted-text" />
-                        <MudText Typo="Typo.body2" Class="muted-text">
-                            No hay combos activos para este producto en este momento.
-                        </MudText>
-                    </MudPaper>
+                    <div class="lower-empty-state">
+                        <MudIcon Icon="@Icons.Material.Filled.Inbox" Class="lower-empty-icon" />
+                        <span>No hay combos activos para este producto.</span>
+                    </div>
                 }
-            </MudItem>
+            </div>
 
-            <!-- ===== PROMOCIONES ===== -->
-            <MudItem xs="12" md="6">
-                <div class="section-header d-flex align-center mb-4">
-                    <MudIcon Icon="@Icons.Material.Filled.LocalOffer" Color="Color.Warning" Class="mr-2" />
-                    <MudText Typo="Typo.h5" Class="font-weight-bold">Promociones Especiales</MudText>
+            <!-- ── Separador ── -->
+            <div class="lower-divider"></div>
+
+            <!-- ── Promociones ── -->
+            <div class="lower-section-block">
+
+                <div class="lower-section-title">
+                    <div class="lower-title-icon lower-title-icon--orange">
+                        <MudIcon Icon="@Icons.Material.Filled.LocalOffer"
+                                 Style="font-size:20px; color:#ff9800;" />
+                    </div>
+                    <div>
+                        <div class="lower-title-text">Promociones especiales</div>
+                        <div class="lower-title-sub">Ofertas exclusivas vigentes ahora mismo</div>
+                    </div>
                 </div>
 
                 @if (Promotions.Any())
                 {
-                    <div class="cards-list-container">
+                    <div class="promos-grid-detail">
                         @foreach (var promo in Promotions)
                         {
-                            <MudCard Elevation="2" Class="promo-premium-card mb-3">
-                                <MudCardContent>
+                            <div class="promo-detail-card">
 
-                                    <!-- Badge de tipo de promo -->
-                                    <div class="d-flex justify-space-between align-start mb-2">
-                                        <MudText Typo="Typo.subtitle1"
-                                                 Class="font-weight-bold text-warning-dark">
-                                            @promo.Title
-                                        </MudText>
-                                        <MudChip T="string"
-                                                 Color="@GetPromoBadgeColor(promo)"
-                                                 Size="Size.Small"
-                                                 Class="font-weight-bold ml-2 promo-badge-chip">
+                                <!-- Franja de color según tipo -->
+                                <div class="promo-detail-stripe promo-detail-stripe--@(promo.IsPayXGetY ? "green" : promo.HasDiscount ? "red" : "orange")"></div>
+
+                                <!-- Cuerpo -->
+                                <div class="promo-detail-body">
+
+                                    <div class="promo-detail-header">
+                                        <div class="promo-detail-title">@promo.Title</div>
+                                        <span class="promo-detail-badge promo-detail-badge--@(promo.IsPayXGetY ? "green" : promo.HasDiscount ? "red" : "orange")">
                                             @promo.BadgeLabel
-                                        </MudChip>
+                                        </span>
                                     </div>
 
-                                    <!-- Descripción -->
                                     @if (!string.IsNullOrWhiteSpace(promo.Description))
                                     {
-                                        <MudText Typo="Typo.body2" Class="muted-text mb-3">
-                                            @promo.Description
-                                        </MudText>
+                                        <div class="promo-detail-desc">@promo.Description</div>
                                     }
 
-                                    <!-- Detalle de la oferta -->
-                                    <div class="promo-detail-box">
+                                    <!-- Oferta destacada -->
+                                    <div class="promo-offer-box">
 
                                         @if (promo.HasDiscount && Product != null)
                                         {
                                             var discounted = Product.Price * (1 - promo.DiscountPercentage!.Value / 100);
-                                            <div class="d-flex align-center gap-x-3">
-                                                <MudText Typo="Typo.body2" Class="muted-text line-through">
-                                                    $@Product.Price.ToString("N2")
-                                                </MudText>
-                                                <MudText Typo="Typo.h6" Color="Color.Success" Class="font-weight-black">
-                                                    $@discounted.ToString("N2")
-                                                </MudText>
-                                                <MudChip T="string" Color="Color.Error" Size="Size.Small" Class="font-weight-bold">
-                                                    -@promo.DiscountPercentage!.Value.ToString("0.##")%
-                                                </MudChip>
+                                            <div class="promo-offer-discount">
+                                                <span class="promo-price-original">$@Product.Price.ToString("N2")</span>
+                                                <span class="promo-price-new">$@discounted.ToString("N2")</span>
+                                                <span class="promo-pct-badge">-@promo.DiscountPercentage!.Value.ToString("0.##")%</span>
                                             </div>
                                         }
                                         else if (promo.HasSpecialPrice)
                                         {
-                                            <div class="d-flex align-center gap-x-3">
+                                            <div class="promo-offer-discount">
                                                 @if (Product != null)
                                                 {
-                                                    <MudText Typo="Typo.body2" Class="muted-text line-through">
-                                                        $@Product.Price.ToString("N2")
-                                                    </MudText>
+                                                    <span class="promo-price-original">$@Product.Price.ToString("N2")</span>
                                                 }
-                                                <MudText Typo="Typo.h6" Color="Color.Success" Class="font-weight-black">
-                                                    $@promo.SpecialPrice!.Value.ToString("N2")
-                                                </MudText>
-                                                <MudChip T="string" Color="Color.Warning" Size="Size.Small">
-                                                    Precio especial
-                                                </MudChip>
+                                                <span class="promo-price-new">$@promo.SpecialPrice!.Value.ToString("N2")</span>
+                                                <span class="promo-special-badge">Precio especial</span>
                                             </div>
                                         }
                                         else if (promo.IsPayXGetY)
                                         {
-                                            <div class="d-flex align-center gap-x-2">
+                                            <div class="promo-offer-pxgy">
                                                 <MudIcon Icon="@Icons.Material.Filled.CardGiftcard"
-                                                         Color="Color.Success" Size="Size.Small" />
-                                                <MudText Typo="Typo.body1" Class="font-weight-bold text-success-custom">
-                                                    Lleva @promo.RequiredQuantity, paga @promo.PayQuantity
-                                                </MudText>
+                                                         Style="font-size:28px; color:#66bb6a;" />
+                                                <div>
+                                                    <div class="promo-pxgy-main">
+                                                        Lleva @promo.RequiredQuantity · Paga @promo.PayQuantity
+                                                    </div>
+                                                    <div class="promo-pxgy-sub">
+                                                        ¡Te regalamos @(promo.RequiredQuantity - promo.PayQuantity) unidad@(promo.RequiredQuantity - promo.PayQuantity != 1 ? "es" : "")!
+                                                    </div>
+                                                </div>
                                             </div>
                                         }
 
                                     </div>
 
                                     <!-- Vigencia -->
-                                    <div class="d-flex align-center mt-3 gap-x-1">
+                                    <div class="promo-detail-validity">
                                         <MudIcon Icon="@Icons.Material.Filled.Schedule"
-                                                 Size="Size.Small"
-                                                 Class="muted-text" />
-                                        <MudText Typo="Typo.caption" Class="muted-text">
-                                            Válido hasta @promo.EndDate.ToString("dd MMM yyyy")
-                                        </MudText>
+                                                 Size="Size.Small" Class="mr-1" />
+                                        Válido hasta @promo.EndDate.ToString("dd MMM yyyy")
                                     </div>
 
-                                </MudCardContent>
-                            </MudCard>
+                                </div>
+                            </div>
                         }
                     </div>
                 }
                 else
                 {
-                    <MudPaper Variant="Variant.Outlined"
-                              Class="d-flex align-center p-4 rounded-lg empty-state-box">
-                        <MudIcon Icon="@Icons.Material.Filled.NotificationsOff" Class="mr-3 muted-text" />
-                        <MudText Typo="Typo.body2" Class="muted-text">
-                            Sin promociones activas por ahora. ¡Vuelve pronto!
-                        </MudText>
-                    </MudPaper>
+                    <div class="lower-empty-state">
+                        <MudIcon Icon="@Icons.Material.Filled.NotificationsOff" Class="lower-empty-icon" />
+                        <span>Sin promociones activas. ¡Vuelve pronto!</span>
+                    </div>
                 }
-            </MudItem>
 
-        </MudGrid>
+            </div>
+        </div>
     }
     else
     {
@@ -309,3 +298,325 @@
     }
 
 </MudContainer>
+
+<style>
+    /* ════════════════════════════════════
+       HERO (sin cambios al original)
+    ════════════════════════════════════ */
+    .image-container-premium {
+        position: relative; width: 400px; height: 400px;
+        background: #ffffff; border-radius: 24px;
+        display: flex; justify-content: center; align-items: center;
+        box-shadow: 0 15px 35px rgba(0,0,0,0.4);
+        border: 1px solid rgba(255,255,255,0.08); overflow: hidden;
+    }
+    .product-info-container { width: 100%; max-width: 450px; }
+    .product-image-fluid {
+        width: 100%; height: 100%; object-fit: cover; object-position: center;
+        transition: transform 0.4s cubic-bezier(0.25,1,0.5,1);
+    }
+    .image-container-premium:hover .product-image-fluid { transform: scale(1.06); }
+    .badge-premium-floating {
+        position: absolute; top: 16px; left: 16px;
+        background: linear-gradient(135deg,#b38728,#fbf5b7,#daa520,#aa771c);
+        color: #1a1a1a; font-weight: 800; font-size: 0.75rem;
+        padding: 6px 12px; border-radius: 30px;
+        display: inline-flex; align-items: center;
+        box-shadow: 0 4px 10px rgba(179,135,40,0.3); letter-spacing: 1px; z-index: 2;
+    }
+    .product-title { color: #ffffff; line-height: 1.2; }
+    .muted-text { color: #a1a1aa !important; }
+    .product-description { color: #d4d4d8; line-height: 1.6; font-size: 1.05rem; }
+    .btn-add-cart {
+        font-weight: 700 !important; font-size: 1.1rem !important;
+        letter-spacing: 0.5px; border-radius: 12px !important;
+        text-transform: none !important;
+        box-shadow: 0 6px 20px rgba(244,67,54,0.25) !important;
+        transition: all 0.2s ease !important;
+    }
+    .btn-add-cart:hover:not(:disabled) {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(244,67,54,0.4) !important;
+    }
+    .text-transform-none { text-transform: none !important; }
+    .uppercase { text-transform: uppercase; }
+    .tracking-wider { letter-spacing: 1px; }
+
+    /* ════════════════════════════════════
+       SECCIÓN INFERIOR — CONTENEDOR
+    ════════════════════════════════════ */
+    .lower-section {
+        display: flex; flex-direction: column; gap: 0;
+        border: 1px solid rgba(255,255,255,0.07);
+        border-radius: 20px; overflow: hidden;
+        background: rgba(255,255,255,0.02);
+    }
+
+    .lower-section-block { padding: 32px; }
+
+    .lower-divider {
+        height: 1px;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
+        margin: 0 32px;
+    }
+
+    /* ── Título de bloque ── */
+    .lower-section-title {
+        display: flex; align-items: flex-start; gap: 14px; margin-bottom: 24px;
+    }
+
+    .lower-title-icon {
+        width: 42px; height: 42px; border-radius: 12px;
+        display: flex; align-items: center; justify-content: center;
+        flex-shrink: 0;
+    }
+
+    .lower-title-icon--red    { background: rgba(239,83,80,0.12); }
+    .lower-title-icon--orange { background: rgba(255,152,0,0.12); }
+
+    .lower-title-text {
+        font-size: 18px; font-weight: 700; color: #fff; line-height: 1.2;
+    }
+
+    .lower-title-sub {
+        font-size: 12px; color: #71717a; margin-top: 3px;
+    }
+
+    /* ── Empty state ── */
+    .lower-empty-state {
+        display: flex; align-items: center; gap: 10px;
+        padding: 20px 24px;
+        border: 1.5px dashed rgba(255,255,255,0.08);
+        border-radius: 12px;
+        color: #52525b; font-size: 14px;
+    }
+
+    .lower-empty-icon { font-size: 24px !important; color: #3f3f46 !important; }
+
+    /* ════════════════════════════════════
+       GRID DE COMBOS
+    ════════════════════════════════════ */
+    .combos-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+        gap: 14px;
+    }
+
+    @@media (max-width: 600px) { .combos-grid { grid-template-columns: 1fr 1fr; } }
+    @@media (max-width: 400px) { .combos-grid { grid-template-columns: 1fr; } }
+
+    /* ── Card de combo ── */
+    .combo-card {
+        background: rgba(255,255,255,0.03);
+        border: 1.5px solid rgba(255,255,255,0.07);
+        border-radius: 14px; overflow: hidden;
+        display: flex; flex-direction: column;
+        transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+        cursor: pointer;
+    }
+
+    .combo-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 10px 28px rgba(239,83,80,0.15);
+        border-color: rgba(239,83,80,0.35);
+    }
+
+    /* Imagen del combo */
+    .combo-card-img-wrap {
+        position: relative; width: 100%; aspect-ratio: 4/3;
+        background: rgba(239,83,80,0.05); overflow: hidden; flex-shrink: 0;
+    }
+
+    .combo-card-img {
+        width: 100%; height: 100%; object-fit: cover;
+        transition: transform 0.3s ease;
+    }
+
+    .combo-card:hover .combo-card-img { transform: scale(1.05); }
+
+    .combo-card-img-placeholder {
+        width: 100%; height: 100%;
+        display: flex; align-items: center; justify-content: center;
+    }
+
+    /* Precio flotante */
+    .combo-card-price-pill {
+        position: absolute; bottom: 8px; right: 8px;
+        background: rgba(76,175,80,0.9);
+        color: #fff; font-size: 13px; font-weight: 800;
+        padding: 4px 10px; border-radius: 20px;
+        backdrop-filter: blur(6px);
+    }
+
+    /* Cuerpo */
+    .combo-card-body { padding: 12px 14px 8px; flex-grow: 1; }
+
+    .combo-card-name {
+        font-size: 14px; font-weight: 700; color: #fff;
+        line-height: 1.3; margin-bottom: 4px;
+        display: -webkit-box; -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical; overflow: hidden;
+    }
+
+    .combo-card-desc {
+        font-size: 11px; color: #71717a;
+        display: -webkit-box; -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical; overflow: hidden;
+    }
+
+    /* Footer con botones */
+    .combo-card-footer {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 8px 14px 12px; gap: 8px;
+        border-top: 1px solid rgba(255,255,255,0.05);
+    }
+
+    .combo-btn-cart {
+        display: inline-flex; align-items: center;
+        background: rgba(239,83,80,0.15);
+        border: 1px solid rgba(239,83,80,0.3);
+        color: #ef5350; font-size: 11px; font-weight: 700;
+        padding: 5px 10px; border-radius: 7px; cursor: pointer;
+        transition: background 0.15s, transform 0.12s;
+        white-space: nowrap;
+    }
+
+    .combo-btn-cart:hover {
+        background: rgba(239,83,80,0.28); transform: scale(1.03);
+    }
+
+    .combo-btn-detail {
+        background: transparent; border: none;
+        color: #71717a; font-size: 11px; font-weight: 600;
+        cursor: pointer; padding: 5px 4px;
+        transition: color 0.15s; white-space: nowrap;
+    }
+
+    .combo-btn-detail:hover { color: #d4d4d8; }
+
+    /* ════════════════════════════════════
+       GRID DE PROMOCIONES
+    ════════════════════════════════════ */
+    .promos-grid-detail {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 14px;
+    }
+
+    @@media (max-width: 600px) { .promos-grid-detail { grid-template-columns: 1fr; } }
+
+    /* ── Card de promo ── */
+    .promo-detail-card {
+        display: flex;
+        background: rgba(255,255,255,0.03);
+        border: 1.5px solid rgba(255,255,255,0.07);
+        border-radius: 14px; overflow: hidden;
+        transition: transform 0.18s ease, box-shadow 0.18s ease;
+    }
+
+    .promo-detail-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 24px rgba(255,152,0,0.12);
+        border-color: rgba(255,152,0,0.25);
+    }
+
+    /* Franja lateral de color */
+    .promo-detail-stripe {
+        width: 5px; flex-shrink: 0;
+    }
+
+    .promo-detail-stripe--red    { background: linear-gradient(180deg,#e53935,#ef9a9a); }
+    .promo-detail-stripe--orange { background: linear-gradient(180deg,#ff9800,#ffcc80); }
+    .promo-detail-stripe--green  { background: linear-gradient(180deg,#43a047,#a5d6a7); }
+
+    /* Cuerpo */
+    .promo-detail-body { padding: 16px 18px; flex: 1; min-width: 0; }
+
+    .promo-detail-header {
+        display: flex; align-items: flex-start;
+        justify-content: space-between; gap: 8px; margin-bottom: 6px;
+    }
+
+    .promo-detail-title {
+        font-size: 15px; font-weight: 700; color: #fff; line-height: 1.3;
+        flex: 1; min-width: 0;
+        display: -webkit-box; -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical; overflow: hidden;
+    }
+
+    /* Badges de tipo */
+    .promo-detail-badge {
+        font-size: 9px; font-weight: 800; white-space: nowrap;
+        padding: 3px 8px; border-radius: 20px;
+        text-transform: uppercase; letter-spacing: 0.5px; flex-shrink: 0;
+    }
+
+    .promo-detail-badge--red    { background: rgba(229,57,53,0.2);  color: #ef9a9a; }
+    .promo-detail-badge--orange { background: rgba(255,152,0,0.2);  color: #ffcc80; }
+    .promo-detail-badge--green  { background: rgba(76,175,80,0.2);  color: #a5d6a7; }
+
+    /* Descripción */
+    .promo-detail-desc {
+        font-size: 12px; color: #71717a; margin-bottom: 12px;
+        display: -webkit-box; -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical; overflow: hidden;
+    }
+
+    /* Caja de la oferta */
+    .promo-offer-box {
+        background: rgba(0,0,0,0.2);
+        border-radius: 10px; padding: 10px 14px;
+        margin-bottom: 10px;
+    }
+
+    /* Descuento / precio especial */
+    .promo-offer-discount {
+        display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    }
+
+    .promo-price-original {
+        font-size: 13px; color: #71717a; text-decoration: line-through;
+    }
+
+    .promo-price-new {
+        font-size: 20px; font-weight: 800; color: #66bb6a;
+    }
+
+    .promo-pct-badge {
+        font-size: 11px; font-weight: 800;
+        background: rgba(229,57,53,0.2); color: #ef9a9a;
+        padding: 3px 8px; border-radius: 20px;
+    }
+
+    .promo-special-badge {
+        font-size: 11px; font-weight: 700;
+        background: rgba(255,152,0,0.2); color: #ffcc80;
+        padding: 3px 8px; border-radius: 20px;
+    }
+
+    /* PayXGetY */
+    .promo-offer-pxgy {
+        display: flex; align-items: center; gap: 12px;
+    }
+
+    .promo-pxgy-main {
+        font-size: 15px; font-weight: 800; color: #66bb6a;
+    }
+
+    .promo-pxgy-sub {
+        font-size: 11px; color: #71717a; margin-top: 2px;
+    }
+
+    /* Vigencia */
+    .promo-detail-validity {
+        display: flex; align-items: center;
+        font-size: 11px; color: #52525b;
+    }
+
+    /* ── Responsive móvil general ── */
+    @@media (max-width: 600px) {
+        .lower-section-block { padding: 20px 16px; }
+        .lower-divider { margin: 0 16px; }
+        .image-container-premium { width: 100%; height: 260px; }
+    }
+</style>

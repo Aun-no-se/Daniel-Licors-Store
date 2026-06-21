@@ -29,14 +29,15 @@ public class PromotionService : IPromotionService
 
         return promos.Select(p => new PromotionAdminDto
         {
-            PromotionId    = p.PromotionId,
-            Title          = p.Title,
-            Description    = p.Description,
-            PromotionType  = p.PromotionType,
-            StartDate      = p.StartDate,
-            EndDate        = p.EndDate,
-            IsActive       = p.IsActive,
-            ProductCount   = p.PromotionProducts.Count,
+            PromotionId = p.PromotionId,
+            Title = p.Title,
+            Description = p.Description,
+            PromotionType = p.PromotionType,
+            StartDate = p.StartDate,
+            EndDate = p.EndDate,
+            IsActive = p.IsActive,
+            ImageUrl = p.ImageUrl,   // ← incluimos la ruta de la imagen
+            ProductCount = p.PromotionProducts.Count,
             ProductsSummary = string.Join(", ",
                 p.PromotionProducts.Select(pp => pp.Product?.Name ?? "").Where(n => n != ""))
         }).ToList();
@@ -56,14 +57,15 @@ public class PromotionService : IPromotionService
 
         return new PromotionAdminDto
         {
-            PromotionId    = p.PromotionId,
-            Title          = p.Title,
-            Description    = p.Description,
-            PromotionType  = p.PromotionType,
-            StartDate      = p.StartDate,
-            EndDate        = p.EndDate,
-            IsActive       = p.IsActive,
-            ProductCount   = p.PromotionProducts.Count,
+            PromotionId = p.PromotionId,
+            Title = p.Title,
+            Description = p.Description,
+            PromotionType = p.PromotionType,
+            StartDate = p.StartDate,
+            EndDate = p.EndDate,
+            IsActive = p.IsActive,
+            ImageUrl = p.ImageUrl,   // ← incluimos la ruta de la imagen
+            ProductCount = p.PromotionProducts.Count,
             ProductsSummary = string.Join(", ",
                 p.PromotionProducts.Select(pp => pp.Product?.Name ?? ""))
         };
@@ -79,13 +81,13 @@ public class PromotionService : IPromotionService
         {
             var promo = new Promotion
             {
-                Title         = model.Title.Trim(),
-                Description   = model.Description?.Trim(),
-                StartDate     = model.StartDate,
-                EndDate       = model.EndDate,
+                Title = model.Title.Trim(),
+                Description = model.Description?.Trim(),
+                StartDate = model.StartDate,
+                EndDate = model.EndDate,
                 PromotionType = model.PromotionType,
-                ImageUrl      = model.ImageUrl,
-                IsActive      = model.IsActive
+                ImageUrl = model.ImageUrl,
+                IsActive = model.IsActive
             };
 
             _context.Promotions.Add(promo);
@@ -95,12 +97,12 @@ public class PromotionService : IPromotionService
             {
                 _context.PromotionProducts.Add(new PromotionProduct
                 {
-                    PromotionId        = promo.PromotionId,
-                    ProductId          = line.ProductId,
-                    SpecialPrice       = line.SpecialPrice,
+                    PromotionId = promo.PromotionId,
+                    ProductId = line.ProductId,
+                    SpecialPrice = line.SpecialPrice,
                     DiscountPercentage = line.DiscountPercentage,
-                    RequiredQuantity   = line.RequiredQuantity,
-                    PayQuantity        = line.PayQuantity
+                    RequiredQuantity = line.RequiredQuantity,
+                    PayQuantity = line.PayQuantity
                 });
             }
 
@@ -128,17 +130,17 @@ public class PromotionService : IPromotionService
                 .FirstOrDefaultAsync(p => p.PromotionId == promotionId)
                 ?? throw new Exception("Promoción no encontrada");
 
-            promo.Title         = model.Title.Trim();
-            promo.Description   = model.Description?.Trim();
-            promo.StartDate     = model.StartDate;
-            promo.EndDate       = model.EndDate;
+            promo.Title = model.Title.Trim();
+            promo.Description = model.Description?.Trim();
+            promo.StartDate = model.StartDate;
+            promo.EndDate = model.EndDate;
             promo.PromotionType = model.PromotionType;
-            promo.IsActive      = model.IsActive;
+            promo.IsActive = model.IsActive;
 
+            // Solo actualizamos la imagen si se subió una nueva
             if (!string.IsNullOrWhiteSpace(model.ImageUrl))
                 promo.ImageUrl = model.ImageUrl;
 
-            // Reemplazar líneas de productos
             _context.PromotionProducts.RemoveRange(promo.PromotionProducts);
             await _context.SaveChangesAsync();
 
@@ -146,12 +148,12 @@ public class PromotionService : IPromotionService
             {
                 _context.PromotionProducts.Add(new PromotionProduct
                 {
-                    PromotionId        = promo.PromotionId,
-                    ProductId          = line.ProductId,
-                    SpecialPrice       = line.SpecialPrice,
+                    PromotionId = promo.PromotionId,
+                    ProductId = line.ProductId,
+                    SpecialPrice = line.SpecialPrice,
                     DiscountPercentage = line.DiscountPercentage,
-                    RequiredQuantity   = line.RequiredQuantity,
-                    PayQuantity        = line.PayQuantity
+                    RequiredQuantity = line.RequiredQuantity,
+                    PayQuantity = line.PayQuantity
                 });
             }
 
