@@ -35,6 +35,9 @@ namespace Daniel_Licors_Store.Components.Pages
 
         private ComboCreateModel _newCombo = new();
 
+        // ════════════════════════════════════════════════════════
+        // INIT
+        // ════════════════════════════════════════════════════════
         protected override async Task OnInitializedAsync()
         {
             try
@@ -51,7 +54,6 @@ namespace Daniel_Licors_Store.Components.Pages
         private async Task LoadCombos()
         {
             _loading = true;
-
             try
             {
                 _adminCombos = await ComboService.GetAdminCombosAsync();
@@ -66,53 +68,42 @@ namespace Daniel_Licors_Store.Components.Pages
             }
         }
 
+        // ════════════════════════════════════════════════════════
+        // FORMULARIO
+        // ════════════════════════════════════════════════════════
         private void ShowCreateSection()
         {
+            ResetForm();
             _showCreateCombo = true;
         }
 
-        private async Task OpenQuantityModal(ProductDetailDto product)
+        private void ResetForm()
         {
-            var dialog = DialogService.Show<QuantityDialog>(
-                "Cantidad",
-                new DialogParameters { ["SelectedProduct"] = product }
-            );
-
-            var result = await dialog.Result;
-
-            if (!result.Canceled && result.Data is int qty && qty > 0)
-            {
-                AddProduct(product, qty);
-            }
+            _showCreateCombo = false;
+            _comboBuilder.Clear();
+            _imageBytes = null;
+            _imageFileName = null;
+            _newCombo = new ComboCreateModel();
+            _isEditMode = false;
+            _editingComboId = 0;
         }
 
-        private void AddProduct(ProductDetailDto product, int qty)
+        private void RemoveImage()
         {
-            var existing = _comboBuilder.FirstOrDefault(x => x.ProductId == product.ProductId);
-
-            if (existing != null)
-                existing.Quantity += qty;
-            else
-            {
-                _comboBuilder.Add(new ComboProductTemp
-                {
-                    ProductId = product.ProductId,
-                    ProductName = product.Name,
-                    Quantity = qty,
-                    ImageUrl = product.ImageUrl ?? string.Empty
-                });
-            }
+            _imageBytes = null;
+            _imageFileName = null;
+            _newCombo.ImageUrl = null;
         }
 
+        // ════════════════════════════════════════════════════════
+        // UPLOAD DE IMAGEN
+        // ════════════════════════════════════════════════════════
         private async Task HandleFileSelected(InputFileChangeEventArgs e)
         {
             try
             {
                 var file = e.File;
-
-                // Validaciones tempranas sin tocar el stream
-                if (file is null || file.Size <= 0)
-                    return;
+                if (file is null || file.Size <= 0) return;
 
                 if (file.Size > 5 * 1024 * 1024)
                 {
@@ -120,7 +111,6 @@ namespace Daniel_Licors_Store.Components.Pages
                     return;
                 }
 
-                // Leer el stream en un buffer antes de cualquier await externo
                 var buffer = new byte[file.Size];
                 await using var stream = file.OpenReadStream(maxAllowedSize: 5 * 1024 * 1024);
                 var totalRead = 0;
@@ -136,23 +126,36 @@ namespace Daniel_Licors_Store.Components.Pages
                 _imageFileName = file.Name;
 
                 Snackbar.Add("Imagen cargada correctamente", Severity.Success);
-                StateHasChanged(); // sin InvokeAsync, ya estás en el circuit correcto
+                StateHasChanged();
             }
             catch (JSException jsEx)
             {
-                // El usuario cerró el diálogo o navegó — no es un error real
                 Console.WriteLine($"[InputFile] JSException ignorada: {jsEx.Message}");
             }
-            catch (TaskCanceledException)
-            {
-                // Circuit cancelado — ignorar silenciosamente
-            }
+            catch (TaskCanceledException) { }
             catch (Exception ex)
             {
                 Snackbar.Add($"Error leyendo imagen: {ex.Message}", Severity.Error);
             }
         }
 
+        private async Task<string> SaveImageAsync()
+        {
+            var folder = Path.Combine(Env.WebRootPath, "images", "combos");
+            Directory.CreateDirectory(folder);
+
+            var extension = Path.GetExtension(_imageFileName ?? ".jpg");
+            var fileName = $"{Guid.NewGuid()}{extension}";
+            var fullPath = Path.Combine(folder, fileName);
+
+            await File.WriteAllBytesAsync(fullPath, _imageBytes!);
+
+            return $"/images/combos/{fileName}";
+        }
+
+        // ════════════════════════════════════════════════════════
+        // CRUD
+        // ════════════════════════════════════════════════════════
         private async Task SaveCombo()
         {
             if (!_comboBuilder.Any())
@@ -184,42 +187,15 @@ namespace Daniel_Licors_Store.Components.Pages
             }
             catch (Exception ex)
             {
-                Snackbar.Add($"Error creando combo: {ex.Message}", Severity.Error);
+                Snackbar.Add($"Error guardando combo: {ex.Message}", Severity.Error);
             }
         }
 
-        private async Task<string> SaveImageAsync()
-        {
-            var folder = Path.Combine(Env.WebRootPath, "images", "combos");
-            Directory.CreateDirectory(folder);
-
-            var extension = Path.GetExtension(_imageFileName ?? ".jpg");
-            var fileName = $"{Guid.NewGuid()}{extension}";
-            var fullPath = Path.Combine(folder, fileName);
-
-            await File.WriteAllBytesAsync(fullPath, _imageBytes!);
-
-            return $"/images/combos/{fileName}";
-        }
-
-        private void ResetForm()
-        {
-            _showCreateCombo = false;
-            _comboBuilder.Clear();
-            _imageBytes = null;
-            _imageFileName = null;
-            _newCombo = new ComboCreateModel();
-            _isEditMode = false;
-            _editingComboId = 0;
-        }
-
-        private void ViewCombo(int id) { }
         private async Task EditCombo(int id)
         {
             try
             {
                 var combo = await ComboService.GetComboDetailAsync(id);
-
                 if (combo == null)
                 {
                     Snackbar.Add("Combo no encontrado", Severity.Warning);
@@ -234,8 +210,12 @@ namespace Daniel_Licors_Store.Components.Pages
                 {
                     Name = combo.Name,
                     Description = combo.Description,
-                    ComboPrice = combo.ComboPrice
+                    ComboPrice = combo.ComboPrice,
+                    ImageUrl = combo.ImageUrl != "/images/combo-default.png" ? combo.ImageUrl : null
                 };
+
+                _imageBytes = null;
+                _imageFileName = null;
 
                 _comboBuilder = combo.Products.Select(p => new ComboProductTemp
                 {
@@ -249,20 +229,19 @@ namespace Daniel_Licors_Store.Components.Pages
                 Snackbar.Add($"Error cargando combo: {ex.Message}", Severity.Error);
             }
         }
+
         private async Task DeleteCombo(int id)
         {
             var parameters = new DialogParameters
             {
-                ["ContentText"] = "¿Seguro que deseas eliminar este combo?",
+                ["ContentText"] = "¿Seguro que deseas eliminar este combo? Esta acción no se puede deshacer.",
                 ["ButtonText"] = "Eliminar",
                 ["ButtonColor"] = Color.Error
             };
 
             var dialog = DialogService.Show<ConfirmDialog>("Confirmar eliminación", parameters);
             var result = await dialog.Result;
-
-            if (result.Canceled)
-                return;
+            if (result.Canceled) return;
 
             try
             {
@@ -273,6 +252,40 @@ namespace Daniel_Licors_Store.Components.Pages
             catch (Exception ex)
             {
                 Snackbar.Add($"Error eliminando combo: {ex.Message}", Severity.Error);
+            }
+        }
+
+        // ════════════════════════════════════════════════════════
+        // MODAL CANTIDAD
+        // ════════════════════════════════════════════════════════
+        private async Task OpenQuantityModal(ProductDetailDto product)
+        {
+            var dialog = DialogService.Show<QuantityDialog>(
+                "Cantidad",
+                new DialogParameters { ["SelectedProduct"] = product }
+            );
+
+            var result = await dialog.Result;
+
+            if (!result.Canceled && result.Data is int qty && qty > 0)
+                AddProduct(product, qty);
+        }
+
+        private void AddProduct(ProductDetailDto product, int qty)
+        {
+            var existing = _comboBuilder.FirstOrDefault(x => x.ProductId == product.ProductId);
+
+            if (existing != null)
+                existing.Quantity += qty;
+            else
+            {
+                _comboBuilder.Add(new ComboProductTemp
+                {
+                    ProductId = product.ProductId,
+                    ProductName = product.Name,
+                    Quantity = qty,
+                    ImageUrl = product.ImageUrl ?? string.Empty
+                });
             }
         }
     }

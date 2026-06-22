@@ -111,7 +111,7 @@
                         <div class="promo-card-dates">
                             <MudIcon Icon="@Icons.Material.Filled.DateRange"
                                      Size="Size.Small" Class="mr-1" />
-                            <span>@promo.StartDate.ToString("dd MMM") — @promo.EndDate.ToString("dd MMM yyyy")</span>
+                            <span>@FormatDate(promo.StartDate, "dd MMM") — @FormatDate(promo.EndDate)</span>
                         </div>
                     </div>
 
@@ -211,7 +211,7 @@
                             else
                             {
                                 <MudIcon Icon="@Icons.Material.Filled.AddPhotoAlternate"
-                                         Style="font-size:48px; color:rgba(255,165,0,0.4);" />
+                                         Style="font-size:48px; color:rgba(255,152,0,0.4);" />
                                 <span class="img-upload-hint">Imagen de la promoción</span>
                             }
                         </div>

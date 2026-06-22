@@ -9,13 +9,11 @@ namespace Daniel_Licors_Store.Components.Pages
     public partial class ProductDetail
     {
         [Parameter] public int ProductId { get; set; }
-
         [Inject] public ICatalogService CatalogService { get; set; } = default!;
 
         ProductDetailDto? Product;
         List<ComboDto> Combos = new();
         List<PromotionDto> Promotions = new();
-
         bool _loading = true;
 
         protected override async Task OnInitializedAsync()
@@ -26,11 +24,9 @@ namespace Daniel_Licors_Store.Components.Pages
         private async Task Load()
         {
             _loading = true;
-
             try
             {
                 Product = await CatalogService.GetProductDetailAsync(ProductId);
-
                 if (Product is not null)
                 {
                     Combos = await CatalogService.GetCombosByProductAsync(ProductId);
@@ -43,7 +39,6 @@ namespace Daniel_Licors_Store.Components.Pages
             }
         }
 
-        // Helper: color del badge según tipo de promoción
         private Color GetPromoBadgeColor(PromotionDto promo)
         {
             if (promo.IsPayXGetY) return Color.Success;
@@ -52,18 +47,14 @@ namespace Daniel_Licors_Store.Components.Pages
             return Color.Info;
         }
 
+        // ── Agregar producto al carrito ──
         private async Task AddToCart(int productId)
         {
             try
             {
                 var authState = await AuthStateProvider.GetAuthenticationStateAsync();
                 var userId = authState.User.FindFirst(c => c.Type == System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-
-                if (string.IsNullOrEmpty(userId))
-                {
-                    Nav.NavigateTo("/login");
-                    return;
-                }
+                if (string.IsNullOrEmpty(userId)) { Nav.NavigateTo("/login"); return; }
 
                 await CartService.AddProductToCartAsync(userId, productId, 1, 1);
                 Snackbar.Add("Producto agregado al carrito ✓", Severity.Success);
@@ -74,21 +65,36 @@ namespace Daniel_Licors_Store.Components.Pages
             }
         }
 
+        // ── Agregar combo al carrito ──
         private async Task AddComboToCart(int comboId)
         {
             try
             {
                 var authState = await AuthStateProvider.GetAuthenticationStateAsync();
                 var userId = authState.User.FindFirst(c => c.Type == System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-
-                if (string.IsNullOrEmpty(userId))
-                {
-                    Nav.NavigateTo("/login");
-                    return;
-                }
+                if (string.IsNullOrEmpty(userId)) { Nav.NavigateTo("/login"); return; }
 
                 await CartService.AddComboToCartAsync(userId, comboId, 1, 1);
                 Snackbar.Add("Combo agregado al carrito ✓", Severity.Success);
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Error: {ex.Message}", Severity.Error);
+            }
+        }
+
+        // ── Agregar promoción al carrito (agrega el producto con precio especial) ──
+        private async Task AddPromotionToCart(PromotionDto promo)
+        {
+            try
+            {
+                var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+                var userId = authState.User.FindFirst(c => c.Type == System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                if (string.IsNullOrEmpty(userId)) { Nav.NavigateTo("/login"); return; }
+
+                var qty = promo.IsPayXGetY ? (promo.RequiredQuantity ?? 1) : 1;
+                await CartService.AddProductToCartAsync(userId, ProductId, qty, 1);
+                Snackbar.Add($"Promoción «{promo.Title}» agregada al carrito ✓", Severity.Success);
             }
             catch (Exception ex)
             {

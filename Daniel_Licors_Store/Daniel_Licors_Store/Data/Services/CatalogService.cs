@@ -76,6 +76,7 @@ namespace Daniel_Licors_Store.Data.Services
 
         // =========================
         // COMBOS BY PRODUCT
+        // Incluye ImageUrl para mostrarla en la vista de detalle
         // =========================
         public async Task<List<ComboDto>> GetCombosByProductAsync(int productId)
         {
@@ -93,7 +94,8 @@ namespace Daniel_Licors_Store.Data.Services
                     ComboId = cp.ComboId,
                     Name = cp.Combo.Name,
                     Description = cp.Combo.Description,
-                    ComboPrice = cp.Combo.ComboPrice
+                    ComboPrice = cp.Combo.ComboPrice,
+                    ImageUrl = cp.Combo.ImageUrl   // ← incluir imagen
                 })
                 .ToListAsync();
         }
@@ -119,7 +121,7 @@ namespace Daniel_Licors_Store.Data.Services
                     Title = pp.Promotion.Title,
                     Description = pp.Promotion.Description,
                     PromotionType = pp.Promotion.PromotionType,
-                    ImageUrl = pp.Promotion.ImageUrl,
+                    ImageUrl = pp.Promotion.ImageUrl,   // ← incluir imagen
                     StartDate = pp.Promotion.StartDate,
                     EndDate = pp.Promotion.EndDate,
                     SpecialPrice = pp.SpecialPrice,

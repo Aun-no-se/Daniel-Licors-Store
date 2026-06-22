@@ -1,182 +1,592 @@
 ﻿@page "/admin/combos"
+@attribute [Authorize(Roles = "Admin,Empleado")]
+
+@using Microsoft.AspNetCore.Authorization
 @using Microsoft.AspNetCore.Components.Forms
 @using Daniel_Licors_Store.Models.Combo
+@using Daniel_Licors_Store.Models.Product
+@using MudBlazor
 
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="combos-page mt-6 mb-12">
 
-<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="mt-6">
-
-    <MudText Typo="Typo.h4" Class="font-weight-bold mb-4">
-        Administración de Combos
-    </MudText>
+    <!-- ── Encabezado ── -->
+    <div class="combos-page-header mb-8">
+        <div class="header-accent"></div>
+        <div class="header-content">
+            <MudText Typo="Typo.h4" Class="combos-page-title">Combos</MudText>
+            <MudText Typo="Typo.body2" Class="combos-page-sub">
+                Paquetes especiales con múltiples productos a precio combinado
+            </MudText>
+        </div>
+        <div class="header-actions">
+            <MudButton Color="Color.Warning"
+                       Variant="Variant.Filled"
+                       StartIcon="@Icons.Material.Filled.Add"
+                       OnClick="ShowCreateSection"
+                       Class="btn-new-combo">
+                Nuevo Combo
+            </MudButton>
+        </div>
+    </div>
 
     @if (_loading)
     {
-        <div class="d-flex justify-center my-10">
-            <MudProgressCircular Indeterminate Size="Size.Large" />
+        <div class="d-flex justify-center align-center flex-column py-16">
+            <MudProgressCircular Indeterminate Size="Size.Large" Color="Color.Warning" />
+            <MudText Typo="Typo.body2" Class="mt-4 muted-text">Cargando combos...</MudText>
+        </div>
+    }
+    else if (!_adminCombos.Any())
+    {
+        <div class="empty-combos-state">
+            <MudIcon Icon="@Icons.Material.Filled.Inventory2" Class="empty-icon" />
+            <MudText Typo="Typo.h6" Class="font-weight-bold mt-3 mb-1">Sin combos aún</MudText>
+            <MudText Typo="Typo.body2" Class="muted-text mb-4">Crea tu primer combo para empezar a ofrecer paquetes especiales.</MudText>
+            <MudButton Color="Color.Warning" Variant="Variant.Filled" OnClick="ShowCreateSection">
+                Crear combo
+            </MudButton>
         </div>
     }
     else
     {
-        <MudPaper Elevation="1" Class="pa-4 rounded-lg">
+        <!-- ── Grid de cards de combos ── -->
+        <div class="combos-grid">
+            @foreach (var combo in _adminCombos)
+            {
+                <div class="combo-card">
 
-            <MudTable Items="_adminCombos" Dense Hover Bordered>
-                <HeaderContent>
-                    <MudTh>Imagen</MudTh>
-                    <MudTh>Nombre</MudTh>
-                    <MudTh>Precio</MudTh>
-                    <MudTh>Productos</MudTh>
-                    <MudTh Align="Align.Center">Acciones</MudTh>
-                </HeaderContent>
+                    <!-- Imagen del combo -->
+                    <div class="combo-card-img">
+                        @if (!string.IsNullOrWhiteSpace(combo.ImageUrl) && combo.ImageUrl != "/images/combo-default.png")
+                        {
+                            <img src="@combo.ImageUrl" alt="@combo.Name" class="combo-img-real" />
+                        }
+                        else
+                        {
+                            <div class="combo-img-placeholder">
+                                <MudIcon Icon="@Icons.Material.Filled.Inventory2"
+                                         Style="font-size:40px; color:rgba(255,165,0,0.3);" />
+                            </div>
+                        }
+                        <!-- Badge tipo -->
+                        <span class="combo-type-badge">
+                            COMBO
+                        </span>
+                        <!-- Precio badge -->
+                        <span class="combo-price-badge">
+                            $@combo.ComboPrice.ToString("N2")
+                        </span>
+                    </div>
 
-                <RowTemplate>
-                    <MudTd>
-                        <MudAvatar Size="Size.Medium" Square>
-                            <MudImage Src="@context.ImageUrl" Width="48" Height="48" />
-                        </MudAvatar>
-                    </MudTd>
+                    <!-- Cuerpo -->
+                    <div class="combo-card-body">
+                        <div class="combo-card-title">@combo.Name</div>
 
-                    <MudTd>
-                        <MudText Typo="Typo.subtitle2" Class="font-weight-bold">
-                            @context.Name
-                        </MudText>
-                    </MudTd>
+                        <div class="combo-card-meta">
+                            <MudIcon Icon="@Icons.Material.Filled.Inventory2"
+                                     Size="Size.Small" Class="mr-1 muted-text" />
+                            <span class="muted-text" style="font-size:12px;">
+                                @combo.ProductsSummary
+                            </span>
+                        </div>
+                    </div>
 
-                    <MudTd>
-                        <MudText Color="Color.Success" Class="font-weight-bold">
-                            $@context.ComboPrice.ToString("N2")
-                        </MudText>
-                    </MudTd>
-
-                    <MudTd>
-                        <MudText Typo="Typo.body2">
-                            @context.ProductsSummary
-                        </MudText>
-                    </MudTd>
-
-                    <MudTd Align="Align.Center">
+                    <!-- Acciones -->
+                    <div class="combo-card-actions">
                         <MudIconButton Icon="@Icons.Material.Filled.Visibility"
-                                       Color="Color.Primary"
-                                       OnClick="@(() => Nav.NavigateTo($"/combo/{context.ComboId}", true))" />
-
+                                       Color="Color.Info"
+                                       Size="Size.Small"
+                                       Title="Ver detalle"
+                                       OnClick="@(() => Nav.NavigateTo($"/combo/{combo.ComboId}", true))" />
                         <MudIconButton Icon="@Icons.Material.Filled.Edit"
                                        Color="Color.Warning"
-                                       OnClick="@(() => EditCombo(context.ComboId))" />
-
+                                       Size="Size.Small"
+                                       Title="Editar"
+                                       OnClick="@(() => EditCombo(combo.ComboId))" />
                         <MudIconButton Icon="@Icons.Material.Filled.Delete"
                                        Color="Color.Error"
-                                       OnClick="@(() => DeleteCombo(context.ComboId))" />
-                    </MudTd>
-                </RowTemplate>
-            </MudTable>
+                                       Size="Size.Small"
+                                       Title="Eliminar"
+                                       OnClick="@(() => DeleteCombo(combo.ComboId))" />
+                    </div>
 
-        </MudPaper>
-
-        <div class="d-flex justify-end mt-4">
-            <MudButton Color="Color.Primary"
-                       Variant="Variant.Filled"
-                       StartIcon="@Icons.Material.Filled.Add"
-                       OnClick="ShowCreateSection">
-                Añadir combo
-            </MudButton>
+                </div>
+            }
         </div>
     }
 
+
+    <!-- ── FORMULARIO CREAR / EDITAR ── -->
     @if (_showCreateCombo)
     {
-        <MudPaper Elevation="2" Class="pa-4 mt-6">
+        <div class="form-section mt-8">
 
-            <MudText Typo="Typo.h5" Class="mb-2">
-                Crear nuevo combo
-            </MudText>
+            <div class="form-section-header">
+                <MudIcon Icon="@Icons.Material.Filled.Inventory2" Color="Color.Warning" Class="mr-2" />
+                <MudText Typo="Typo.h5" Class="font-weight-bold">
+                    @(_isEditMode ? "Editar Combo" : "Nuevo Combo")
+                </MudText>
+            </div>
 
-            <MudDivider Class="mb-4" />
+            <MudDivider Class="my-4" />
 
-            <MudGrid Class="mb-4">
+            <MudGrid>
 
-                <MudItem xs="12" sm="8">
-                    <MudTextField @bind-Value="_newCombo.Name"
-                                  Label="Nombre del Combo"
-                                  Variant="Variant.Outlined"
-                                  Required />
+                <!-- Columna izquierda: datos principales -->
+                <MudItem xs="12" md="8">
+                    <MudGrid>
+                        <MudItem xs="12" sm="8">
+                            <MudTextField @bind-Value="_newCombo.Name"
+                                          Label="Nombre del Combo"
+                                          Variant="Variant.Outlined"
+                                          Required
+                                          Placeholder="Ej: Combo Fin de Semana" />
+                        </MudItem>
+                        <MudItem xs="12" sm="4">
+                            <MudNumericField @bind-Value="_newCombo.ComboPrice"
+                                             T="decimal"
+                                             Label="Precio ($)"
+                                             Variant="Variant.Outlined"
+                                             Required
+                                             Adornment="Adornment.Start"
+                                             AdornmentText="$" />
+                        </MudItem>
+                        <MudItem xs="12">
+                            <MudTextField @bind-Value="_newCombo.Description"
+                                          Label="Descripción (opcional)"
+                                          Lines="3"
+                                          Variant="Variant.Outlined" />
+                        </MudItem>
+                    </MudGrid>
                 </MudItem>
 
-                <MudItem xs="12" sm="4">
-                    <MudNumericField @bind-Value="_newCombo.ComboPrice"
-                                     Label="Precio ($)"
-                                     Variant="Variant.Outlined"
-                                     Required />
-                </MudItem>
+                <!-- Columna derecha: imagen -->
+                <MudItem xs="12" md="4">
+                    <div class="img-upload-panel">
+                        <div class="img-upload-preview @(string.IsNullOrWhiteSpace(_imageFileName) ? "img-upload-empty" : "")">
+                            @if (_imageBytes != null)
+                            {
+                                <img src="data:image/*;base64,@Convert.ToBase64String(_imageBytes)"
+                                     alt="Preview" class="img-upload-img" />
+                                <button class="img-upload-remove" @onclick="RemoveImage" title="Quitar imagen">✕</button>
+                            }
+                            else if (!string.IsNullOrWhiteSpace(_newCombo.ImageUrl) && _newCombo.ImageUrl != "/images/combo-default.png")
+                            {
+                                <img src="@_newCombo.ImageUrl" alt="Preview" class="img-upload-img" />
+                                <button class="img-upload-remove" @onclick="RemoveImage" title="Quitar imagen">✕</button>
+                            }
+                            else
+                            {
+                                <MudIcon Icon="@Icons.Material.Filled.AddPhotoAlternate"
+                                         Style="font-size:48px; color:rgba(255,152,0,0.4);" />
+                                <span class="img-upload-hint">Imagen del combo</span>
+                            }
+                    </div>
 
-                <MudItem xs="12" md="7">
-                    <MudTextField @bind-Value="_newCombo.Description"
-                                  Label="Descripción"
-                                  Lines="4"
-                                  Variant="Variant.Outlined" />
-                </MudItem>
+                    <InputFile id="combo-img-input"
+                               OnChange="HandleFileSelected"
+                               accept="image/png,image/jpeg,image/webp"
+                               style="display:none;" />
 
-                <MudItem xs="12" md="5"
-                         Class="d-flex flex-column align-center justify-center pa-4 border-dashed rounded-lg">
+                    <label for="combo-img-input" class="img-upload-btn">
+                        <MudIcon Icon="@Icons.Material.Filled.CloudUpload" Size="Size.Small" Class="mr-1" />
+                        @(_imageBytes != null || (!string.IsNullOrWhiteSpace(_newCombo.ImageUrl) && _newCombo.ImageUrl != "/images/combo-default.png")
+                                                ? "Cambiar imagen" : "Subir imagen")
+                    </label>
 
-                    @if (!string.IsNullOrEmpty(_imageFileName))
-                    {
-                        <MudText Typo="Typo.subtitle2" Color="Color.Success">
-                            @_imageFileName
-                        </MudText>
-                    }
-                    else
-                    {
-                        <InputFile OnChange="HandleFileSelected"
-                                   accept="image/png,image/jpeg,image/webp"
-                                   style="display:block" />
-                    }
-
+                    @if (!string.IsNullOrWhiteSpace(_imageFileName))
+                        {
+                            <MudText Typo="Typo.caption" Class="muted-text mt-1">@_imageFileName</MudText>
+                        }
+                    </div>
                 </MudItem>
 
             </MudGrid>
 
-            <MudText Typo="Typo.subtitle2" Class="mb-2 font-weight-bold">
-                Seleccionar productos
+            <MudDivider Class="my-5" />
+
+            <!-- ── Selector de productos ── -->
+            <MudText Typo="Typo.subtitle1" Class="font-weight-bold mb-3">
+                <MudIcon Icon="@Icons.Material.Filled.ShoppingCart" Size="Size.Small" Class="mr-1" />
+                Productos en este combo
             </MudText>
 
-            <MudTable Items="_products" Dense Hover Bordered>
+            <MudTable Items="_products" Dense Hover Bordered Class="mb-3 products-picker-table">
+                <HeaderContent>
+                    <MudTh>Producto</MudTh>
+                    <MudTh>Precio</MudTh>
+                    <MudTh Align="Align.Center">Agregar</MudTh>
+                </HeaderContent>
                 <RowTemplate>
-                    <MudTd>@context.Name</MudTd>
-                    <MudTd>$@context.Price.ToString("N2")</MudTd>
+                    <MudTd>
+                        <MudText Typo="Typo.body2" Class="font-weight-bold">@context.Name</MudText>
+                    </MudTd>
+                    <MudTd>
+                        <MudText Color="Color.Success" Class="font-weight-bold">$@context.Price.ToString("N2")</MudText>
+                    </MudTd>
                     <MudTd Align="Align.Center">
-                        <MudIconButton Icon="@Icons.Material.Filled.Add"
-                                       Color="Color.Success"
+                        <MudIconButton Icon="@Icons.Material.Filled.AddCircleOutline"
+                                       Color="Color.Warning"
                                        OnClick="@(() => OpenQuantityModal(context))" />
                     </MudTd>
                 </RowTemplate>
             </MudTable>
 
-            <MudDivider Class="my-4" />
-
-            @foreach (var item in _comboBuilder)
+            <!-- Chips de productos agregados -->
+            @if (_comboBuilder.Any())
             {
-                <MudChip T="ComboProductTemp"
-                         Value="@item"
-                         Closeable="true"
-                         OnClose="@(() => _comboBuilder.Remove(item))">
-                    @($"{item.Quantity} x {item.ProductName}")
-                </MudChip>
+                <MudText Typo="Typo.caption" Class="muted-text mb-2 d-block">Incluidos en el combo:</MudText>
+                <div class="d-flex flex-wrap gap-2 mb-4">
+                    @foreach (var item in _comboBuilder)
+                    {
+                        <MudChip T="ComboProductTemp"
+                                 Value="@item"
+                                 Closeable="true"
+                                 Color="Color.Warning"
+                                 OnClose="@(() => _comboBuilder.Remove(item))">
+                            @($"{item.Quantity} x {item.ProductName}")
+                        </MudChip>
+                    }
+                </div>
             }
 
-            <div class="d-flex justify-end mt-4">
-                <MudButton Color="Color.Success"
+            <!-- Acciones del form -->
+            <div class="d-flex justify-end gap-x-3 mt-2">
+                <MudButton Color="Color.Secondary" Variant="Variant.Outlined" OnClick="ResetForm">
+                    Cancelar
+                </MudButton>
+                <MudButton Color="Color.Warning"
+                           Variant="Variant.Filled"
+                           StartIcon="@Icons.Material.Filled.Save"
                            Disabled="@(!_comboBuilder.Any())"
                            OnClick="SaveCombo">
-                    Guardar combo
-                </MudButton>
-
-                <MudButton Color="Color.Secondary"
-                           Variant="Variant.Outlined"
-                           OnClick="@ResetForm">
-                    Cancelar
+                    @(_isEditMode ? "Actualizar Combo" : "Guardar Combo")
                 </MudButton>
             </div>
 
-        </MudPaper>
+        </div>
     }
 
 </MudContainer>
+
+<style>
+    /* ── Variables ── */
+    :root {
+        --combo-orange: #ff9800;
+        --combo-orange-dim: rgba(255,152,0,0.15);
+        --combo-orange-border: rgba(255,152,0,0.25);
+        --card-bg: rgba(255,255,255,0.03);
+        --card-border: rgba(255,255,255,0.08);
+        --radius-card: 16px;
+    }
+
+    /* ── Page header ── */
+    .combos-page-header {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        flex-wrap: wrap;
+    }
+
+    .header-accent {
+        width: 5px;
+        height: 48px;
+        background: linear-gradient(180deg, #ff9800, #ff5722);
+        border-radius: 3px;
+        flex-shrink: 0;
+    }
+
+    .header-content {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .combos-page-title {
+        font-weight: 800 !important;
+        letter-spacing: -0.5px;
+        color: #fff;
+    }
+
+    .combos-page-sub {
+        color: #a1a1aa !important;
+        margin-top: 2px;
+    }
+
+    .header-actions {
+        margin-left: auto;
+    }
+
+    .btn-new-combo {
+        font-weight: 700 !important;
+        border-radius: 10px !important;
+        text-transform: none !important;
+        letter-spacing: 0.2px;
+        box-shadow: 0 4px 16px rgba(255,152,0,0.3) !important;
+    }
+
+    /* ── Empty state ── */
+    .empty-combos-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 60px 20px;
+        border: 2px dashed rgba(255,152,0,0.2);
+        border-radius: 20px;
+        text-align: center;
+    }
+
+    .empty-icon {
+        font-size: 64px !important;
+        color: rgba(255,152,0,0.25) !important;
+    }
+
+    /* ── Grid de cards ── */
+    .combos-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 16px;
+    }
+
+    @@media (max-width: 600px) {
+        .combos-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    /* ── Card de combo ── */
+    .combo-card {
+        background: var(--card-bg);
+        border: 1.5px solid var(--card-border);
+        border-radius: var(--radius-card);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+    }
+
+        .combo-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.25);
+            border-color: var(--combo-orange-border);
+        }
+
+    /* Imagen */
+    .combo-card-img {
+        position: relative;
+        width: 100%;
+        aspect-ratio: 16 / 9;
+        background: rgba(255,152,0,0.05);
+        overflow: hidden;
+        flex-shrink: 0;
+    }
+
+    .combo-img-real {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform 0.35s ease;
+    }
+
+    .combo-card:hover .combo-img-real {
+        transform: scale(1.05);
+    }
+
+    .combo-img-placeholder {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    /* Badges sobre la imagen */
+    .combo-type-badge {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        font-size: 10px;
+        font-weight: 700;
+        padding: 3px 9px;
+        border-radius: 20px;
+        text-transform: uppercase;
+        letter-spacing: 0.6px;
+        backdrop-filter: blur(8px);
+        background: rgba(255,152,0,0.85);
+        color: #1a1a1a;
+    }
+
+    .combo-price-badge {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        font-size: 11px;
+        font-weight: 800;
+        padding: 3px 10px;
+        border-radius: 20px;
+        backdrop-filter: blur(8px);
+        background: rgba(76,175,80,0.85);
+        color: #fff;
+    }
+
+    /* Cuerpo de la card */
+    .combo-card-body {
+        padding: 14px 16px 8px;
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+    }
+
+    .combo-card-title {
+        font-size: 15px;
+        font-weight: 700;
+        color: #fff;
+        line-height: 1.3;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .combo-card-meta {
+        display: flex;
+        align-items: center;
+        font-size: 11px;
+        color: #71717a;
+        margin-top: 2px;
+    }
+
+    /* Acciones footer de la card */
+    .combo-card-actions {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        padding: 6px 10px 10px;
+        gap: 4px;
+        border-top: 1px solid rgba(255,255,255,0.05);
+    }
+
+    /* ── Formulario ── */
+    .form-section {
+        border: 1px solid var(--combo-orange-border);
+        background: rgba(255,152,0,0.025);
+        border-radius: 20px;
+        padding: 28px;
+    }
+
+    .form-section-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 4px;
+    }
+
+    /* ── Upload de imagen ── */
+    .img-upload-panel {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+        padding: 16px;
+        border: 1.5px dashed var(--combo-orange-border);
+        border-radius: 14px;
+        background: rgba(255,152,0,0.03);
+        min-height: 200px;
+    }
+
+    .img-upload-preview {
+        width: 100%;
+        aspect-ratio: 16/9;
+        border-radius: 10px;
+        overflow: hidden;
+        background: rgba(255,255,255,0.04);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        border: 1px solid rgba(255,255,255,0.07);
+    }
+
+    .img-upload-empty {
+        border-style: dashed !important;
+    }
+
+    .img-upload-img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .img-upload-hint {
+        font-size: 12px;
+        color: #71717a;
+        margin-top: 8px;
+    }
+
+    .img-upload-remove {
+        position: absolute;
+        top: 6px;
+        right: 6px;
+        background: rgba(229,57,53,0.85);
+        color: #fff;
+        border: none;
+        cursor: pointer;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        font-size: 12px;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background 0.15s;
+    }
+
+        .img-upload-remove:hover {
+            background: #e53935;
+        }
+
+    .img-upload-btn {
+        display: inline-flex;
+        align-items: center;
+        background: rgba(255,152,0,0.15);
+        border: 1px solid var(--combo-orange-border);
+        color: var(--combo-orange);
+        font-size: 13px;
+        font-weight: 600;
+        padding: 8px 16px;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: background 0.15s;
+        text-decoration: none;
+        user-select: none;
+    }
+
+        .img-upload-btn:hover {
+            background: rgba(255,152,0,0.25);
+        }
+
+    /* ── Utilitarios ── */
+    .muted-text {
+        color: #a1a1aa !important;
+    }
+
+    .gap-x-2 {
+        gap: 8px;
+    }
+
+    .gap-x-3 {
+        gap: 12px;
+    }
+
+    .gap-2 {
+        gap: 8px;
+    }
+
+    .products-picker-table .mud-table-head th {
+        font-size: 12px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+</style>

@@ -5,6 +5,7 @@ using Daniel_Licors_Store.Models.Promotion;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Forms;
 using MudBlazor;
+using System.Globalization;
 
 namespace Daniel_Licors_Store.Components.Pages;
 
@@ -15,6 +16,9 @@ public partial class Promotions
     [Inject] public ISnackbar Snackbar { get; set; } = default!;
     [Inject] public IDialogService DialogService { get; set; } = default!;
     [Inject] public IWebHostEnvironment Env { get; set; } = default!;
+
+    // ─── Cultura española ────────────────────────────────────
+    private static readonly CultureInfo _es = new CultureInfo("es-DO");
 
     // ─── Estado general ──────────────────────────────────────
     private List<PromotionAdminDto> _promos = new();
@@ -80,19 +84,13 @@ public partial class Promotions
     // ════════════════════════════════════════════════════════
     // UPLOAD DE IMAGEN
     // ════════════════════════════════════════════════════════
-
-    /// <summary>
-    /// Guarda la imagen en wwwroot/images/promociones/
-    /// y almacena en la DB solo la ruta relativa (/images/promociones/nombre.ext).
-    /// </summary>
     private async Task HandleImageUpload(InputFileChangeEventArgs e)
     {
         _uploadError = string.Empty;
         var file = e.File;
         if (file == null) return;
 
-        // ── Validaciones ────────────────────────────────────
-        const long maxBytes = 5 * 1024 * 1024; // 5 MB
+        const long maxBytes = 5 * 1024 * 1024;
         if (file.Size > maxBytes)
         {
             _uploadError = "La imagen no debe superar 5 MB.";
@@ -111,23 +109,17 @@ public partial class Promotions
 
         try
         {
-            // ── Ruta física en disco ─────────────────────────
-            // Carpeta: wwwroot/images/promociones/
             var uploadDir = Path.Combine(Env.WebRootPath, "images", "promociones");
-            Directory.CreateDirectory(uploadDir); // crea la carpeta si no existe
+            Directory.CreateDirectory(uploadDir);
 
-            // Nombre único para evitar colisiones
             var ext = Path.GetExtension(file.Name).ToLowerInvariant();
             var fileName = $"promo_{Guid.NewGuid():N}{ext}";
             var fullPath = Path.Combine(uploadDir, fileName);
 
-            // Guardar el archivo en disco
             await using var fs = new FileStream(fullPath, FileMode.Create);
             await using var stream = file.OpenReadStream(maxBytes);
             await stream.CopyToAsync(fs);
 
-            // ── Ruta relativa que la DB guarda ───────────────
-            // Esto es lo que se persiste en Promotions.ImageUrl
             _form.ImageUrl = $"/images/promociones/{fileName}";
         }
         catch (Exception ex)
@@ -225,11 +217,9 @@ public partial class Promotions
             _startDate = promo.StartDate;
             _endDate = promo.EndDate;
 
-            // ── Reconstruir el builder con los productos existentes ──
             _promoBuilder.Clear();
             foreach (var pp in promo.PromotionProducts)
             {
-                // Buscar el producto en la lista ya cargada para obtener el precio original
                 var product = _products.FirstOrDefault(p => p.ProductId == pp.ProductId);
 
                 _promoBuilder.Add(new PromotionProductLine
@@ -325,6 +315,9 @@ public partial class Promotions
     // ════════════════════════════════════════════════════════
     // HELPERS UI
     // ════════════════════════════════════════════════════════
+    private string FormatDate(DateTime d, string fmt = "dd MMM yyyy")
+        => d.ToString(fmt, _es);
+
     private Color GetTypeColor(string? type) => type switch
     {
         "Discount" => Color.Error,
