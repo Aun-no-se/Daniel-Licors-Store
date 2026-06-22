@@ -49,9 +49,10 @@ public class PromotionService : IPromotionService
     public async Task<PromotionAdminDto?> GetPromotionByIdAsync(int promotionId)
     {
         var p = await _context.Promotions
-            .Include(x => x.PromotionProducts)
-                .ThenInclude(pp => pp.Product)
-            .FirstOrDefaultAsync(x => x.PromotionId == promotionId);
+    .Include(x => x.PromotionProducts)
+        .ThenInclude(pp => pp.Product)
+            .ThenInclude(prod => prod.ProductStores)  // ← agregar esto
+    .FirstOrDefaultAsync(x => x.PromotionId == promotionId);
 
         if (p == null) return null;
 
@@ -64,10 +65,22 @@ public class PromotionService : IPromotionService
             StartDate = p.StartDate,
             EndDate = p.EndDate,
             IsActive = p.IsActive,
-            ImageUrl = p.ImageUrl,   // ← incluimos la ruta de la imagen
+            ImageUrl = p.ImageUrl,
             ProductCount = p.PromotionProducts.Count,
             ProductsSummary = string.Join(", ",
-                p.PromotionProducts.Select(pp => pp.Product?.Name ?? ""))
+                p.PromotionProducts.Select(pp => pp.Product?.Name ?? "")),
+
+            // ── Nuevo: mapear líneas de productos ──
+            PromotionProducts = p.PromotionProducts.Select(pp => new PromotionProductLine
+            {
+                ProductId = pp.ProductId,
+                ProductName = pp.Product?.Name ?? $"Producto #{pp.ProductId}",
+                OriginalPrice = pp.Product?.ProductStores?.FirstOrDefault()?.Price ?? 0,
+                DiscountPercentage = pp.DiscountPercentage,
+                SpecialPrice = pp.SpecialPrice,
+                RequiredQuantity = pp.RequiredQuantity,
+                PayQuantity = pp.PayQuantity
+            }).ToList()
         };
     }
 

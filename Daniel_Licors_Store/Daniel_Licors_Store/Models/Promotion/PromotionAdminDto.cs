@@ -12,9 +12,9 @@ public class PromotionAdminDto
     public bool IsActive { get; set; }
     public int ProductCount { get; set; }
     public string ProductsSummary { get; set; } = string.Empty;
-
-    /// <summary>Ruta relativa de la imagen, ej: /images/promociones/promo_abc123.jpg</summary>
     public string? ImageUrl { get; set; }
-
     public bool IsVigente => IsActive && StartDate <= DateTime.Now && EndDate >= DateTime.Now;
+
+    // ── Nuevo ──
+    public List<PromotionProductLine> PromotionProducts { get; set; } = new();
 }

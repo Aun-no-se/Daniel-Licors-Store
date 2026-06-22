@@ -219,12 +219,30 @@ public partial class Promotions
                 Description = promo.Description,
                 PromotionType = promo.PromotionType ?? "Discount",
                 IsActive = promo.IsActive,
-                ImageUrl = promo.ImageUrl   // carga la imagen existente en el preview
+                ImageUrl = promo.ImageUrl
             };
 
             _startDate = promo.StartDate;
             _endDate = promo.EndDate;
+
+            // ── Reconstruir el builder con los productos existentes ──
             _promoBuilder.Clear();
+            foreach (var pp in promo.PromotionProducts)
+            {
+                // Buscar el producto en la lista ya cargada para obtener el precio original
+                var product = _products.FirstOrDefault(p => p.ProductId == pp.ProductId);
+
+                _promoBuilder.Add(new PromotionProductLine
+                {
+                    ProductId = pp.ProductId,
+                    ProductName = product?.Name ?? $"Producto #{pp.ProductId}",
+                    OriginalPrice = product?.Price ?? 0,
+                    DiscountPercentage = pp.DiscountPercentage,
+                    SpecialPrice = pp.SpecialPrice,
+                    RequiredQuantity = pp.RequiredQuantity,
+                    PayQuantity = pp.PayQuantity
+                });
+            }
         }
         catch (Exception ex)
         {
