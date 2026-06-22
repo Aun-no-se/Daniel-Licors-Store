@@ -22,6 +22,7 @@
 
 	<ItemGroup>
 		<Folder Include="Data\Repositories\Specific\" />
+		<Folder Include="Models\Admin\" />
 		<Folder Include="wwwroot\images\Carrusel\" />
 		<Folder Include="wwwroot\images\Combos\" />
 		<Folder Include="wwwroot\images\promociones\" />
