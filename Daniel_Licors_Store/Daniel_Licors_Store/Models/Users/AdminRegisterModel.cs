@@ -1,7 +1,12 @@
-﻿namespace Daniel_Licors_Store.Models.Users.Auth
+﻿namespace Daniel_Licors_Store.Models.Users.Auth;
+
+public class AdminRegisterModel
 {
-    public class AdminRegisterModel : RegisterModel
-    {
-        public int RoleId { get; set; } // Admin, Empleado, Cliente
-    }
+    public string? Name { get; set; }
+    public string? LastName { get; set; }
+    public int Age { get; set; }
+    public string? Email { get; set; }
+    public string? Password { get; set; }
+    public string? ConfirmPassword { get; set; }
+    public int RoleId { get; set; }
 }

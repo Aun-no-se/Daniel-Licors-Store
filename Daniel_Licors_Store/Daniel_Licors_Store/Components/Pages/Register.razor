@@ -2,35 +2,32 @@
 @inject IAuthService AuthService
 @inject NavigationManager Nav
 @using Daniel_Licors_Store.Models.Users.Auth
-@using Daniel_Licors_Store.Services
 @using Daniel_Licors_Store.Services.Auth
 @using MudBlazor
 
 <div class="d-flex align-center justify-center signup-login-wrapper" style="min-height: 100vh; width: 100%;">
     <MudContainer MaxWidth="MaxWidth.Small" Class="my-auto">
 
-        @* Contenedor Principal con Bordes Suaves y Sombra Premium *@
         <MudPaper Elevation="4" Class="overflow-hidden rounded-xl backend-card-custom">
 
-            @* Banner Superior Elegante y Pegado (Igual al Login) *@
+            <!-- Banner -->
             <div class="login-banner-premium d-flex flex-column align-center justify-center py-6 text-center">
                 <MudIcon Icon="@Icons.Material.Filled.LocalBar" Size="Size.Large" Color="Color.Surface" Class="mb-2 logo-animate" />
                 <MudText Typo="Typo.h5" Class="font-weight-black text-white uppercase tracking-wider">
                     Daniel Liquor Store
                 </MudText>
                 <MudText Typo="Typo.caption" Class="text-white-50 px-4">
-                    Únete a nuestra plataforma de gestión y automatiza tu inventario
+                    Únete a nuestra plataforma de gestión
                 </MudText>
             </div>
 
-            @* Cuerpo del Formulario *@
+            <!-- Formulario -->
             <div class="pa-8">
 
                 <MudText Typo="Typo.h5" Class="font-weight-bold mb-6 text-center dark-text-highlight">
                     Crear Cuenta
                 </MudText>
 
-                @* Campo de Nombre *@
                 <MudTextField @bind-Value="model.Name"
                               Label="Nombre"
                               Variant="Variant.Outlined"
@@ -38,9 +35,9 @@
                               AdornmentIcon="@Icons.Material.Filled.Person"
                               AdornmentColor="Color.Primary"
                               FullWidth
+                              Disabled="@isLoading"
                               Class="mb-4" />
 
-                @* Campo de Apellido *@
                 <MudTextField @bind-Value="model.LastName"
                               Label="Apellido"
                               Variant="Variant.Outlined"
@@ -48,32 +45,34 @@
                               AdornmentIcon="@Icons.Material.Filled.PersonOutline"
                               AdornmentColor="Color.Primary"
                               FullWidth
+                              Disabled="@isLoading"
                               Class="mb-4" />
 
-                @* Campo de Edad *@
                 <MudTextField @bind-Value="model.Age"
-                              Label="Edad"
+                              Label="Edad (mínimo 18)"
                               Variant="Variant.Outlined"
                               InputType="InputType.Number"
                               Adornment="Adornment.End"
                               AdornmentIcon="@Icons.Material.Filled.Cake"
                               AdornmentColor="Color.Primary"
                               FullWidth
+                              Disabled="@isLoading"
                               Class="mb-4" />
 
-                @* Campo de Correo *@
                 <MudTextField @bind-Value="model.Email"
                               Label="Correo Electrónico"
                               Variant="Variant.Outlined"
+                              InputType="InputType.Email"
                               Adornment="Adornment.End"
                               AdornmentIcon="@Icons.Material.Filled.Email"
                               AdornmentColor="Color.Primary"
                               FullWidth
+                              Disabled="@isLoading"
                               Class="mb-4" />
 
-                @* Campo de Contraseña con Ojito Interactivo *@
                 <MudTextField @bind-Value="model.Password"
                               Label="Contraseña"
+                              HelperText="Mín. 8 caracteres, una mayúscula y un número"
                               Variant="Variant.Outlined"
                               InputType="@_passwordInput"
                               Adornment="Adornment.End"
@@ -81,9 +80,9 @@
                               AdornmentColor="Color.Primary"
                               OnAdornmentClick="TogglePasswordVisibility"
                               FullWidth
+                              Disabled="@isLoading"
                               Class="mb-4" />
 
-                @* Campo de Confirmar Contraseña con Ojito Interactivo Independiente *@
                 <MudTextField @bind-Value="model.ConfirmPassword"
                               Label="Confirmar Contraseña"
                               Variant="Variant.Outlined"
@@ -93,9 +92,9 @@
                               AdornmentColor="Color.Primary"
                               OnAdornmentClick="ToggleConfirmPasswordVisibility"
                               FullWidth
+                              Disabled="@isLoading"
                               Class="mb-6" />
 
-                @* Botón de Registro con Efectos Premium *@
                 <MudButton OnClick="HandleRegister"
                            Color="Color.Error"
                            Variant="Variant.Filled"
@@ -106,7 +105,7 @@
                     @if (isLoading)
                     {
                         <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
-                        <span>Registrando usuario...</span>
+                        <span>Registrando...</span>
                     }
                     else
                     {
@@ -114,17 +113,26 @@
                     }
                 </MudButton>
 
-                @* Alerta de Error Estilizada *@
                 @if (!string.IsNullOrEmpty(errorMessage))
                 {
                     <MudAlert Severity="Severity.Error"
                               Variant="Variant.Outlined"
                               Dense="true"
-                              Class="mt-4 rounded-lg animate__animated animate__fadeIn">
+                              Class="mt-4 rounded-lg">
                         @errorMessage
                     </MudAlert>
                 }
-                @* Enlace para regresar al Login opcional de cortesía *@
+
+                @if (success)
+                {
+                    <MudAlert Severity="Severity.Success"
+                              Variant="Variant.Outlined"
+                              Dense="true"
+                              Class="mt-4 rounded-lg">
+                        ¡Cuenta creada exitosamente! Redirigiendo al login...
+                    </MudAlert>
+                }
+
                 <div class="text-center mt-4">
                     <MudLink Href="/login" Color="Color.Primary" Underline="Underline.Hover" Class="text-sm">
                         ¿Ya tienes cuenta? Inicia sesión aquí
@@ -140,58 +148,78 @@
     private RegisterModel model = new();
     private string? errorMessage;
     private bool isLoading;
+    private bool success;
 
-    // Variables de control visual para el primer ojito (Contraseña)
     private bool _passwordVisibility;
     private InputType _passwordInput = InputType.Password;
     private string _passwordInputIcon = Icons.Material.Filled.VisibilityOff;
 
-    // Variables de control visual para el segundo ojito (Confirmar Contraseña)
     private bool _confirmPasswordVisibility;
     private InputType _confirmPasswordInput = InputType.Password;
     private string _confirmPasswordInputIcon = Icons.Material.Filled.VisibilityOff;
 
     private void TogglePasswordVisibility()
     {
-        if (_passwordVisibility)
-        {
-            _passwordVisibility = false;
-            _passwordInputIcon = Icons.Material.Filled.VisibilityOff;
-            _passwordInput = InputType.Password;
-        }
-        else
-        {
-            _passwordVisibility = true;
-            _passwordInputIcon = Icons.Material.Filled.Visibility;
-            _passwordInput = InputType.Text;
-        }
+        _passwordVisibility = !_passwordVisibility;
+        _passwordInput = _passwordVisibility ? InputType.Text : InputType.Password;
+        _passwordInputIcon = _passwordVisibility
+            ? Icons.Material.Filled.Visibility
+            : Icons.Material.Filled.VisibilityOff;
     }
 
     private void ToggleConfirmPasswordVisibility()
     {
-        if (_confirmPasswordVisibility)
-        {
-            _confirmPasswordVisibility = false;
-            _confirmPasswordInputIcon = Icons.Material.Filled.VisibilityOff;
-            _confirmPasswordInput = InputType.Password;
-        }
-        else
-        {
-            _confirmPasswordVisibility = true;
-            _confirmPasswordInputIcon = Icons.Material.Filled.Visibility;
-            _confirmPasswordInput = InputType.Text;
-        }
+        _confirmPasswordVisibility = !_confirmPasswordVisibility;
+        _confirmPasswordInput = _confirmPasswordVisibility ? InputType.Text : InputType.Password;
+        _confirmPasswordInputIcon = _confirmPasswordVisibility
+            ? Icons.Material.Filled.Visibility
+            : Icons.Material.Filled.VisibilityOff;
     }
 
     private async Task HandleRegister()
     {
+        // Validaciones rápidas del lado cliente antes de ir al servicio
+        if (string.IsNullOrWhiteSpace(model.Name) || string.IsNullOrWhiteSpace(model.LastName))
+        {
+            errorMessage = "Nombre y apellido son requeridos.";
+            return;
+        }
+
+        if (model.Age < 18)
+        {
+            errorMessage = "Debes tener al menos 18 años para registrarte.";
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(model.Email))
+        {
+            errorMessage = "El correo electrónico es requerido.";
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(model.Password))
+        {
+            errorMessage = "La contraseña es requerida.";
+            return;
+        }
+
+        if (model.Password != model.ConfirmPassword)
+        {
+            errorMessage = "Las contraseñas no coinciden.";
+            return;
+        }
+
+        errorMessage = null;
+        isLoading = true;
+
         try
         {
-            errorMessage = null;
-            isLoading = true;
-
             await AuthService.RegisterAsync(model);
+            success = true;
+            StateHasChanged();
 
+            // Pequeña pausa para que el usuario vea el mensaje de éxito
+            await Task.Delay(1500);
             Nav.NavigateTo("/login");
         }
         catch (Exception ex)

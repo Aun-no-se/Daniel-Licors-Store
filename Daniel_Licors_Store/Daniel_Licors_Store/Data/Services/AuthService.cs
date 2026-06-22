@@ -3,6 +3,7 @@ using Daniel_Licors_Store.Data.Entities;
 using Daniel_Licors_Store.Models.Users.Auth;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using System.Text.RegularExpressions;
 
 namespace Daniel_Licors_Store.Services.Auth;
 
@@ -10,7 +11,7 @@ public interface IAuthService
 {
     Task RegisterAsync(RegisterModel model);
     Task CreateUserByAdminAsync(AdminRegisterModel model);
-    Task<User?> ValidateLoginAsync(LoginModel model);
+    Task<(User? User, List<string> Roles)> ValidateLoginAsync(LoginModel model);
 }
 
 public class AuthService : IAuthService
@@ -18,44 +19,58 @@ public class AuthService : IAuthService
     private readonly ApplicationDbContext _context;
     private readonly PasswordHasher<User> _hasher = new();
 
+    // Regex de email simple pero efectivo
+    private static readonly Regex EmailRegex = new(
+        @"^[^@\s]+@[^@\s]+\.[^@\s]+$",
+        RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
     public AuthService(ApplicationDbContext context)
     {
         _context = context;
     }
 
-    // =========================
-    // REGISTER CLIENTE
-    // =========================
+    // ─────────────────────────────────────────────────────────────────
+    // REGISTRO DE CLIENTE
+    // ─────────────────────────────────────────────────────────────────
     public async Task RegisterAsync(RegisterModel model)
     {
-        if (model.Password != model.ConfirmPassword)
-            throw new Exception("Las contraseñas no coinciden");
+        // ── Validaciones de entrada ──────────────────────────────────
+        if (string.IsNullOrWhiteSpace(model.Name))
+            throw new Exception("El nombre es requerido.");
+
+        if (string.IsNullOrWhiteSpace(model.LastName))
+            throw new Exception("El apellido es requerido.");
+
+        if (model.Age < 18 || model.Age > 120)
+            throw new Exception("Debes tener al menos 18 años para registrarte.");
 
         var email = model.Email?.Trim().ToLower();
+        if (string.IsNullOrWhiteSpace(email) || !EmailRegex.IsMatch(email))
+            throw new Exception("El correo electrónico no es válido.");
 
-        if (string.IsNullOrWhiteSpace(email))
-            throw new Exception("Email inválido");
+        ValidatePassword(model.Password);
 
+        if (model.Password != model.ConfirmPassword)
+            throw new Exception("Las contraseñas no coinciden.");
+
+        // ── Unicidad de email ────────────────────────────────────────
         var exists = await _context.Users.AnyAsync(u => u.Email == email);
         if (exists)
-            throw new Exception("Este correo ya está registrado");
+            throw new Exception("Este correo ya está registrado.");
 
-        var roleCliente = await _context.Roles
-            .FirstOrDefaultAsync(r => r.Name == "Cliente");
+        var roleCliente = await _context.Roles.FirstOrDefaultAsync(r => r.Name == "Cliente")
+            ?? throw new Exception("Rol Cliente no configurado en el sistema.");
 
-        if (roleCliente == null)
-            throw new Exception("Rol Cliente no existe");
-
+        // ── Crear usuario ────────────────────────────────────────────
         var user = new User
         {
-            FullName = model.Name?.Trim(),
-            LastName = model.LastName?.Trim(),
+            FullName = model.Name.Trim(),
+            LastName = model.LastName.Trim(),
             Age = model.Age,
             Email = email,
             IsActive = true,
             CreatedAt = DateTime.Now
         };
-
         user.PasswordHash = _hasher.HashPassword(user, model.Password);
 
         _context.Users.Add(user);
@@ -67,40 +82,39 @@ public class AuthService : IAuthService
             RoleId = roleCliente.RoleId,
             AssignedAt = DateTime.Now
         });
-
         await _context.SaveChangesAsync();
     }
 
-    // =========================
-    // ADMIN CREA USUARIOS
-    // =========================
+    // ─────────────────────────────────────────────────────────────────
+    // ADMIN CREA USUARIOS (Empleado / Cliente / Admin)
+    // ─────────────────────────────────────────────────────────────────
     public async Task CreateUserByAdminAsync(AdminRegisterModel model)
     {
-        var email = model.Email?.Trim().ToLower();
+        if (string.IsNullOrWhiteSpace(model.Name))
+            throw new Exception("El nombre es requerido.");
 
-        if (string.IsNullOrWhiteSpace(email))
-            throw new Exception("Email inválido");
+        var email = model.Email?.Trim().ToLower();
+        if (string.IsNullOrWhiteSpace(email) || !EmailRegex.IsMatch(email))
+            throw new Exception("El correo electrónico no es válido.");
+
+        ValidatePassword(model.Password);
 
         var exists = await _context.Users.AnyAsync(u => u.Email == email);
         if (exists)
-            throw new Exception("Este correo ya está registrado");
+            throw new Exception("Este correo ya está registrado.");
 
-        var role = await _context.Roles
-            .FirstOrDefaultAsync(r => r.RoleId == model.RoleId);
-
-        if (role == null)
-            throw new Exception("Rol inválido");
+        var role = await _context.Roles.FirstOrDefaultAsync(r => r.RoleId == model.RoleId)
+            ?? throw new Exception("Rol inválido.");
 
         var user = new User
         {
-            FullName = model.Name?.Trim(),
+            FullName = model.Name.Trim(),
             LastName = model.LastName?.Trim(),
             Age = model.Age,
             Email = email,
             IsActive = true,
             CreatedAt = DateTime.Now
         };
-
         user.PasswordHash = _hasher.HashPassword(user, model.Password);
 
         _context.Users.Add(user);
@@ -112,36 +126,47 @@ public class AuthService : IAuthService
             RoleId = role.RoleId,
             AssignedAt = DateTime.Now
         });
-
         await _context.SaveChangesAsync();
     }
 
-    // =========================
-    // LOGIN VALIDACIÓN
-    // =========================
-    public async Task<User?> ValidateLoginAsync(LoginModel model)
+    // ─────────────────────────────────────────────────────────────────
+    // VALIDAR LOGIN — devuelve usuario + roles para no repetir query
+    // ─────────────────────────────────────────────────────────────────
+    public async Task<(User? User, List<string> Roles)> ValidateLoginAsync(LoginModel model)
     {
         var email = model.Email?.Trim().ToLower();
 
-        if (string.IsNullOrWhiteSpace(email))
-            return null;
+        if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(model.Password))
+            return (null, new());
 
         var user = await _context.Users
             .Include(u => u.UserRoles)
-                .ThenInclude(r => r.Role)
+                .ThenInclude(ur => ur.Role)
             .FirstOrDefaultAsync(u => u.Email == email && u.IsActive);
 
         if (user == null || string.IsNullOrEmpty(user.PasswordHash))
-            return null;
+            return (null, new());
 
-        var result = _hasher.VerifyHashedPassword(
-            user,
-            user.PasswordHash,
-            model.Password
-        );
+        var result = _hasher.VerifyHashedPassword(user, user.PasswordHash, model.Password);
+        if (result == PasswordVerificationResult.Failed)
+            return (null, new());
 
-        return result == PasswordVerificationResult.Success
-            ? user
-            : null;
+        var roles = user.UserRoles.Select(ur => ur.Role.Name).ToList();
+        return (user, roles);
+    }
+
+    // ─────────────────────────────────────────────────────────────────
+    // VALIDACIÓN DE CONTRASEÑA CENTRALIZADA
+    // ─────────────────────────────────────────────────────────────────
+    private static void ValidatePassword(string? password)
+    {
+        if (string.IsNullOrWhiteSpace(password) || password.Length < 8)
+            throw new Exception("La contraseña debe tener al menos 8 caracteres.");
+
+        if (!password.Any(char.IsUpper))
+            throw new Exception("La contraseña debe tener al menos una letra mayúscula.");
+
+        if (!password.Any(char.IsDigit))
+            throw new Exception("La contraseña debe contener al menos un número.");
     }
 }

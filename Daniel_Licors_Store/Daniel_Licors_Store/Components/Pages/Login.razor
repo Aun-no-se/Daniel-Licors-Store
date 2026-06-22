@@ -1,30 +1,30 @@
 ﻿@page "/login"
 @using Daniel_Licors_Store.Models.Users.Auth
+@using Daniel_Licors_Store.Services.Auth
+@using Daniel_Licors_Store.Data.Services
 @using Microsoft.AspNetCore.Components.Authorization
 @using MudBlazor
-@using Daniel_Licors_Store.Data.Services
-@inject IHttpClientFactory HttpClientFactory
+@inject IAuthService AuthService
 @inject NavigationManager Nav
 @inject AuthenticationStateProvider AuthStateProvider
 
 <div class="d-flex align-center justify-center signup-login-wrapper" style="min-height: 100vh; width: 100%;">
     <MudContainer MaxWidth="MaxWidth.Small" Class="my-auto">
 
-        @* Contenedor Principal *@
         <MudPaper Elevation="4" Class="overflow-hidden rounded-xl backend-card-custom">
 
-            @* Banner Superior *@
+            <!-- Banner -->
             <div class="login-banner-premium d-flex flex-column align-center justify-center py-6 text-center">
                 <MudIcon Icon="@Icons.Material.Filled.LocalBar" Size="Size.Large" Color="Color.Surface" Class="mb-2 logo-animate" />
                 <MudText Typo="Typo.h5" Class="font-weight-black text-white uppercase tracking-wider">
                     Daniel Liquor Store
                 </MudText>
                 <MudText Typo="Typo.caption" Class="text-white-50 px-4">
-                    Introduce tus credenciales para acceder al sistema de gestión
+                    Introduce tus credenciales para acceder al sistema
                 </MudText>
             </div>
 
-            @* Animación de Carga Lineal Superior Premium *@
+            <!-- Barra de carga -->
             <div class="loader-container-fixed">
                 @if (isLoading)
                 {
@@ -32,25 +32,24 @@
                 }
             </div>
 
-            @* Cuerpo del Formulario *@
+            <!-- Formulario -->
             <div class="pa-8 pt-4">
 
                 <MudText Typo="Typo.h5" Class="font-weight-bold mb-6 text-center dark-text-highlight">
                     Iniciar Sesión
                 </MudText>
 
-                @* Campo de Correo *@
                 <MudTextField @bind-Value="model.Email"
                               Label="Correo Electrónico"
                               Variant="Variant.Outlined"
                               Adornment="Adornment.End"
                               AdornmentIcon="@Icons.Material.Filled.Email"
                               AdornmentColor="Color.Primary"
+                              InputType="InputType.Email"
                               FullWidth
                               Disabled="@isLoading"
                               Class="mb-4" />
 
-                @* Campo de Contraseña *@
                 <MudTextField @bind-Value="model.Password"
                               Label="Contraseña"
                               Variant="Variant.Outlined"
@@ -63,8 +62,7 @@
                               Disabled="@isLoading"
                               Class="mb-6" />
 
-                @* Botón de Acción con Carga Interna Circular *@
-                <MudButton OnClick="LoginUsers"
+                <MudButton OnClick="HandleLogin"
                            Color="Color.Error"
                            Variant="Variant.Filled"
                            Size="Size.Large"
@@ -82,18 +80,16 @@
                     }
                 </MudButton>
 
-                @* Alerta de Error *@
                 @if (!string.IsNullOrEmpty(error))
                 {
                     <MudAlert Severity="Severity.Error"
                               Variant="Variant.Outlined"
                               Dense="true"
-                              Class="mt-4 rounded-lg animate__animated animate__fadeIn">
+                              Class="mt-4 rounded-lg">
                         @error
                     </MudAlert>
                 }
 
-                @* Enlace para ir al Registro *@
                 <div class="text-center mt-4">
                     <MudLink Href="/register" Color="Color.Primary" Underline="Underline.Hover" Class="text-sm">
                         ¿No tienes cuenta? Regístrate aquí
@@ -114,89 +110,69 @@
     private InputType _passwordInput = InputType.Password;
     private string _passwordInputIcon = Icons.Material.Filled.VisibilityOff;
 
-    private void TogglePasswordVisibility()
+    protected override async Task OnInitializedAsync()
     {
-        if (_passwordVisibility)
-        {
-            _passwordVisibility = false;
-            _passwordInputIcon = Icons.Material.Filled.VisibilityOff;
-            _passwordInput = InputType.Password;
-        }
-        else
-        {
-            _passwordVisibility = true;
-            _passwordInputIcon = Icons.Material.Filled.Visibility;
-            _passwordInput = InputType.Text;
-        }
+        // Si ya está logueado, redirigir directo al index
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        if (authState.User.Identity?.IsAuthenticated == true)
+            Nav.NavigateTo("/", replace: true);
     }
 
-    private async Task LoginUsers()
+    private void TogglePasswordVisibility()
     {
+        _passwordVisibility = !_passwordVisibility;
+        _passwordInput = _passwordVisibility ? InputType.Text : InputType.Password;
+        _passwordInputIcon = _passwordVisibility
+            ? Icons.Material.Filled.Visibility
+            : Icons.Material.Filled.VisibilityOff;
+    }
+
+    private async Task HandleLogin()
+    {
+        // Validación básica antes de ir al servidor
+        if (string.IsNullOrWhiteSpace(model.Email) || string.IsNullOrWhiteSpace(model.Password))
+        {
+            error = "Por favor ingresa tu correo y contraseña.";
+            return;
+        }
+
         error = null;
         isLoading = true;
 
         try
         {
-            var http = HttpClientFactory.CreateClient("LocalApi");
-            var response = await http.PostAsJsonAsync("/api/login", model);
+            // Llamada directa al servicio — sin HttpClient, sin /api/login
+            var (user, roles) = await AuthService.ValidateLoginAsync(model);
 
-            if (response.IsSuccessStatusCode)
-            {
-                var result = await response.Content.ReadFromJsonAsync<LoginResponse>();
-
-                // Validación de integridad de respuesta
-                if (result == null || string.IsNullOrEmpty(result.GetUserId()))
-                {
-                    error = "El servidor respondió correctamente pero no se encontró el identificador de usuario.";
-                    return;
-                }
-
-                var userId = result.GetUserId();
-                var roles = result.roles ?? new List<string>();
-                var customAuth = (CustomAuthStateProvider)AuthStateProvider;
-
-                var session = new UserSession
-                {
-                    UserId = userId,
-                    Email = model.Email,
-                    Roles = roles,
-                    LastActivity = DateTime.Now
-                };
-
-                await customAuth.MarkUserAsAuthenticated(session);
-
-                // Redirección basada en roles
-                if (roles.Contains("Admin")) Nav.NavigateTo("/admin/dashboard", forceLoad: true);
-                else if (roles.Contains("Empleado")) Nav.NavigateTo("/dashboard", forceLoad: true);
-                else Nav.NavigateTo("/", forceLoad: true);
-            }
-            else if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            if (user == null)
             {
                 error = "El correo o la contraseña son incorrectos.";
+                return;
             }
-            else
+
+            var session = new UserSession
             {
-                error = "Ocurrió un error inesperado al conectar con el servidor.";
-            }
+                UserId = user.UserId,
+                Email = user.Email ?? string.Empty,
+                FullName = user.FullName ?? string.Empty,
+                Roles = roles,
+                LastActivity = DateTime.Now
+            };
+
+            var customAuth = (CustomAuthStateProvider)AuthStateProvider;
+            await customAuth.MarkUserAsAuthenticated(session);
+
+            // TODOS los usuarios van al Index — el layout se encarga
+            // de mostrar u ocultar menús según el rol
+            Nav.NavigateTo("/", forceLoad: true);
         }
         catch (Exception ex)
         {
-            error = $"Error de conexión: {ex.Message}";
+            error = $"Error inesperado: {ex.Message}";
         }
         finally
         {
             isLoading = false;
         }
-    }
-
-    public class LoginResponse
-    {
-        public string? userId { get; set; }
-        public string? id { get; set; }
-        public string? user_Id { get; set; }
-        public List<string> roles { get; set; } = new();
-
-        public string GetUserId()
-            => userId ?? id ?? user_Id ?? string.Empty;
     }
 }

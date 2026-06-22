@@ -1,12 +1,19 @@
 ﻿using Blazored.LocalStorage;
+using Daniel_Licors_Store.Models.Users.Auth;
 using Microsoft.AspNetCore.Components.Authorization;
 using System.Security.Claims;
 
 namespace Daniel_Licors_Store.Data.Services
 {
+    /// <summary>
+    /// CustomAuthStateProvider: guarda la sesión en LocalStorage
+    /// y expone el estado de autenticación a Blazor.
+    /// Se mantiene LocalStorage porque es Blazor Server con pre-rendering desactivado.
+    /// </summary>
     public class CustomAuthStateProvider : AuthenticationStateProvider
     {
         private readonly ILocalStorageService _localStorage;
+        private UserSession? _cachedSession;
 
         public CustomAuthStateProvider(ILocalStorageService localStorage)
         {
@@ -15,58 +22,79 @@ namespace Daniel_Licors_Store.Data.Services
 
         public override async Task<AuthenticationState> GetAuthenticationStateAsync()
         {
-            var userSession = await _localStorage.GetItemAsync<UserSession>("userSession");
-
-            if (userSession == null)
-                return new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()));
-
-            var claims = new List<Claim>
-    {
-        new Claim(ClaimTypes.NameIdentifier, userSession.UserId),
-        new Claim(ClaimTypes.Name, userSession.Email)
-    };
-
-            foreach (var role in userSession.Roles)
+            try
             {
-                claims.Add(new Claim(ClaimTypes.Role, role));
+                // Usa caché en memoria primero para evitar llamadas dobles a LocalStorage
+                _cachedSession ??= await _localStorage.GetItemAsync<UserSession>("userSession");
+
+                if (_cachedSession == null)
+                    return Anonymous();
+
+                // Verificar que la sesión no haya expirado (30 min de inactividad)
+                if (DateTime.Now - _cachedSession.LastActivity > TimeSpan.FromMinutes(30))
+                {
+                    await Logout();
+                    return Anonymous();
+                }
+
+                return BuildState(_cachedSession);
             }
-
-            var identity = new ClaimsIdentity(claims, "customAuth");
-            var user = new ClaimsPrincipal(identity);
-
-            return new AuthenticationState(user);
+            catch
+            {
+                // Si LocalStorage falla (pre-rendering, etc.), retornar anónimo sin explotar
+                return Anonymous();
+            }
         }
 
         public async Task MarkUserAsAuthenticated(UserSession session)
         {
             if (string.IsNullOrWhiteSpace(session.UserId))
-                throw new Exception("UserId no puede ser vacío al autenticar");
+                throw new InvalidOperationException("UserId no puede ser vacío al autenticar.");
+
+            session.LastActivity = DateTime.Now;
+            _cachedSession = session;
 
             await _localStorage.SetItemAsync("userSession", session);
+            NotifyAuthenticationStateChanged(Task.FromResult(BuildState(session)));
+        }
 
-            var claims = new List<Claim>
-    {
-        new Claim(ClaimTypes.NameIdentifier, session.UserId),
-        new Claim(ClaimTypes.Name, session.Email)
-    };
-
-            foreach (var role in session.Roles)
+        public async Task RefreshActivity()
+        {
+            try
             {
-                claims.Add(new Claim(ClaimTypes.Role, role));
+                var session = await _localStorage.GetItemAsync<UserSession>("userSession");
+                if (session != null)
+                {
+                    session.LastActivity = DateTime.Now;
+                    _cachedSession = session;
+                    await _localStorage.SetItemAsync("userSession", session);
+                }
             }
-
-            var identity = new ClaimsIdentity(claims, "customAuth");
-            var user = new ClaimsPrincipal(identity);
-
-            NotifyAuthenticationStateChanged(
-                Task.FromResult(new AuthenticationState(user))
-            );
+            catch { /* silencioso */ }
         }
 
         public async Task Logout()
         {
+            _cachedSession = null;
             await _localStorage.RemoveItemAsync("userSession");
-            NotifyAuthenticationStateChanged(GetAuthenticationStateAsync());
+            NotifyAuthenticationStateChanged(Task.FromResult(Anonymous()));
+        }
+
+        // ── helpers privados ──────────────────────────────────────────────
+        private static AuthenticationState Anonymous()
+            => new(new ClaimsPrincipal(new ClaimsIdentity()));
+
+        private static AuthenticationState BuildState(UserSession session)
+        {
+            var claims = new List<Claim>
+            {
+                new(ClaimTypes.NameIdentifier, session.UserId),
+                new(ClaimTypes.Name,           session.Email)
+            };
+            claims.AddRange(session.Roles.Select(r => new Claim(ClaimTypes.Role, r)));
+
+            var identity = new ClaimsIdentity(claims, "customAuth");
+            return new AuthenticationState(new ClaimsPrincipal(identity));
         }
     }
 }
