@@ -17,10 +17,15 @@ namespace Daniel_Licors_Store.Components.Pages
         private bool arrows = true;
         private bool bullets = true;
         private bool enableSwipeGesture = true;
-        private bool autocycle = true;
         private Transition transition = Transition.Fade;
-
         private bool _loading = true;
+
+        // Referencia al carrusel hero para avanzar slides manualmente
+        private MudCarousel<object>? _heroCarousel;
+
+        // Timer que reemplaza AutoCycle — controlado 100% por Blazor
+        private System.Threading.Timer? _cycleTimer;
+        private bool _disposed = false;
 
         protected override async Task OnInitializedAsync()
         {
@@ -29,27 +34,48 @@ namespace Daniel_Licors_Store.Components.Pages
             _loading = false;
         }
 
-        // FIX CRÍTICO: Era "async void" — eso hace que las excepciones
-        // no sean capturadas y el circuit Blazor se rompe sin posibilidad
-        // de recovery. Cambiar a Task no funciona directo en un event handler
-        // de Action, así que usamos InvokeAsync para volver al hilo del circuit.
+        protected override Task OnAfterRenderAsync(bool firstRender)
+        {
+            if (firstRender && !_disposed)
+            {
+                // Solo arranca el timer DESPUÉS del primer render completo.
+                // A diferencia del AutoCycle de MudCarousel que arranca
+                // en OnAfterRender compitiendo con los datos que cargan,
+                // este timer empieza cuando la página ya está estable.
+                _cycleTimer = new System.Threading.Timer(
+                    callback: _ => AdvanceSlide(),
+                    state: null,
+                    dueTime: TimeSpan.FromSeconds(16),
+                    period: TimeSpan.FromSeconds(16)
+                );
+            }
+            return Task.CompletedTask;
+        }
+
+        private void AdvanceSlide()
+        {
+            if (_disposed || _heroCarousel == null) return;
+            InvokeAsync(() =>
+            {
+                try
+                {
+                    _heroCarousel?.Next();
+                    StateHasChanged();
+                }
+                catch { /* circuit cerrado — ignorar */ }
+            });
+        }
+
         private void OnStateChanged()
         {
             InvokeAsync(async () =>
             {
-                await ReloadData();
+                _loading = true;
+                StateHasChanged();
+                await LoadData();
+                _loading = false;
+                StateHasChanged();
             });
-        }
-
-        private async Task ReloadData()
-        {
-            _loading = true;
-            StateHasChanged(); // Notifica el estado de carga primero
-
-            await LoadData();
-
-            _loading = false;
-            StateHasChanged();
         }
 
         private async Task LoadData()
@@ -63,6 +89,9 @@ namespace Daniel_Licors_Store.Components.Pages
 
         public void Dispose()
         {
+            _disposed = true;
+            _cycleTimer?.Dispose();
+            _cycleTimer = null;
             State.OnChange -= OnStateChanged;
         }
     }

@@ -1,21 +1,25 @@
 ﻿@using MudBlazor
 @inherits LayoutComponentBase
 
+<!--
+    FIX insertBefore: MudBreakpointProvider dispara resize events
+    mientras Blazor hace re-render de los datos del carrusel.
+    Solución: MudSnackbarProvider agregado (faltaba), y todos los
+    providers van ANTES del layout para que el DOM de providers
+    esté estable antes de que @Body empiece a renderizar.
+-->
 <MudThemeProvider Theme="@Theme" IsDarkMode="true" />
-<MudBreakpointProvider />
-<MudPopoverProvider />
 <MudDialogProvider />
+<MudSnackbarProvider />
+<MudPopoverProvider />
 
 <MudLayout>
-
     <TopBar />
-
     <MudMainContent Class="mud-main-content-reset">
         <MudContainer MaxWidth="MaxWidth.False" Class="pa-0">
             @Body
         </MudContainer>
     </MudMainContent>
-
 </MudLayout>
 
 @code {

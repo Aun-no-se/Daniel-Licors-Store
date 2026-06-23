@@ -18,37 +18,35 @@ builder.Logging.ClearProviders();
 builder.Logging.AddConsole();
 builder.Logging.AddDebug();
 builder.Logging.SetMinimumLevel(
-    builder.Environment.IsDevelopment() ? LogLevel.Debug : LogLevel.Warning);
+    builder.Environment.IsDevelopment() ? LogLevel.Warning : LogLevel.Warning);
 
-// ── RAZOR COMPONENTS ──────────────────────────────────────────
+// ── RAZOR COMPONENTS (UNA SOLA VEZ) ──────────────────────────────────────────
 builder.Services
     .AddRazorComponents()
     .AddInteractiveServerComponents()
     .AddHubOptions(options =>
     {
-        options.MaximumReceiveMessageSize = 32 * 1024 * 1024;
+        options.MaximumReceiveMessageSize = 64 * 1024 * 1024;
         options.ClientTimeoutInterval = TimeSpan.FromSeconds(60);
         options.HandshakeTimeout = TimeSpan.FromSeconds(30);
     });
 
-// ── SERVER SIDE BLAZOR ────────────────────────────────────────────────────────
 builder.Services.AddServerSideBlazor(options =>
 {
     options.DetailedErrors = builder.Environment.IsDevelopment();
 });
 
 // ── BASE DE DATOS ─────────────────────────────────────────────────────────────
-// DbContextFactory para evitar el error de concurrencia en Blazor Server
+// DbContextFactory para Repository<T> (usa IDbContextFactory internamente)
 builder.Services.AddDbContextFactory<ApplicationDbContext>(options =>
     options.UseSqlServer(
-        builder.Configuration.GetConnectionString("DefaultConnection")
-    ));
+        builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// DbContext con scope normal para servicios que lo necesiten directamente
+// DbContext scoped para servicios que lo reciben por constructor
+// (CatalogService, ProductService, AdminDashboardService, etc.)
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(
-        builder.Configuration.GetConnectionString("DefaultConnection")
-    ));
+        builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // ── MUD BLAZOR ────────────────────────────────────────────────────────────────
 builder.Services.AddMudServices();
@@ -57,8 +55,7 @@ builder.Services.AddMudServices();
 builder.Services.AddBlazoredLocalStorage();
 
 // ── AUTORIZACIÓN ──────────────────────────────────────────────────────────────
-// Solo AddAuthorization — sin AddAuthentication Cookie porque la auth
-// la maneja CustomAuthStateProvider con LocalStorage, no cookies de ASP.NET
+// Solo AddAuthorization — sin cookie auth (la auth la maneja LocalStorage)
 builder.Services.AddAuthorization();
 builder.Services.AddScoped<AuthenticationStateProvider, CustomAuthStateProvider>();
 
@@ -68,7 +65,7 @@ builder.Services.AddHttpContextAccessor();
 // ── REPOSITORIOS ──────────────────────────────────────────────────────────────
 builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 
-// ── SERVICIOS DE NEGOCIO ──────────────────────────────────────────────────────
+// ── SERVICIOS ─────────────────────────────────────────────────────────────────
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<ICatalogService, CatalogService>();
@@ -80,34 +77,26 @@ builder.Services.AddScoped<ProductStateService>();
 builder.Services.AddScoped<AdminDashboardService>();
 builder.Services.AddScoped<StockGeneralService>();
 
-// ── BUILD APP ─────────────────────────────────────────────────────────────────
+// ── APP ───────────────────────────────────────────────────────────────────────
 var app = builder.Build();
 
-// ── MANEJO DE ERRORES ─────────────────────────────────────────────────────────
 if (app.Environment.IsDevelopment())
-{
     app.UseDeveloperExceptionPage();
-}
 else
 {
     app.UseExceptionHandler("/Error");
     app.UseHsts();
 }
 
-// ── PIPELINE HTTP ─────────────────────────────────────────────────────────────
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseAntiforgery();
 app.UseAuthorization();
 
-// ── RAZOR COMPONENTS ──────────────────────────────────────────────────────────
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 
-// ── UNHANDLED EXCEPTIONS ──────────────────────────────────────────────────────
 AppDomain.CurrentDomain.UnhandledException += (_, e) =>
-{
     File.WriteAllText("fatal.txt", e.ExceptionObject.ToString());
-};
 
 app.Run();

@@ -8,21 +8,21 @@ namespace Daniel_Licors_Store.Data.Services
 {
     public class CatalogService : ICatalogService
     {
-        private readonly ApplicationDbContext _context;
+        // Usamos IDbContextFactory en lugar de ApplicationDbContext directo.
+        // Esto evita el TaskCanceledException cuando Blazor Server hace el
+        // pre-render y cancela el scope antes de que terminen las queries.
+        private readonly IDbContextFactory<ApplicationDbContext> _factory;
         private readonly IRepository<Category> _categoryRepo;
         private readonly IRepository<Brand> _brandRepo;
-        private readonly IRepository<Product> _productRepo;
 
         public CatalogService(
-            ApplicationDbContext context,
+            IDbContextFactory<ApplicationDbContext> factory,
             IRepository<Category> categoryRepo,
-            IRepository<Brand> brandRepo,
-            IRepository<Product> productRepo)
+            IRepository<Brand> brandRepo)
         {
-            _context = context;
+            _factory = factory;
             _categoryRepo = categoryRepo;
             _brandRepo = brandRepo;
-            _productRepo = productRepo;
         }
 
         public async Task<List<Category>> GetCategoriesAsync()
@@ -31,65 +31,48 @@ namespace Daniel_Licors_Store.Data.Services
         public async Task<List<Brand>> GetBrandsAsync()
             => (await _brandRepo.FindAsync(b => b.IsActive)).ToList();
 
-        // =========================
-        // PRODUCTS (HOME)
-        // Ahora usa _context con Include para traer el precio
-        // =========================
         public async Task<List<ProductResponseModel>> GetProductsAsync()
         {
-            var products = await _context.Products
+            await using var ctx = await _factory.CreateDbContextAsync();
+            var products = await ctx.Products
                 .Include(p => p.Category)
                 .Include(p => p.Brand)
                 .Include(p => p.ProductStores)
                 .Where(p => p.IsActive)
                 .OrderByDescending(p => p.CreatedAt)
                 .ToListAsync();
-
             return products.Select(Map).ToList();
         }
 
-        // =========================
-        // PRODUCTS BY CATEGORY
-        // Fix: include ProductStores para que Price llegue al carrusel
-        // =========================
         public async Task<List<ProductResponseModel>> GetProductsByCategoryAsync(int categoryId)
         {
-            var products = await _context.Products
+            await using var ctx = await _factory.CreateDbContextAsync();
+            var products = await ctx.Products
                 .Include(p => p.Category)
                 .Include(p => p.Brand)
                 .Include(p => p.ProductStores)
                 .Where(p => p.IsActive && p.CategoryId == categoryId)
                 .OrderByDescending(p => p.CreatedAt)
                 .ToListAsync();
-
             return products.Select(Map).ToList();
         }
 
-        // =========================
-        // PRODUCT DETAIL
-        // =========================
         public async Task<ProductDetailDto?> GetProductDetailAsync(int productId)
         {
-            var p = await _context.Products
+            await using var ctx = await _factory.CreateDbContextAsync();
+            var p = await ctx.Products
                 .Include(x => x.Category)
                 .Include(x => x.Brand)
                 .Include(x => x.ProductStores)
                 .FirstOrDefaultAsync(x => x.ProductId == productId && x.IsActive);
-
-            if (p == null)
-                return null;
-
-            return MapDetail(p);
+            return p == null ? null : MapDetail(p);
         }
 
-        // =========================
-        // COMBOS BY PRODUCT
-        // =========================
         public async Task<List<ComboDto>> GetCombosByProductAsync(int productId)
         {
             var now = DateTime.Now;
-
-            return await _context.ComboProducts
+            await using var ctx = await _factory.CreateDbContextAsync();
+            return await ctx.ComboProducts
                 .Where(cp =>
                     cp.ProductId == productId &&
                     cp.Combo.IsActive &&
@@ -107,14 +90,11 @@ namespace Daniel_Licors_Store.Data.Services
                 .ToListAsync();
         }
 
-        // =========================
-        // PROMOTIONS BY PRODUCT
-        // =========================
         public async Task<List<PromotionDto>> GetPromotionsByProductAsync(int productId)
         {
             var now = DateTime.Now;
-
-            return await _context.PromotionProducts
+            await using var ctx = await _factory.CreateDbContextAsync();
+            return await ctx.PromotionProducts
                 .Where(pp =>
                     pp.ProductId == productId &&
                     pp.Promotion.IsActive &&
@@ -138,15 +118,11 @@ namespace Daniel_Licors_Store.Data.Services
                 .ToListAsync();
         }
 
-        // =========================
-        // MAPPERS
-        // =========================
+        // ── Mappers ──────────────────────────────────────────────────────────
         private static ProductResponseModel Map(Product p)
         {
-            // Toma el precio de la primera tienda disponible (StoreId = 1 = Haina)
             var store = p.ProductStores?.FirstOrDefault(ps => ps.StoreId == 1)
                      ?? p.ProductStores?.FirstOrDefault();
-
             return new ProductResponseModel
             {
                 ProductId = p.ProductId,
@@ -157,7 +133,7 @@ namespace Daniel_Licors_Store.Data.Services
                 ImageUrl = p.ImageUrl,
                 IsPremium = p.IsPremium,
                 IsActive = p.IsActive,
-                Price = store?.Price ?? 0   // ← fix: precio mapeado
+                Price = store?.Price ?? 0
             };
         }
 
@@ -165,7 +141,6 @@ namespace Daniel_Licors_Store.Data.Services
         {
             var store = p.ProductStores?.FirstOrDefault(ps => ps.StoreId == 1)
                      ?? p.ProductStores?.FirstOrDefault();
-
             return new ProductDetailDto
             {
                 ProductId = p.ProductId,

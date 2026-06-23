@@ -4,36 +4,35 @@
 @using Daniel_Licors_Store.Components.Shared
 @using Microsoft.AspNetCore.Components.Authorization
 
-
 <div class="index-page">
-    <MudCarousel Class="mud-width-full promo-carousel"
+
+    <!--
+        AutoCycle="false" siempre — el avance automático lo maneja
+        un Timer en C# que solo arranca después de que los datos
+        ya cargaron. Esto elimina la race condition con el render
+        inicial que causaba insertBefore on null.
+    -->
+    <MudCarousel @ref="_heroCarousel"
+                 Class="mud-width-full promo-carousel"
                  Style="height:75vh;"
                  ShowArrows="@arrows"
                  ShowBullets="@bullets"
                  EnableSwipeGesture="@enableSwipeGesture"
-                 AutoCycle="@autocycle"
-                 AutoCycleInterval="16000"
+                 AutoCycle="false"
                  TData="object"
                  Transition="@transition">
 
         <MudCarouselItem>
             <div class="hero-container">
-
-                <!-- Desktop: video real -->
                 <video class="hero-video"
                        autoplay muted loop playsinline preload="metadata">
                     <source src="/videos/video1.mp4" type="video/mp4" />
                 </video>
-
-                <!-- Móvil: imagen estática + overlay animado en CSS -->
                 <img src="/images/Carrusel/NOTICIA-5-portada-cerveza-1210x642-1.jpg"
                      class="hero-image"
                      alt="Promoción Daniel Licors" />
-
-                <!-- Overlay con animaciones CSS (solo activo en móvil) -->
                 <div class="hero-animated-overlay"></div>
                 <div class="hero-vignette"></div>
-
             </div>
         </MudCarouselItem>
 
