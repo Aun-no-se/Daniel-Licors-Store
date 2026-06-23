@@ -3,99 +3,179 @@
 @using Microsoft.AspNetCore.Components.Authorization
 @inject IJSRuntime JS
 
-<div class="category-section">
-    <h2 class="category-title">@Title</h2>
+<div class="dlc-section">
+
+    <div class="dlc-header">
+        <div class="dlc-header-line"></div>
+        <h2 class="dlc-title">
+            <span class="dlc-title-icon">🥃</span>
+            @Title
+        </h2>
+        <div class="dlc-header-line"></div>
+    </div>
 
     @if (IsLoading)
     {
-        <!--
-            FIX: En vez de no renderizar nada mientras carga,
-            mostramos un skeleton. Esto mantiene el nodo en el DOM
-            y evita que Blazor haga insert/remove violento de la
-            sección justo cuando Swiper tiene referencias activas.
-        -->
-        <div class="swiper-skeleton">
-            @for (int i = 0; i < 3; i++)
+        <div class="dlc-skeleton-row">
+            @for (int i = 0; i < 5; i++)
             {
-                <div class="skeleton-card">
-                    <div class="skeleton-img"></div>
-                    <div class="skeleton-line"></div>
-                    <div class="skeleton-line short"></div>
+                int idx = i;
+                <div class="dlc-skel-card @(idx == 2 ? "skel-center" : idx == 1 || idx == 3 ? "skel-side" : "skel-far")">
+                    <div class="dlc-skel-img"></div>
+                    <div class="dlc-skel-line"></div>
+                    <div class="dlc-skel-line short"></div>
                 </div>
             }
         </div>
     }
     else if (Products != null && Products.Any())
     {
-        <div class="swiper-container-wrapper">
+        <div class="dlc-stage">
 
-            <div @ref="swiperElement" class="swiper product-swiper js-product-swiper">
-                <div class="swiper-wrapper">
+            <button class="dlc-btn dlc-btn-prev" @onclick="Prev" aria-label="Anterior">
+                <span class="dlc-btn-arrow">‹</span>
+            </button>
 
-                    @foreach (var product in Products)
-                    {
-                        <div class="swiper-slide">
-                            <div class="product-card">
-                                <img src="@product.ImageUrl" class="product-image" />
+            <div class="dlc-track">
+                @for (int i = 0; i < Products.Count; i++)
+                {
+                    var product = Products[i];
+                    int pos = GetPosition(i);
+                    string cls = GetCardClass(pos);
+                    bool isCenter = pos == 0;
 
-                                <div class="product-info">
-                                    <h3>@product.Name</h3>
-                                    <p class="product-category">@product.Category</p>
+                    <div class="dlc-card @cls" @onclick="@(() => CardClicked(i))">
+                        <div class="dlc-card-glow"></div>
+                        <div class="dlc-card-inner">
 
-                                    <div class="actions">
-                                        <MudIconButton Icon="@Icons.Material.Filled.Visibility"
-                                                       Size="Size.Small"
-                                                       Variant="Variant.Text"
-                                                       Class="action-btn btn-ver"
-                                                       Title="Ver detalle"
-                                                       OnClick="@(() => Nav.NavigateTo($"/producto/{product.ProductId}"))" />
+                            <div class="dlc-img-wrap">
+                                <img src="@(string.IsNullOrEmpty(product.ImageUrl) ? "/images/placeholder.png" : product.ImageUrl)"
+                                     class="dlc-img"
+                                     loading="lazy"
+                                     alt="@product.Name" />
+                                @if (isCenter)
+                                {
+                                    <div class="dlc-img-shine"></div>
+                                }
+                            </div>
 
-                                        <AuthorizeView Roles="Admin, Empleado">
-                                            <Authorized>
-                                                <MudIconButton Icon="@Icons.Material.Filled.Edit"
-                                                               Size="Size.Small"
-                                                               Variant="Variant.Text"
-                                                               Class="action-btn btn-editar"
-                                                               Title="Editar"
-                                                               OnClick="@(() => EditarProducto(product.ProductId))" />
+                            <div class="dlc-info">
+                                <span class="dlc-cat-badge">@product.Category</span>
+                                <p class="dlc-name">@product.Name</p>
 
-                                                <MudIconButton Icon="@Icons.Material.Filled.Delete"
-                                                               Size="Size.Small"
-                                                               Variant="Variant.Text"
-                                                               Class="action-btn btn-borrar"
-                                                               Title="Eliminar"
-                                                               OnClick="@(() => DeleteProduct(product.ProductId))" />
-                                            </Authorized>
-                                        </AuthorizeView>
+                                @if (!string.IsNullOrEmpty(product.Description))
+                                {
+                                    <p class="dlc-desc">@product.Description</p>
+                                }
+
+                                @if (isCenter)
+                                {
+                                    @if (product.Price > 0)
+                                    {
+                                        <p class="dlc-price">RD$@product.Price.ToString("N0")</p>
+                                    }
+
+                                    <div class="dlc-actions">
+                                        <button class="dlc-action-btn dlc-view" @onclick:stopPropagation="true"
+                                                @onclick="@(() => Nav.NavigateTo($"/producto/{product.ProductId}"))">
+                                            <span class="dlc-action-icon">👁</span>
+                                            <span>Ver</span>
+                                        </button>
 
                                         <AuthorizeView Roles="Admin, Empleado, Cliente">
                                             <Authorized>
-                                                <MudIconButton Icon="@Icons.Material.Filled.Add"
-                                                               Size="Size.Small"
-                                                               Variant="Variant.Text"
-                                                               Class="action-btn btn-anadir"
-                                                               Title="Añadir al carrito"
-                                                               OnClick="@(async () => await AgregarAlCarrito(product.ProductId))" />
+                                                <button class="dlc-action-btn dlc-add" @onclick:stopPropagation="true"
+                                                        @onclick="@(async () => await AgregarAlCarrito(product.ProductId))">
+                                                    <span class="dlc-action-icon">🛒</span>
+                                                    <span>Añadir</span>
+                                                </button>
+                                            </Authorized>
+                                        </AuthorizeView>
+
+                                        <AuthorizeView Roles="Admin, Empleado">
+                                            <Authorized>
+                                                <button class="dlc-action-btn dlc-edit" @onclick:stopPropagation="true"
+                                                        @onclick="@(() => EditarProducto(product.ProductId))">
+                                                    <span class="dlc-action-icon">✏️</span>
+                                                </button>
+                                                <button class="dlc-action-btn dlc-del" @onclick:stopPropagation="true"
+                                                        @onclick="@(async () => await DeleteProduct(product.ProductId))">
+                                                    <span class="dlc-action-icon">🗑</span>
+                                                </button>
                                             </Authorized>
                                         </AuthorizeView>
                                     </div>
-
-                                </div>
+                                }
                             </div>
                         </div>
-                    }
-
-                </div>
-
-                <div class="swiper-button-prev custom-swiper-btn"></div>
-                <div class="swiper-button-next custom-swiper-btn"></div>
-
+                    </div>
+                }
             </div>
 
+            <button class="dlc-btn dlc-btn-next" @onclick="Next" aria-label="Siguiente">
+                <span class="dlc-btn-arrow">›</span>
+            </button>
+
+        </div>
+
+        <div class="dlc-dots">
+            @for (int i = 0; i < Products.Count; i++)
+            {
+                int idx = i;
+                <button class="dlc-dot @(idx == _activeIndex ? "active" : "")"
+                        @onclick="@(() => GoTo(idx))"
+                        aria-label="Ir a @(idx + 1)">
+                </button>
+            }
         </div>
     }
     else
     {
-        <p class="empty-state">No hay productos disponibles</p>
+        <div class="dlc-empty">
+            <span>🍾</span>
+            <p>No hay productos disponibles</p>
+        </div>
     }
 </div>
+
+@code {
+    // NOTA: _disposed, parámetros e inyecciones viven en el .razor.cs
+    // Aquí solo va la lógica de navegación del carrusel
+
+    private int _activeIndex = 0;
+
+    private int GetPosition(int index)
+    {
+        if (Products == null || Products.Count == 0) return 99;
+        int count = Products.Count;
+        int raw = index - _activeIndex;
+        while (raw > count / 2) raw -= count;
+        while (raw < -count / 2) raw += count;
+        return raw;
+    }
+
+    private string GetCardClass(int pos) => pos switch
+    {
+        0 => "dlc-pos-center",
+        1 => "dlc-pos-right1",
+        -1 => "dlc-pos-left1",
+        2 => "dlc-pos-right2",
+        -2 => "dlc-pos-left2",
+        _ => "dlc-pos-hidden"
+    };
+
+    private void Next()
+    {
+        if (Products == null || Products.Count == 0) return;
+        _activeIndex = (_activeIndex + 1) % Products.Count;
+    }
+
+    private void Prev()
+    {
+        if (Products == null || Products.Count == 0) return;
+        _activeIndex = (_activeIndex - 1 + Products.Count) % Products.Count;
+    }
+
+    private void GoTo(int index) => _activeIndex = index;
+    private void CardClicked(int i) { if (i != _activeIndex) _activeIndex = i; }
+}

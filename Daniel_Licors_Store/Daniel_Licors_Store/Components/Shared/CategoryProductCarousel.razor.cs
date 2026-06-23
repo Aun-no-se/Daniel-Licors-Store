@@ -1,13 +1,12 @@
 ﻿using Daniel_Licors_Store.Components.Product;
+using Daniel_Licors_Store.Components.Shared;
 using Daniel_Licors_Store.Data.Repositories.Interfaces;
+using Daniel_Licors_Store.Data.Services;
 using Daniel_Licors_Store.Models.Product;
 using Daniel_Licors_Store.Services;
 using Microsoft.AspNetCore.Components;
-using Microsoft.JSInterop;
-using MudBlazor;
-using Daniel_Licors_Store.Components.Shared;
 using Microsoft.AspNetCore.Components.Authorization;
-using Daniel_Licors_Store.Data.Services;
+using MudBlazor;
 
 namespace Daniel_Licors_Store.Components.Shared
 {
@@ -16,26 +15,18 @@ namespace Daniel_Licors_Store.Components.Shared
         [Parameter] public string Title { get; set; } = string.Empty;
         [Parameter] public int CategoryId { get; set; }
         [Parameter] public List<ProductResponseModel> Products { get; set; } = new();
-
-        // FIX: nuevo parámetro que recibe el estado de carga del padre
-        // para mostrar skeleton y evitar que el carousel aparezca con lista vacía
         [Parameter] public bool IsLoading { get; set; } = true;
 
         [Inject] private NavigationManager Nav { get; set; } = default!;
         [Inject] private IDialogService DialogService { get; set; } = default!;
         [Inject] private IProductService ProductService { get; set; } = default!;
         [Inject] private ProductStateService ProductState { get; set; } = default!;
-
         [Inject] private ICartService CartService { get; set; } = default!;
         [Inject] private AuthenticationStateProvider AuthStateProvider { get; set; } = default!;
         [Inject] private ISnackbar Snackbar { get; set; } = default!;
 
-        private ElementReference swiperElement;
-        private bool _swiperInicializado = false;
-        private int _previousProductsCount = -1;
         private bool _disposed = false;
 
-        protected void VerProducto(int productId) => Nav.NavigateTo($"/producto/{productId}");
         protected async Task AgregarAlCarrito(int productId)
         {
             try
@@ -53,7 +44,6 @@ namespace Daniel_Licors_Store.Components.Shared
                 var userId =
                     user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
                     ?? user.FindFirst("sub")?.Value
-                    ?? user.FindFirst("userId")?.Value
                     ?? string.Empty;
 
                 if (string.IsNullOrWhiteSpace(userId))
@@ -62,69 +52,12 @@ namespace Daniel_Licors_Store.Components.Shared
                     return;
                 }
 
-                // Store fijo por ahora (igual que en Cart.razor)
-                int storeId = 1;
-
-                await CartService.AddProductToCartAsync(
-                    userId,
-                    productId,
-                    1,          // cantidad inicial
-                    storeId
-                );
-
-                Snackbar.Add("Producto añadido al carrito", Severity.Success);
+                await CartService.AddProductToCartAsync(userId, productId, 1, storeId: 1);
+                Snackbar.Add("🛒 Producto añadido al carrito", Severity.Success);
             }
             catch (Exception ex)
             {
-                Snackbar.Add($"Error al añadir al carrito: {ex.Message}", Severity.Error);
-            }
-        }
-
-        protected override async Task OnParametersSetAsync()
-        {
-            // Resetea flag solo si la cantidad real de productos cambió
-            if (Products != null && Products.Count != _previousProductsCount)
-            {
-                _swiperInicializado = false;
-                _previousProductsCount = Products.Count;
-            }
-        }
-
-        protected override async Task OnAfterRenderAsync(bool firstRender)
-        {
-            if (_disposed) return;
-
-            // FIX: Solo intentamos inicializar Swiper si:
-            // 1. Hay productos reales
-            // 2. No está en estado de carga
-            // 3. No lo inicializamos ya
-            if (!IsLoading && Products != null && Products.Any() && !_swiperInicializado)
-            {
-                try
-                {
-                    // FIX: pequeño delay para dejar que Chrome termine
-                    // su ciclo de layout antes de que Swiper manipule el DOM.
-                    // Edge/Brave son más tolerantes; Chrome requiere este tick.
-                    await Task.Delay(50);
-
-                    if (_disposed) return;
-
-                    await JS.InvokeVoidAsync("initProductSwiper", swiperElement);
-                    await JS.InvokeVoidAsync("initScrollReveal");
-                    _swiperInicializado = true;
-                }
-                catch (JSDisconnectedException)
-                {
-                    // Circuit cerrado — normal cuando el usuario navega
-                }
-                catch (ObjectDisposedException)
-                {
-                    // Componente ya destruido — ignorar
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"[Carousel] Error Swiper: {ex.Message}");
-                }
+                Snackbar.Add($"Error: {ex.Message}", Severity.Error);
             }
         }
 
@@ -140,10 +73,8 @@ namespace Daniel_Licors_Store.Components.Shared
             {
                 { "ContentText", "¿Estás seguro de que deseas eliminar este producto? Esta acción no se puede deshacer." }
             };
-
             var dialog = DialogService.Show<ConfirmDialog>("Confirmar eliminación", parameters);
             var result = await dialog.Result;
-
             if (!result.Canceled)
             {
                 await ProductService.DeleteProductAsync(productId);
@@ -151,22 +82,10 @@ namespace Daniel_Licors_Store.Components.Shared
             }
         }
 
-        // FIX: IAsyncDisposable para destruir Swiper desde JS
-        // antes de que Blazor destruya el nodo del DOM.
-        // Esto previene el insertBefore sobre nodo nulo en navegaciones.
-        public async ValueTask DisposeAsync()
+        public ValueTask DisposeAsync()
         {
             _disposed = true;
-            try
-            {
-                if (_swiperInicializado)
-                {
-                    await JS.InvokeVoidAsync("destroyProductSwiper", swiperElement);
-                }
-            }
-            catch
-            {
-            }
+            return ValueTask.CompletedTask;
         }
     }
 }

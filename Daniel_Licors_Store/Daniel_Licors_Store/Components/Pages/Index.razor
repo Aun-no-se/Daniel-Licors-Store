@@ -4,8 +4,8 @@
 @using Daniel_Licors_Store.Components.Shared
 @using Microsoft.AspNetCore.Components.Authorization
 
-<div class="index-page">
 
+<div class="index-page">
     <MudCarousel Class="mud-width-full promo-carousel"
                  Style="height:75vh;"
                  ShowArrows="@arrows"
@@ -18,17 +18,22 @@
 
         <MudCarouselItem>
             <div class="hero-container">
+
+                <!-- Desktop: video real -->
                 <video class="hero-video"
-                       autoplay
-                       muted
-                       loop
-                       playsinline
-                       preload="auto">
+                       autoplay muted loop playsinline preload="metadata">
                     <source src="/videos/video1.mp4" type="video/mp4" />
                 </video>
+
+                <!-- Móvil: imagen estática + overlay animado en CSS -->
                 <img src="/images/Carrusel/NOTICIA-5-portada-cerveza-1210x642-1.jpg"
                      class="hero-image"
                      alt="Promoción Daniel Licors" />
+
+                <!-- Overlay con animaciones CSS (solo activo en móvil) -->
+                <div class="hero-animated-overlay"></div>
+                <div class="hero-vignette"></div>
+
             </div>
         </MudCarouselItem>
 
@@ -55,18 +60,10 @@
 
     </MudCarousel>
 
-    <!--
-        FIX: Los carouseles de categoría ahora usan key única.
-        @key fuerza a Blazor a crear un nodo nuevo si la lista
-        cambia, evitando que Swiper intente operar sobre un
-        elemento ya destruido por el diffing.
-    -->
-        <CategoryProductCarousel Title="Cervezas"
-                                 Products="@cervezas"
-                                 IsLoading="@_loading" />
-
-        <CategoryProductCarousel Title="Rones"
-                                 Products="@rones"
-                                 IsLoading="@_loading" />
-
+    <CategoryProductCarousel Title="Cervezas"
+                             Products="@cervezas"
+                             IsLoading="@_loading" />
+    <CategoryProductCarousel Title="Rones"
+                             Products="@rones"
+                             IsLoading="@_loading" />
 </div>

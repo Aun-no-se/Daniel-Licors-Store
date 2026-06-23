@@ -33,26 +33,34 @@ namespace Daniel_Licors_Store.Data.Services
 
         // =========================
         // PRODUCTS (HOME)
+        // Ahora usa _context con Include para traer el precio
         // =========================
         public async Task<List<ProductResponseModel>> GetProductsAsync()
         {
-            var products = (await _productRepo.GetAllAsync())
+            var products = await _context.Products
+                .Include(p => p.Category)
+                .Include(p => p.Brand)
+                .Include(p => p.ProductStores)
                 .Where(p => p.IsActive)
                 .OrderByDescending(p => p.CreatedAt)
-                .ToList();
+                .ToListAsync();
 
             return products.Select(Map).ToList();
         }
 
         // =========================
         // PRODUCTS BY CATEGORY
+        // Fix: include ProductStores para que Price llegue al carrusel
         // =========================
         public async Task<List<ProductResponseModel>> GetProductsByCategoryAsync(int categoryId)
         {
-            var products = (await _productRepo.GetAllAsync())
+            var products = await _context.Products
+                .Include(p => p.Category)
+                .Include(p => p.Brand)
+                .Include(p => p.ProductStores)
                 .Where(p => p.IsActive && p.CategoryId == categoryId)
                 .OrderByDescending(p => p.CreatedAt)
-                .ToList();
+                .ToListAsync();
 
             return products.Select(Map).ToList();
         }
@@ -76,7 +84,6 @@ namespace Daniel_Licors_Store.Data.Services
 
         // =========================
         // COMBOS BY PRODUCT
-        // Incluye ImageUrl para mostrarla en la vista de detalle
         // =========================
         public async Task<List<ComboDto>> GetCombosByProductAsync(int productId)
         {
@@ -95,14 +102,13 @@ namespace Daniel_Licors_Store.Data.Services
                     Name = cp.Combo.Name,
                     Description = cp.Combo.Description,
                     ComboPrice = cp.Combo.ComboPrice,
-                    ImageUrl = cp.Combo.ImageUrl   // ← incluir imagen
+                    ImageUrl = cp.Combo.ImageUrl
                 })
                 .ToListAsync();
         }
 
         // =========================
         // PROMOTIONS BY PRODUCT
-        // Solo activas y dentro de vigencia
         // =========================
         public async Task<List<PromotionDto>> GetPromotionsByProductAsync(int productId)
         {
@@ -121,7 +127,7 @@ namespace Daniel_Licors_Store.Data.Services
                     Title = pp.Promotion.Title,
                     Description = pp.Promotion.Description,
                     PromotionType = pp.Promotion.PromotionType,
-                    ImageUrl = pp.Promotion.ImageUrl,   // ← incluir imagen
+                    ImageUrl = pp.Promotion.ImageUrl,
                     StartDate = pp.Promotion.StartDate,
                     EndDate = pp.Promotion.EndDate,
                     SpecialPrice = pp.SpecialPrice,
@@ -137,6 +143,10 @@ namespace Daniel_Licors_Store.Data.Services
         // =========================
         private static ProductResponseModel Map(Product p)
         {
+            // Toma el precio de la primera tienda disponible (StoreId = 1 = Haina)
+            var store = p.ProductStores?.FirstOrDefault(ps => ps.StoreId == 1)
+                     ?? p.ProductStores?.FirstOrDefault();
+
             return new ProductResponseModel
             {
                 ProductId = p.ProductId,
@@ -146,13 +156,15 @@ namespace Daniel_Licors_Store.Data.Services
                 Brand = p.Brand?.Name,
                 ImageUrl = p.ImageUrl,
                 IsPremium = p.IsPremium,
-                IsActive = p.IsActive
+                IsActive = p.IsActive,
+                Price = store?.Price ?? 0   // ← fix: precio mapeado
             };
         }
 
         private static ProductDetailDto MapDetail(Product p)
         {
-            var store = p.ProductStores?.FirstOrDefault();
+            var store = p.ProductStores?.FirstOrDefault(ps => ps.StoreId == 1)
+                     ?? p.ProductStores?.FirstOrDefault();
 
             return new ProductDetailDto
             {

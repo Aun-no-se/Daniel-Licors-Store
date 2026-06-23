@@ -10,4 +10,5 @@ public class ProductResponseModel
     public bool IsPremium { get; set; }
     public string? ImageUrl { get; set; }
     public bool IsActive { get; set; }
+    public decimal Price { get; set; }   // ← agregado para mostrar en el carrusel
 }
