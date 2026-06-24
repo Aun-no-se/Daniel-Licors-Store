@@ -86,7 +86,7 @@
                 </MudPaper>
 
                 <!-- Sin resultados -->
-                @if (_filteredProducts.Count == 0 && _filteredCombos.Count == 0 &&
+                @if (_filteredProducts.Count == 0 && _filteredCombos.Count == 0 && _filteredPromotions.Count == 0 &&
                             (!string.IsNullOrEmpty(_searchTerm) || !string.IsNullOrEmpty(_filterCategory)))
                 {
                     <MudPaper Elevation="0" Class="d-flex flex-column align-center py-8 mb-4 rounded-lg"
@@ -107,61 +107,6 @@
                             Limpiar filtros
                         </MudButton>
                     </MudPaper>
-                }
-
-                <!-- Sección PROMOCIONES -->
-                @if (_filteredPromotions.Count > 0)
-                {
-                    <div class="section-block mb-6">
-                        <div class="section-label mb-3">
-                            <span class="label-dot dot-promo"></span>
-                            <MudText Typo="Typo.body2" Class="font-weight-bold section-title-text">
-                                🏷️ PROMOCIONES (@_filteredPromotions.Count)
-                            </MudText>
-                        </div>
-                        <div class="item-grid">
-                            @foreach (var promo in _filteredPromotions)
-                            {
-                                <div class="pcard @(promo.IsSelected ? "pcard-selected" : "")"
-                                     @onclick="@(() => UpdateSelection(promo.CartPromotionId, !promo.IsSelected, "promotion"))">
-
-                                    <div class="pcard-img-wrap">
-                                        <img src="@promo.PromotionImage" alt="@promo.PromotionName" onerror="this.style.display='none'" />
-                                        <div class="pcard-img-placeholder">
-                                            <span class="placeholder-icon">🏷️</span>
-                                        </div>
-                                        <span class="item-badge badge-promo">Promo</span>
-                                        <div class="pcard-check @(promo.IsSelected ? "pcard-check-active" : "")">
-                                            @if (promo.IsSelected)
-                                            {
-                                                <span>✓</span>
-                                            }
-                                        </div>
-                                    </div>
-
-                                    <div class="pcard-body">
-                                        <div class="pcard-name" title="@promo.PromotionName">@promo.PromotionName</div>
-                                        <div class="pcard-cat">@promo.Category</div>
-                                        <div class="pcard-price">$@promo.UnitPrice.ToString("N2")</div>
-                                        <div class="pcard-subtotal">Sub: $@promo.SubTotal.ToString("N2")</div>
-                                        <div class="pcard-footer" @onclick:stopPropagation="true">
-                                            <div class="qty-mini">
-                                                <button @onclick="@(() => UpdateQuantity(promo.CartPromotionId, promo.Quantity - 1, "promotion"))">−</button>
-                                                <span>@promo.Quantity</span>
-                                                <button @onclick="@(() => UpdateQuantity(promo.CartPromotionId, promo.Quantity + 1, "promotion"))">+</button>
-                                            </div>
-                                            <button class="del-mini"
-                                                    @onclick="@(() => RemoveItem(promo.CartPromotionId, "promotion"))"
-                                                    @onclick:stopPropagation="true"
-                                                    title="Eliminar del carrito">
-                                                🗑️
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            }
-                        </div>
-                    </div>
                 }
 
                 <!-- Sección PRODUCTOS -->
@@ -221,6 +166,61 @@
                     </div>
                 }
 
+                <!-- Sección PROMOCIONES -->
+                @if (_filteredPromotions.Count > 0)
+                {
+                    <div class="section-block mb-6">
+                        <div class="section-label mb-3">
+                            <span class="label-dot dot-promo"></span>
+                            <MudText Typo="Typo.body2" Class="font-weight-bold section-title-text">
+                                🏷️ PROMOCIONES (@_filteredPromotions.Count)
+                            </MudText>
+                        </div>
+                        <div class="item-grid">
+                            @foreach (var promo in _filteredPromotions)
+                            {
+                                <div class="pcard @(promo.IsSelected ? "pcard-selected" : "")"
+                                     @onclick="@(() => UpdateSelection(promo.CartPromotionId, !promo.IsSelected, "promotion"))">
+
+                                    <div class="pcard-img-wrap">
+                                        <img src="@promo.PromotionImage" alt="@promo.PromotionName" onerror="this.style.display='none'" />
+                                        <div class="pcard-img-placeholder">
+                                            <span class="placeholder-icon">🏷️</span>
+                                        </div>
+                                        <span class="item-badge badge-promo">Promo</span>
+                                        <div class="pcard-check @(promo.IsSelected ? "pcard-check-active" : "")">
+                                            @if (promo.IsSelected)
+                                            {
+                                                <span>✓</span>
+                                            }
+                                        </div>
+                                    </div>
+
+                                    <div class="pcard-body">
+                                        <div class="pcard-name" title="@promo.PromotionName">@promo.PromotionName</div>
+                                        <div class="pcard-cat">@promo.Category</div>
+                                        <div class="pcard-price">$@promo.UnitPrice.ToString("N2")</div>
+                                        <div class="pcard-subtotal">Sub: $@promo.SubTotal.ToString("N2")</div>
+                                        <div class="pcard-footer" @onclick:stopPropagation="true">
+                                            <div class="qty-mini">
+                                                <button @onclick="@(() => UpdateQuantity(promo.CartPromotionId, promo.Quantity - 1, "promotion"))">−</button>
+                                                <span>@promo.Quantity</span>
+                                                <button @onclick="@(() => UpdateQuantity(promo.CartPromotionId, promo.Quantity + 1, "promotion"))">+</button>
+                                            </div>
+                                            <button class="del-mini"
+                                                    @onclick="@(() => RemoveItem(promo.CartPromotionId, "promotion"))"
+                                                    @onclick:stopPropagation="true"
+                                                    title="Eliminar del carrito">
+                                                🗑️
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+
                 <!-- Sección COMBOS -->
                 @if (_filteredCombos.Count > 0 && _filterCategory != "promo")
                 {
@@ -228,7 +228,7 @@
                         <div class="section-label mb-3">
                             <span class="label-dot dot-combo"></span>
                             <MudText Typo="Typo.body2" Class="font-weight-bold section-title-text">
-                                🎁 COMBOS & PROMOS (@_filteredCombos.Count)
+                                🎁 COMBOS (@_filteredCombos.Count)
                             </MudText>
                         </div>
                         <div class="item-grid">
