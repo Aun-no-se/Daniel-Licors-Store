@@ -444,25 +444,122 @@ public class CartService : ICartService
         if (string.IsNullOrWhiteSpace(userId))
             throw new Exception("UserId inválido en CartService");
 
+        using var transaction = await _context.Database.BeginTransactionAsync();
+
         try
         {
             var cart = await _context.Carts
                 .Include(c => c.CartItems)
                 .Include(c => c.CartCombos)
+                    .ThenInclude(cc => cc.Combo)
+                        .ThenInclude(combo => combo.ComboProducts)
                 .FirstOrDefaultAsync(c => c.UserId == userId && c.CartStatus == "Active");
 
             if (cart == null)
                 return false;
 
+            // ── 1. DESCONTAR STOCK DE PRODUCTOS DIRECTOS ─────────────────────────
+            foreach (var cartItem in cart.CartItems)
+            {
+                var productStore = await _context.ProductStores
+                    .FirstOrDefaultAsync(ps => ps.ProductId == cartItem.ProductId
+                                            && ps.StoreId == cart.StoreId);
+
+                if (productStore == null)
+                {
+                    _logger.LogWarning(
+                        "ProductStore no encontrado para ProductId={ProductId} StoreId={StoreId}. Se omite.",
+                        cartItem.ProductId, cart.StoreId);
+                    continue;
+                }
+
+                // Validar stock suficiente (protección extra en checkout)
+                if (productStore.Stock < cartItem.Quantity)
+                    throw new InvalidOperationException(
+                        $"Stock insuficiente para '{cartItem.Product?.Name ?? cartItem.ProductId.ToString()}'. " +
+                        $"Disponible: {productStore.Stock}, solicitado: {cartItem.Quantity}.");
+
+                productStore.Stock -= cartItem.Quantity;
+                productStore.IsAvailable = productStore.Stock > 0;
+
+                // Auditoría de movimiento
+                _context.StockMovements.Add(new StockMovement
+                {
+                    ProductId = cartItem.ProductId,
+                    StoreId = cart.StoreId,
+                    Quantity = cartItem.Quantity,
+                    MovementType = "Out",
+                    UserId = userId,
+                    CreatedAt = DateTime.UtcNow
+                });
+            }
+
+            // ── 2. DESCONTAR STOCK DE COMBOS (cada producto dentro del combo) ────
+            foreach (var cartCombo in cart.CartCombos)
+            {
+                if (cartCombo.Combo?.ComboProducts == null) continue;
+
+                foreach (var comboProduct in cartCombo.Combo.ComboProducts)
+                {
+                    var productStore = await _context.ProductStores
+                        .FirstOrDefaultAsync(ps => ps.ProductId == comboProduct.ProductId
+                                                && ps.StoreId == cart.StoreId);
+
+                    if (productStore == null)
+                    {
+                        _logger.LogWarning(
+                            "ProductStore no encontrado para combo ProductId={ProductId}. Se omite.",
+                            comboProduct.ProductId);
+                        continue;
+                    }
+
+                    // La cantidad total a descontar = unidades del combo × cantidad en el combo
+                    var totalQty = cartCombo.Quantity * comboProduct.Quantity;
+
+                    if (productStore.Stock < totalQty)
+                        throw new InvalidOperationException(
+                            $"Stock insuficiente para producto en combo (ProductId={comboProduct.ProductId}). " +
+                            $"Disponible: {productStore.Stock}, requerido: {totalQty}.");
+
+                    productStore.Stock -= totalQty;
+                    productStore.IsAvailable = productStore.Stock > 0;
+
+                    _context.StockMovements.Add(new StockMovement
+                    {
+                        ProductId = comboProduct.ProductId,
+                        StoreId = cart.StoreId,
+                        Quantity = totalQty,
+                        MovementType = "Out",
+                        UserId = userId,
+                        CreatedAt = DateTime.UtcNow
+                    });
+                }
+            }
+
+            // ── 3. CERRAR EL CARRITO ─────────────────────────────────────────────
             cart.CartStatus = "Sent";
             cart.UpdatedAt = DateTime.UtcNow;
+
             await _context.SaveChangesAsync();
+            await transaction.CommitAsync();
+
+            _logger.LogInformation(
+                "Checkout completado para UserId={UserId}. CartId={CartId}.",
+                userId, cart.CartId);
 
             return true;
         }
+        catch (InvalidOperationException ex)
+        {
+            // Stock insuficiente — rollback y re-lanzar para que el frontend muestre el mensaje
+            await transaction.RollbackAsync();
+            _logger.LogWarning(ex, "Checkout cancelado por stock insuficiente para UserId={UserId}", userId);
+            throw;
+        }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error during checkout");
+            await transaction.RollbackAsync();
+            _logger.LogError(ex, "Error during checkout para UserId={UserId}", userId);
             return false;
         }
     }
