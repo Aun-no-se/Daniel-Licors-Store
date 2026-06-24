@@ -173,18 +173,6 @@
 }
 
 /* ══════════════════════════════════════════════
-   POSICIONES — arco escalonado
-   top  = posición vertical absoluta dentro del stage
-   Las cards laterales tienen top más pequeño (más arriba),
-   la central tiene top más grande (más abajo).
-
-   Stage height: 580px, card height ~420px aprox.
-
-   Centro  → top: 100px  (abajo del todo)
-   Lados 1 → top:  40px  (sube ~60px)
-   Lados 2 → top:  -10px (sube ~110px, pueden salir un poco del borde)
-   ══════════════════════════════════════════════ */
-/* ══════════════════════════════════════════════
    POSICIONES — arco escalonado (Estilo Plano 2D)
    ══════════════════════════════════════════════ */
 
