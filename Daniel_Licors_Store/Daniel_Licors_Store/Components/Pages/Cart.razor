@@ -109,22 +109,55 @@
                     </MudPaper>
                 }
 
-                <!-- Sección PROMOCIONES (primero, solo cuando filtro = promo) -->
-                @if (_filterCategory == "promo" && _filteredCombos.Any(c => c.ComboName.Contains("Promo", StringComparison.OrdinalIgnoreCase)))
+                <!-- Sección PROMOCIONES -->
+                @if (_filteredPromotions.Count > 0)
                 {
                     <div class="section-block mb-6">
                         <div class="section-label mb-3">
                             <span class="label-dot dot-promo"></span>
                             <MudText Typo="Typo.body2" Class="font-weight-bold section-title-text">
-                                🏷️ PROMOCIONES (@_filteredCombos.Count(c => c.ComboName.Contains("Promo", StringComparison.OrdinalIgnoreCase)))
+                                🏷️ PROMOCIONES (@_filteredPromotions.Count)
                             </MudText>
                         </div>
                         <div class="item-grid">
-                            @foreach (var combo in _filteredCombos.Where(c => c.ComboName.Contains("Promo", StringComparison.OrdinalIgnoreCase)))
+                            @foreach (var promo in _filteredPromotions)
                             {
-                                <div class="pcard @(combo.IsSelected ? "pcard-selected" : "")"
-                                     @onclick="@(() => UpdateSelection(combo.CartComboId, !combo.IsSelected, "combo"))">
-                                    @RenderComboCard(combo)
+                                <div class="pcard @(promo.IsSelected ? "pcard-selected" : "")"
+                                     @onclick="@(() => UpdateSelection(promo.CartPromotionId, !promo.IsSelected, "promotion"))">
+
+                                    <div class="pcard-img-wrap">
+                                        <img src="@promo.PromotionImage" alt="@promo.PromotionName" onerror="this.style.display='none'" />
+                                        <div class="pcard-img-placeholder">
+                                            <span class="placeholder-icon">🏷️</span>
+                                        </div>
+                                        <span class="item-badge badge-promo">Promo</span>
+                                        <div class="pcard-check @(promo.IsSelected ? "pcard-check-active" : "")">
+                                            @if (promo.IsSelected)
+                                            {
+                                                <span>✓</span>
+                                            }
+                                        </div>
+                                    </div>
+
+                                    <div class="pcard-body">
+                                        <div class="pcard-name" title="@promo.PromotionName">@promo.PromotionName</div>
+                                        <div class="pcard-cat">@promo.Category</div>
+                                        <div class="pcard-price">$@promo.UnitPrice.ToString("N2")</div>
+                                        <div class="pcard-subtotal">Sub: $@promo.SubTotal.ToString("N2")</div>
+                                        <div class="pcard-footer" @onclick:stopPropagation="true">
+                                            <div class="qty-mini">
+                                                <button @onclick="@(() => UpdateQuantity(promo.CartPromotionId, promo.Quantity - 1, "promotion"))">−</button>
+                                                <span>@promo.Quantity</span>
+                                                <button @onclick="@(() => UpdateQuantity(promo.CartPromotionId, promo.Quantity + 1, "promotion"))">+</button>
+                                            </div>
+                                            <button class="del-mini"
+                                                    @onclick="@(() => RemoveItem(promo.CartPromotionId, "promotion"))"
+                                                    @onclick:stopPropagation="true"
+                                                    title="Eliminar del carrito">
+                                                🗑️
+                                            </button>
+                                        </div>
+                                    </div>
                                 </div>
                             }
                         </div>
@@ -697,6 +730,7 @@
     private CartViewDto? _cartView;
     private List<CartItemDisplayDto> _filteredProducts = new();
     private List<CartComboDisplayDto> _filteredCombos = new();
+    private List<CartPromotionDisplayDto> _filteredPromotions = new();
     private string _searchTerm = "";
     private string _filterCategory = "";
     private bool _loading = true;
@@ -710,9 +744,11 @@
     {
         if (_cartView == null) { _selectedCount = 0; _selectedPrice = 0; return; }
         _selectedCount = _cartView.Products.Where(p => p.IsSelected).Sum(p => p.Quantity)
-                       + _cartView.Combos.Where(c => c.IsSelected).Sum(c => c.Quantity);
+                       + _cartView.Combos.Where(c => c.IsSelected).Sum(c => c.Quantity)
+                       + _cartView.Promotions.Where(pr => pr.IsSelected).Sum(pr => pr.Quantity);
         _selectedPrice = _cartView.Products.Where(p => p.IsSelected).Sum(p => p.SubTotal)
-                       + _cartView.Combos.Where(c => c.IsSelected).Sum(c => c.SubTotal);
+                       + _cartView.Combos.Where(c => c.IsSelected).Sum(c => c.SubTotal)
+                       + _cartView.Promotions.Where(pr => pr.IsSelected).Sum(pr => pr.SubTotal);
     }
 
     protected override async Task OnInitializedAsync()
@@ -806,6 +842,15 @@
                 _filteredProducts = new();
         }
 
+        // Filtrar promociones reales de CartViewDto.Promotions
+        _filteredPromotions = _cartView?.Promotions
+            .Where(pr => string.IsNullOrEmpty(search) || pr.PromotionName.Contains(search, StringComparison.OrdinalIgnoreCase))
+            .Where(pr => string.IsNullOrEmpty(cat) || cat == "promo")
+            .ToList() ?? new();
+
+        if (cat == "combo")
+            _filteredPromotions = new();
+
         StateHasChanged();
     }
 
@@ -881,6 +926,11 @@
                 var item = _cartView?.Combos.FirstOrDefault(c => c.CartComboId == itemId);
                 if (item != null) item.IsSelected = isSelected;
             }
+            else if (itemType == "promotion")
+            {
+                var item = _cartView?.Promotions.FirstOrDefault(pr => pr.CartPromotionId == itemId);
+                if (item != null) item.IsSelected = isSelected;
+            }
 
             RecalcSelected();
             StateHasChanged();
@@ -895,6 +945,7 @@
     {
         _cartView?.Products.ForEach(p => p.IsSelected = true);
         _cartView?.Combos.ForEach(c => c.IsSelected = true);
+        _cartView?.Promotions.ForEach(pr => pr.IsSelected = true);
         RecalcSelected();
         StateHasChanged();
     }
@@ -903,6 +954,7 @@
     {
         _cartView?.Products.ForEach(p => p.IsSelected = false);
         _cartView?.Combos.ForEach(c => c.IsSelected = false);
+        _cartView?.Promotions.ForEach(pr => pr.IsSelected = false);
         RecalcSelected();
         StateHasChanged();
     }

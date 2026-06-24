@@ -31,6 +31,7 @@ public class ApplicationDbContext : DbContext
     public DbSet<Cart> Carts => Set<Cart>();
     public DbSet<CartItem> CartItems => Set<CartItem>();
     public DbSet<CartCombo> CartCombos => Set<CartCombo>();
+    public DbSet<CartPromotion> CartPromotions => Set<CartPromotion>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -345,6 +346,37 @@ public class ApplicationDbContext : DbContext
             entity.HasOne(cc => cc.Combo)
                   .WithMany()
                   .HasForeignKey(cc => cc.ComboId)
+                  .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        // ============================
+        // CART PROMOTION
+        // ============================
+        modelBuilder.Entity<CartPromotion>(entity =>
+        {
+            entity.ToTable("CartPromotions");
+
+            entity.HasKey(cp => cp.CartPromotionId);
+
+            entity.Property(cp => cp.Quantity)
+                  .IsRequired();
+
+            entity.Property(cp => cp.UnitPrice)
+                  .HasColumnType("decimal(10,2)")
+                  .IsRequired();
+
+            entity.Property(cp => cp.SubTotal)
+                  .HasColumnType("decimal(10,2)")
+                  .IsRequired();
+
+            entity.HasOne(cp => cp.Cart)
+                  .WithMany(c => c.CartPromotions)
+                  .HasForeignKey(cp => cp.CartId)
+                  .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(cp => cp.Promotion)
+                  .WithMany()
+                  .HasForeignKey(cp => cp.PromotionId)
                   .OnDelete(DeleteBehavior.Restrict);
         });
     }

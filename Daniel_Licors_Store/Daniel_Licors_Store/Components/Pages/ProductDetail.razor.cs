@@ -83,7 +83,7 @@ namespace Daniel_Licors_Store.Components.Pages
             }
         }
 
-        // ── Agregar promoción al carrito (agrega el producto con precio especial) ──
+        // ── Agregar promoción al carrito ──
         private async Task AddPromotionToCart(PromotionDto promo)
         {
             try
@@ -93,7 +93,7 @@ namespace Daniel_Licors_Store.Components.Pages
                 if (string.IsNullOrEmpty(userId)) { Nav.NavigateTo("/login"); return; }
 
                 var qty = promo.IsPayXGetY ? (promo.RequiredQuantity ?? 1) : 1;
-                await CartService.AddProductToCartAsync(userId, ProductId, qty, 1);
+                await CartService.AddPromotionToCartAsync(userId, promo.PromotionId, qty, 1);
                 Snackbar.Add($"Promoción «{promo.Title}» agregada al carrito ✓", Severity.Success);
             }
             catch (Exception ex)

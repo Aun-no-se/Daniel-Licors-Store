@@ -45,6 +45,7 @@ public class CartService : ICartService
             var cart = await _context.Carts
                 .Include(c => c.CartItems).ThenInclude(ci => ci.Product)
                 .Include(c => c.CartCombos).ThenInclude(cc => cc.Combo)
+                .Include(c => c.CartPromotions).ThenInclude(cp => cp.Promotion)
                 .Include(c => c.Store)
                 .FirstOrDefaultAsync(c => c.UserId == userId && c.StoreId == storeId && c.CartStatus == "Active");
 
@@ -204,7 +205,93 @@ public class CartService : ICartService
         if (string.IsNullOrWhiteSpace(userId))
             throw new Exception("UserId inválido en CartService");
 
-        throw new NotImplementedException("Funcionalidad de promociones en carrito será implementada");
+        try
+        {
+            var promotion = await _context.Promotions
+                .Include(p => p.PromotionProducts)
+                    .ThenInclude(pp => pp.Product)
+                .FirstOrDefaultAsync(p => p.PromotionId == promotionId && p.IsActive);
+
+            if (promotion == null)
+                throw new InvalidOperationException("Promoción no encontrada o inactiva");
+
+            if (promotion.EndDate < DateTime.UtcNow)
+                throw new InvalidOperationException($"La promoción «{promotion.Title}» ya expiró");
+
+            var cart = await _context.Carts
+                .Include(c => c.CartPromotions)
+                .FirstOrDefaultAsync(c => c.UserId == userId && c.StoreId == storeId && c.CartStatus == "Active");
+
+            if (cart == null)
+            {
+                cart = new Cart
+                {
+                    UserId = userId,
+                    StoreId = storeId,
+                    CartStatus = "Active",
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                };
+                _context.Carts.Add(cart);
+                await _context.SaveChangesAsync();
+            }
+
+            // Calcular el precio representativo de la promoción
+            // Se usa el primer PromotionProduct para obtener el precio especial o el precio base
+            var firstPromoProduct = promotion.PromotionProducts.FirstOrDefault();
+            decimal unitPrice = 0;
+
+            if (firstPromoProduct != null)
+            {
+                if (firstPromoProduct.SpecialPrice.HasValue)
+                    unitPrice = firstPromoProduct.SpecialPrice.Value;
+                else if (firstPromoProduct.DiscountPercentage.HasValue && firstPromoProduct.Product != null)
+                {
+                    var basePrice = await _context.ProductStores
+                        .Where(ps => ps.ProductId == firstPromoProduct.ProductId && ps.StoreId == storeId)
+                        .Select(ps => ps.Price)
+                        .FirstOrDefaultAsync();
+                    unitPrice = basePrice * (1 - firstPromoProduct.DiscountPercentage.Value / 100m);
+                }
+                else if (firstPromoProduct.Product != null)
+                {
+                    unitPrice = await _context.ProductStores
+                        .Where(ps => ps.ProductId == firstPromoProduct.ProductId && ps.StoreId == storeId)
+                        .Select(ps => ps.Price)
+                        .FirstOrDefaultAsync();
+                }
+            }
+
+            var existingItem = cart.CartPromotions.FirstOrDefault(cp => cp.PromotionId == promotionId);
+
+            if (existingItem != null)
+            {
+                existingItem.Quantity += quantity;
+                existingItem.SubTotal = existingItem.Quantity * existingItem.UnitPrice;
+            }
+            else
+            {
+                var cartPromotion = new CartPromotion
+                {
+                    CartId = cart.CartId,
+                    PromotionId = promotionId,
+                    Quantity = quantity,
+                    UnitPrice = unitPrice,
+                    SubTotal = quantity * unitPrice
+                };
+                cart.CartPromotions.Add(cartPromotion);
+            }
+
+            cart.UpdatedAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+
+            return await GetCartAsync(userId, storeId);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error adding promotion to cart");
+            throw;
+        }
     }
 
     public async Task<CartViewDto> RemoveItemAsync(string userId, int cartItemId, string itemType)
@@ -217,6 +304,7 @@ public class CartService : ICartService
             var cart = await _context.Carts
                 .Include(c => c.CartItems)
                 .Include(c => c.CartCombos)
+                .Include(c => c.CartPromotions)
                 .FirstOrDefaultAsync(c => c.UserId == userId && c.CartStatus == "Active");
 
             if (cart == null)
@@ -233,6 +321,12 @@ public class CartService : ICartService
                 var item = cart.CartCombos.FirstOrDefault(cc => cc.CartComboId == cartItemId);
                 if (item != null)
                     _context.CartCombos.Remove(item);
+            }
+            else if (itemType.ToLower() == "promotion")
+            {
+                var item = cart.CartPromotions.FirstOrDefault(cp => cp.CartPromotionId == cartItemId);
+                if (item != null)
+                    _context.CartPromotions.Remove(item);
             }
 
             cart.UpdatedAt = DateTime.UtcNow;
@@ -260,6 +354,7 @@ public class CartService : ICartService
             var cart = await _context.Carts
                 .Include(c => c.CartItems)
                 .Include(c => c.CartCombos)
+                .Include(c => c.CartPromotions)
                 .FirstOrDefaultAsync(c => c.UserId == userId && c.CartStatus == "Active");
 
             if (cart == null)
@@ -277,6 +372,15 @@ public class CartService : ICartService
             else if (itemType.ToLower() == "combo")
             {
                 var item = cart.CartCombos.FirstOrDefault(cc => cc.CartComboId == cartItemId);
+                if (item != null)
+                {
+                    item.Quantity = newQuantity;
+                    item.SubTotal = newQuantity * item.UnitPrice;
+                }
+            }
+            else if (itemType.ToLower() == "promotion")
+            {
+                var item = cart.CartPromotions.FirstOrDefault(cp => cp.CartPromotionId == cartItemId);
                 if (item != null)
                 {
                     item.Quantity = newQuantity;
@@ -344,6 +448,7 @@ public class CartService : ICartService
             {
                 _context.CartItems.RemoveRange(cart.CartItems);
                 _context.CartCombos.RemoveRange(cart.CartCombos);
+                _context.CartPromotions.RemoveRange(cart.CartPromotions);
                 cart.UpdatedAt = DateTime.UtcNow;
                 await _context.SaveChangesAsync();
             }
@@ -425,6 +530,20 @@ public class CartService : ICartService
                     Quantity = combo.Quantity,
                     UnitPrice = combo.UnitPrice,
                     SubTotal = combo.SubTotal
+                });
+            }
+
+            foreach (var promo in cartView.Promotions)
+            {
+                receipt.Items.Add(new ReceiptItemDto
+                {
+                    ItemId = promo.CartPromotionId,
+                    ItemType = "promotion",
+                    ItemName = promo.PromotionName,
+                    Category = promo.Category,
+                    Quantity = promo.Quantity,
+                    UnitPrice = promo.UnitPrice,
+                    SubTotal = promo.SubTotal
                 });
             }
 
@@ -597,6 +716,22 @@ public class CartService : ICartService
                 Quantity = item.Quantity,           // ← cantidad real
                 UnitPrice = item.UnitPrice,
                 SubTotal = item.SubTotal,           // ← subtotal real
+                IsSelected = false
+            });
+        }
+
+        foreach (var item in cart.CartPromotions)
+        {
+            result.Promotions.Add(new CartPromotionDisplayDto
+            {
+                CartPromotionId = item.CartPromotionId,
+                PromotionId = item.PromotionId,
+                PromotionName = item.Promotion.Title,
+                PromotionImage = item.Promotion.ImageUrl,
+                Category = "Promoción",
+                Quantity = item.Quantity,
+                UnitPrice = item.UnitPrice,
+                SubTotal = item.SubTotal,
                 IsSelected = false
             });
         }

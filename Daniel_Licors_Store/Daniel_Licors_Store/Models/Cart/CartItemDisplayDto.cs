@@ -59,18 +59,20 @@ public class CartViewDto
     public List<CartPromotionDisplayDto> Promotions { get; set; } = new();
 
     public int TotalProductsCount =>
-        Products.Sum(p => p.Quantity) + Combos.Sum(c => c.Quantity);
+        Products.Sum(p => p.Quantity) + Combos.Sum(c => c.Quantity) + Promotions.Sum(pr => pr.Quantity);
 
     public decimal TotalPrice =>
-        Products.Sum(p => p.SubTotal) + Combos.Sum(c => c.SubTotal);
+        Products.Sum(p => p.SubTotal) + Combos.Sum(c => c.SubTotal) + Promotions.Sum(pr => pr.SubTotal);
 
     public int SelectedProductsCount =>
         Products.Where(p => p.IsSelected).Sum(p => p.Quantity) +
-        Combos.Where(c => c.IsSelected).Sum(c => c.Quantity);
+        Combos.Where(c => c.IsSelected).Sum(c => c.Quantity) +
+        Promotions.Where(pr => pr.IsSelected).Sum(pr => pr.Quantity);
 
     public decimal SelectedPrice =>
         Products.Where(p => p.IsSelected).Sum(p => p.SubTotal) +
-        Combos.Where(c => c.IsSelected).Sum(c => c.SubTotal);
+        Combos.Where(c => c.IsSelected).Sum(c => c.SubTotal) +
+        Promotions.Where(pr => pr.IsSelected).Sum(pr => pr.SubTotal);
 }
 
 public class ReceiptDto
