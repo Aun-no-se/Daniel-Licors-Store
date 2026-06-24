@@ -55,8 +55,10 @@ builder.Services.AddMudServices();
 builder.Services.AddBlazoredLocalStorage();
 
 // ── AUTORIZACIÓN ──────────────────────────────────────────────────────────────
-// Solo AddAuthorization — sin cookie auth (la auth la maneja LocalStorage)
+// Solo AddAuthorization — sin cookie auth (la auth la maneja LocalStorage + HMAC)
 builder.Services.AddAuthorization();
+// SessionSigner: singleton porque la clave HMAC es fija y es seguro compartirla
+builder.Services.AddSingleton<SessionSigner>();
 builder.Services.AddScoped<AuthenticationStateProvider, CustomAuthStateProvider>();
 
 // ── HTTP CONTEXT ──────────────────────────────────────────────────────────────

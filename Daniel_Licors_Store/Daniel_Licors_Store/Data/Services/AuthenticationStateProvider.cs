@@ -1,4 +1,4 @@
-﻿using Blazored.LocalStorage;
+using Blazored.LocalStorage;
 using Daniel_Licors_Store.Models.Users.Auth;
 using Microsoft.AspNetCore.Components.Authorization;
 using System.Security.Claims;
@@ -7,41 +7,63 @@ namespace Daniel_Licors_Store.Data.Services
 {
     /// <summary>
     /// CustomAuthStateProvider: guarda la sesión en LocalStorage
-    /// y expone el estado de autenticación a Blazor.
-    /// Se mantiene LocalStorage porque es Blazor Server con pre-rendering desactivado.
+    /// FIRMADA con HMAC-SHA256 (via SessionSigner).
+    ///
+    /// Flujo de seguridad:
+    ///   Login  → SessionSigner.Sign(session)  → guarda token firmado en LS
+    ///   Lectura → SessionSigner.Verify(token) → si firma inválida → anónimo
+    ///
+    /// Cualquier edición manual del LocalStorage invalida la firma y
+    /// el usuario queda como anónimo automáticamente.
     /// </summary>
     public class CustomAuthStateProvider : AuthenticationStateProvider
     {
+        private const string SessionKey = "userSession_v2"; // clave distinta para invalidar sesiones viejas sin firma
+
         private readonly ILocalStorageService _localStorage;
+        private readonly SessionSigner _signer;
         private UserSession? _cachedSession;
 
-        public CustomAuthStateProvider(ILocalStorageService localStorage)
+        public CustomAuthStateProvider(ILocalStorageService localStorage, SessionSigner signer)
         {
             _localStorage = localStorage;
+            _signer       = signer;
         }
 
         public override async Task<AuthenticationState> GetAuthenticationStateAsync()
         {
             try
             {
-                // Usa caché en memoria primero para evitar llamadas dobles a LocalStorage
-                _cachedSession ??= await _localStorage.GetItemAsync<UserSession>("userSession");
+                if (_cachedSession != null)
+                    return ValidateAndBuild(_cachedSession) ?? Anonymous();
 
-                if (_cachedSession == null)
+                // Leer el token firmado del LocalStorage
+                var token = await _localStorage.GetItemAsStringAsync(SessionKey);
+                if (string.IsNullOrEmpty(token))
                     return Anonymous();
 
-                // Verificar que la sesión no haya expirado (30 min de inactividad)
-                if (DateTime.Now - _cachedSession.LastActivity > TimeSpan.FromMinutes(30))
+                // ── VERIFICACIÓN DE FIRMA ─────────────────────────────────────
+                // Si alguien editó el token en DevTools, Verify devuelve null
+                var session = _signer.Verify<UserSession>(token);
+                if (session == null)
+                {
+                    // Token manipulado — limpiar y rechazar
+                    await _localStorage.RemoveItemAsync(SessionKey);
+                    return Anonymous();
+                }
+
+                // Verificar expiración (30 min de inactividad)
+                if (DateTime.Now - session.LastActivity > TimeSpan.FromMinutes(30))
                 {
                     await Logout();
                     return Anonymous();
                 }
 
-                return BuildState(_cachedSession);
+                _cachedSession = session;
+                return BuildState(session);
             }
             catch
             {
-                // Si LocalStorage falla (pre-rendering, etc.), retornar anónimo sin explotar
                 return Anonymous();
             }
         }
@@ -54,7 +76,10 @@ namespace Daniel_Licors_Store.Data.Services
             session.LastActivity = DateTime.Now;
             _cachedSession = session;
 
-            await _localStorage.SetItemAsync("userSession", session);
+            // ── GUARDAR FIRMADO ───────────────────────────────────────────────
+            var token = _signer.Sign(session);
+            await _localStorage.SetItemAsStringAsync(SessionKey, token);
+
             NotifyAuthenticationStateChanged(Task.FromResult(BuildState(session)));
         }
 
@@ -62,13 +87,13 @@ namespace Daniel_Licors_Store.Data.Services
         {
             try
             {
-                var session = await _localStorage.GetItemAsync<UserSession>("userSession");
-                if (session != null)
-                {
-                    session.LastActivity = DateTime.Now;
-                    _cachedSession = session;
-                    await _localStorage.SetItemAsync("userSession", session);
-                }
+                if (_cachedSession == null) return;
+
+                _cachedSession.LastActivity = DateTime.Now;
+
+                // Refirmar con el timestamp actualizado
+                var token = _signer.Sign(_cachedSession);
+                await _localStorage.SetItemAsStringAsync(SessionKey, token);
             }
             catch { /* silencioso */ }
         }
@@ -76,11 +101,18 @@ namespace Daniel_Licors_Store.Data.Services
         public async Task Logout()
         {
             _cachedSession = null;
-            await _localStorage.RemoveItemAsync("userSession");
+            await _localStorage.RemoveItemAsync(SessionKey);
             NotifyAuthenticationStateChanged(Task.FromResult(Anonymous()));
         }
 
-        // ── helpers privados ──────────────────────────────────────────────
+        // ── helpers privados ──────────────────────────────────────────────────
+        private static AuthenticationState? ValidateAndBuild(UserSession session)
+        {
+            if (DateTime.Now - session.LastActivity > TimeSpan.FromMinutes(30))
+                return null;
+            return BuildState(session);
+        }
+
         private static AuthenticationState Anonymous()
             => new(new ClaimsPrincipal(new ClaimsIdentity()));
 
