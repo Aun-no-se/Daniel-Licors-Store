@@ -4,101 +4,383 @@
 @using Daniel_Licors_Store.Data.Services
 @using Microsoft.AspNetCore.Components.Authorization
 @using MudBlazor
+
 @inject IAuthService AuthService
 @inject NavigationManager Nav
 @inject AuthenticationStateProvider AuthStateProvider
 
-<div class="d-flex align-center justify-center signup-login-wrapper" style="min-height: 100vh; width: 100%;">
-    <MudContainer MaxWidth="MaxWidth.Small" Class="my-auto">
+<style>
+    /* ── Page shell ───────────────────────────────────────────── */
+    .lg-page {
+        min-height: 100dvh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 24px 16px;
+        position: relative;
+        overflow: hidden;
+    }
 
-        <MudPaper Elevation="4" Class="overflow-hidden rounded-xl backend-card-custom">
+        /* Fondo ambiental animado */
+        .lg-page::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background: radial-gradient(ellipse 80% 60% at 20% 80%, rgba(183,28,28,0.18) 0%, transparent 60%), radial-gradient(ellipse 60% 50% at 80% 10%, rgba(255,23,68,0.08) 0%, transparent 55%);
+            pointer-events: none;
+            animation: lg-bg-drift 12s ease-in-out infinite alternate;
+        }
 
-            <!-- Banner -->
-            <div class="login-banner-premium d-flex flex-column align-center justify-center py-6 text-center">
-                <MudIcon Icon="@Icons.Material.Filled.LocalBar" Size="Size.Large" Color="Color.Surface" Class="mb-2 logo-animate" />
-                <MudText Typo="Typo.h5" Class="font-weight-black text-white uppercase tracking-wider">
-                    Daniel Liquor Store
-                </MudText>
-                <MudText Typo="Typo.caption" Class="text-white-50 px-4">
-                    Introduce tus credenciales para acceder al sistema
-                </MudText>
+    @@keyframes lg-bg-drift {
+        from
+
+    {
+        opacity: 0.7;
+        transform: scale(1);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1.04);
+    }
+
+    }
+
+    /* ── Card ─────────────────────────────────────────────────── */
+    .lg-card {
+        width: 100%;
+        max-width: 440px;
+        background: rgba(12, 12, 12, 0.96);
+        border: 1px solid rgba(255, 23, 68, 0.15);
+        border-radius: 22px;
+        overflow: hidden;
+        box-shadow: 0 32px 80px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.03), inset 0 1px 0 rgba(255,255,255,0.05);
+        position: relative;
+        animation: lg-enter 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    @@keyframes lg-enter {
+        from
+
+    {
+        opacity: 0;
+        transform: translateY(20px) scale(0.98);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+
+    }
+
+    /* ── Banner ───────────────────────────────────────────────── */
+    .lg-banner {
+        position: relative;
+        padding: 36px 28px 30px;
+        background: linear-gradient(145deg, #1f0000 0%, #0d0d0d 65%);
+        border-bottom: 1px solid rgba(255, 23, 68, 0.2);
+        text-align: center;
+        overflow: hidden;
+    }
+
+        /* Líneas decorativas del banner */
+        .lg-banner::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at 50% 120%, rgba(255,23,68,0.18) 0%, transparent 60%), radial-gradient(circle at 10% 10%, rgba(255,23,68,0.06) 0%, transparent 40%);
+            pointer-events: none;
+        }
+
+    .lg-banner-grid {
+        position: absolute;
+        inset: 0;
+        background-image: linear-gradient(rgba(255,23,68,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(255,23,68,0.04) 1px, transparent 1px);
+        background-size: 32px 32px;
+        mask-image: radial-gradient(ellipse at 50% 100%, black 20%, transparent 70%);
+        pointer-events: none;
+    }
+
+    .lg-logo-ring {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 64px;
+        height: 64px;
+        margin: 0 auto 14px;
+    }
+
+        .lg-logo-ring::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 50%;
+            border: 1.5px solid rgba(255,23,68,0.35);
+            animation: lg-ring-pulse 3s ease-in-out infinite;
+        }
+
+        .lg-logo-ring::after {
+            content: '';
+            position: absolute;
+            inset: -8px;
+            border-radius: 50%;
+            border: 1px solid rgba(255,23,68,0.12);
+            animation: lg-ring-pulse 3s ease-in-out infinite 0.8s;
+        }
+
+    @@keyframes lg-ring-pulse {
+        0%, 100%
+
+    {
+        transform: scale(1);
+        opacity: 1;
+    }
+
+    50% {
+        transform: scale(1.12);
+        opacity: 0.4;
+    }
+
+    }
+
+    .lg-logo-icon {
+        font-size: 2rem;
+        animation: lg-icon-breathe 4s ease-in-out infinite alternate;
+        position: relative;
+        z-index: 1;
+    }
+
+    @@keyframes lg-icon-breathe {
+        from
+
+    {
+        transform: scale(1);
+        filter: drop-shadow(0 0 8px rgba(255,23,68,0.3));
+    }
+
+    to {
+        transform: scale(1.08);
+        filter: drop-shadow(0 0 18px rgba(255,23,68,0.6));
+    }
+
+    }
+
+    .lg-banner-title {
+        font-size: 1.25rem;
+        font-weight: 800;
+        color: #fff;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        position: relative;
+    }
+
+    .lg-banner-sub {
+        font-size: 0.72rem;
+        color: rgba(255,255,255,0.4);
+        margin-top: 5px;
+        letter-spacing: 0.5px;
+        position: relative;
+    }
+
+    /* ── Loader bar ───────────────────────────────────────────── */
+    .lg-loader {
+        height: 2px;
+        width: 100%;
+        background: rgba(255,23,68,0.08);
+        overflow: hidden;
+    }
+
+    /* ── Form area ────────────────────────────────────────────── */
+    .lg-form {
+        padding: 28px 28px 32px;
+    }
+
+    .lg-form-title {
+        font-size: 1.05rem;
+        font-weight: 700;
+        color: rgba(255,255,255,0.9);
+        margin-bottom: 22px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+        .lg-form-title::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: linear-gradient(90deg, rgba(255,23,68,0.25), transparent);
+        }
+
+    /* MudBlazor field overrides */
+    .lg-card .mud-input-root {
+        background: rgba(255,255,255,0.03) !important;
+        border-radius: 10px !important;
+        transition: background 0.2s, box-shadow 0.2s;
+    }
+
+        .lg-card .mud-input-root:hover {
+            background: rgba(255,255,255,0.055) !important;
+        }
+
+        .lg-card .mud-input-root.mud-input-root-focused {
+            background: rgba(255,23,68,0.05) !important;
+            box-shadow: 0 0 0 2px rgba(255,23,68,0.22) !important;
+        }
+
+    /* ── Submit button ────────────────────────────────────────── */
+    .lg-btn {
+        background: linear-gradient(135deg, #FF1744 0%, #B71C1C 100%) !important;
+        color: #fff !important;
+        font-weight: 700 !important;
+        border-radius: 10px !important;
+        height: 48px !important;
+        font-size: 0.9rem !important;
+        letter-spacing: 0.6px !important;
+        box-shadow: 0 4px 20px rgba(255,23,68,0.28) !important;
+        transition: all 0.25s ease !important;
+        width: 100%;
+        margin-top: 8px;
+    }
+
+        .lg-btn:hover:not(:disabled) {
+            transform: translateY(-2px) !important;
+            box-shadow: 0 8px 28px rgba(255,23,68,0.45) !important;
+            filter: brightness(1.08) !important;
+        }
+
+        .lg-btn:disabled {
+            opacity: 0.5 !important;
+        }
+
+    /* ── Error box ────────────────────────────────────────────── */
+    .lg-error {
+        margin-top: 14px;
+        padding: 11px 14px;
+        border-radius: 10px;
+        border: 1px solid rgba(255,23,68,0.35);
+        background: rgba(255,23,68,0.07);
+        font-size: 0.78rem;
+        color: rgba(255,120,120,0.95);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        animation: lg-enter 0.2s ease;
+    }
+
+    /* ── Footer link ──────────────────────────────────────────── */
+    .lg-footer {
+        text-align: center;
+        margin-top: 18px;
+        font-size: 0.76rem;
+        color: rgba(255,255,255,0.3);
+    }
+
+        .lg-footer a {
+            color: rgba(255,80,80,0.8);
+            text-decoration: none;
+            font-weight: 600;
+            transition: color 0.2s;
+        }
+
+            .lg-footer a:hover {
+                color: #FF1744;
+            }
+
+    @@media (max-width: 480px) {
+        .lg-banner
+
+    {
+        padding: 28px 20px 24px;
+    }
+
+    .lg-form {
+        padding: 22px 20px 28px;
+    }
+
+    }
+</style>
+
+<div class="lg-page">
+    <div class="lg-card">
+
+        <!-- ── Banner ── -->
+        <div class="lg-banner">
+            <div class="lg-banner-grid"></div>
+
+            <div class="lg-logo-ring">
+                <span class="lg-logo-icon">🍷</span>
             </div>
 
-            <!-- Barra de carga -->
-            <div class="loader-container-fixed">
+            <div class="lg-banner-title">Daniel Liquor Store</div>
+            <div class="lg-banner-sub">Accede al sistema con tus credenciales</div>
+        </div>
+
+        <!-- ── Loader ── -->
+        <div class="lg-loader">
+            @if (isLoading)
+            {
+                <MudProgressLinear Color="Color.Error" Indeterminate="true" Style="height:2px;" />
+            }
+        </div>
+
+        <!-- ── Form ── -->
+        <div class="lg-form">
+
+            <div class="lg-form-title">Iniciar sesión</div>
+
+            <MudTextField @bind-Value="model.Email"
+                          Label="Correo electrónico"
+                          Variant="Variant.Outlined"
+                          InputType="InputType.Email"
+                          Adornment="Adornment.End"
+                          AdornmentIcon="@Icons.Material.Filled.AlternateEmail"
+                          Disabled="@isLoading"
+                          FullWidth
+                          Class="mb-4" />
+
+            <MudTextField @bind-Value="model.Password"
+                          Label="Contraseña"
+                          Variant="Variant.Outlined"
+                          InputType="@_passwordInput"
+                          Adornment="Adornment.End"
+                          AdornmentIcon="@_passwordIcon"
+                          OnAdornmentClick="TogglePass"
+                          Disabled="@isLoading"
+                          FullWidth
+                          Class="mb-2" />
+
+            <MudButton Class="lg-btn"
+                       OnClick="HandleLogin"
+                       Disabled="@isLoading">
                 @if (isLoading)
                 {
-                    <MudProgressLinear Color="Color.Error" Indeterminate="true" />
+                    <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                    <span>Validando...</span>
                 }
-            </div>
-
-            <!-- Formulario -->
-            <div class="pa-8 pt-4">
-
-                <MudText Typo="Typo.h5" Class="font-weight-bold mb-6 text-center dark-text-highlight">
-                    Iniciar Sesión
-                </MudText>
-
-                <MudTextField @bind-Value="model.Email"
-                              Label="Correo Electrónico"
-                              Variant="Variant.Outlined"
-                              Adornment="Adornment.End"
-                              AdornmentIcon="@Icons.Material.Filled.Email"
-                              AdornmentColor="Color.Primary"
-                              InputType="InputType.Email"
-                              FullWidth
-                              Disabled="@isLoading"
-                              Class="mb-4" />
-
-                <MudTextField @bind-Value="model.Password"
-                              Label="Contraseña"
-                              Variant="Variant.Outlined"
-                              InputType="@_passwordInput"
-                              Adornment="Adornment.End"
-                              AdornmentIcon="@_passwordInputIcon"
-                              AdornmentColor="Color.Primary"
-                              OnAdornmentClick="TogglePasswordVisibility"
-                              FullWidth
-                              Disabled="@isLoading"
-                              Class="mb-6" />
-
-                <MudButton OnClick="HandleLogin"
-                           Color="Color.Error"
-                           Variant="Variant.Filled"
-                           Size="Size.Large"
-                           FullWidth
-                           Disabled="@isLoading"
-                           Class="py-3 btn-login-submit font-weight-bold text-transform-none">
-                    @if (isLoading)
-                    {
-                        <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
-                        <span>Validando credenciales...</span>
-                    }
-                    else
-                    {
-                        <span>Entrar al Sistema</span>
-                    }
-                </MudButton>
-
-                @if (!string.IsNullOrEmpty(error))
+                else
                 {
-                    <MudAlert Severity="Severity.Error"
-                              Variant="Variant.Outlined"
-                              Dense="true"
-                              Class="mt-4 rounded-lg">
-                        @error
-                    </MudAlert>
+                    <span>Entrar al sistema →</span>
                 }
+            </MudButton>
 
-                <div class="text-center mt-4">
-                    <MudLink Href="/register" Color="Color.Primary" Underline="Underline.Hover" Class="text-sm">
-                        ¿No tienes cuenta? Regístrate aquí
-                    </MudLink>
+            @if (!string.IsNullOrEmpty(error))
+            {
+                <div class="lg-error">
+                    <span>⚠️</span>
+                    <span>@error</span>
                 </div>
+            }
 
+            <div class="lg-footer">
+                ¿No tienes cuenta?
+                <a href="/register">Regístrate aquí</a>
             </div>
-        </MudPaper>
-    </MudContainer>
+
+        </div>
+    </div>
 </div>
 
 @code {
@@ -106,30 +388,26 @@
     private string? error;
     private bool isLoading;
 
-    private bool _passwordVisibility;
     private InputType _passwordInput = InputType.Password;
-    private string _passwordInputIcon = Icons.Material.Filled.VisibilityOff;
+    private string _passwordIcon = Icons.Material.Filled.VisibilityOff;
+    private bool _showPass;
 
     protected override async Task OnInitializedAsync()
     {
-        // Si ya está logueado, redirigir directo al index
         var authState = await AuthStateProvider.GetAuthenticationStateAsync();
         if (authState.User.Identity?.IsAuthenticated == true)
             Nav.NavigateTo("/", replace: true);
     }
 
-    private void TogglePasswordVisibility()
+    private void TogglePass()
     {
-        _passwordVisibility = !_passwordVisibility;
-        _passwordInput = _passwordVisibility ? InputType.Text : InputType.Password;
-        _passwordInputIcon = _passwordVisibility
-            ? Icons.Material.Filled.Visibility
-            : Icons.Material.Filled.VisibilityOff;
+        _showPass = !_showPass;
+        _passwordInput = _showPass ? InputType.Text : InputType.Password;
+        _passwordIcon = _showPass ? Icons.Material.Filled.Visibility : Icons.Material.Filled.VisibilityOff;
     }
 
     private async Task HandleLogin()
     {
-        // Validación básica antes de ir al servidor
         if (string.IsNullOrWhiteSpace(model.Email) || string.IsNullOrWhiteSpace(model.Password))
         {
             error = "Por favor ingresa tu correo y contraseña.";
@@ -141,7 +419,6 @@
 
         try
         {
-            // Llamada directa al servicio — sin HttpClient, sin /api/login
             var (user, roles) = await AuthService.ValidateLoginAsync(model);
 
             if (user == null)
@@ -162,8 +439,6 @@
             var customAuth = (CustomAuthStateProvider)AuthStateProvider;
             await customAuth.MarkUserAsAuthenticated(session);
 
-            // TODOS los usuarios van al Index — el layout se encarga
-            // de mostrar u ocultar menús según el rol
             Nav.NavigateTo("/", forceLoad: true);
         }
         catch (Exception ex)

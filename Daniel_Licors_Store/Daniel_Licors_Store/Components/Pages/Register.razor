@@ -1,147 +1,503 @@
 ﻿@page "/register"
-@inject IAuthService AuthService
-@inject NavigationManager Nav
 @using Daniel_Licors_Store.Models.Users.Auth
 @using Daniel_Licors_Store.Services.Auth
 @using MudBlazor
 
-<div class="d-flex align-center justify-center signup-login-wrapper" style="min-height: 100vh; width: 100%;">
-    <MudContainer MaxWidth="MaxWidth.Small" Class="my-auto">
+@inject IAuthService AuthService
+@inject NavigationManager Nav
 
-        <MudPaper Elevation="4" Class="overflow-hidden rounded-xl backend-card-custom">
+<style>
+    /* ── Reutiliza las mismas variables que Login ──────────────── */
+    .rg-page {
+        min-height: 100dvh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 24px 16px 40px;
+        position: relative;
+        overflow: hidden;
+    }
 
-            <!-- Banner -->
-            <div class="login-banner-premium d-flex flex-column align-center justify-center py-6 text-center">
-                <MudIcon Icon="@Icons.Material.Filled.LocalBar" Size="Size.Large" Color="Color.Surface" Class="mb-2 logo-animate" />
-                <MudText Typo="Typo.h5" Class="font-weight-black text-white uppercase tracking-wider">
-                    Daniel Liquor Store
-                </MudText>
-                <MudText Typo="Typo.caption" Class="text-white-50 px-4">
-                    Únete a nuestra plataforma de gestión
-                </MudText>
+        .rg-page::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background: radial-gradient(ellipse 80% 60% at 80% 90%, rgba(183,28,28,0.15) 0%, transparent 60%), radial-gradient(ellipse 60% 50% at 10% 5%, rgba(255,23,68,0.07) 0%, transparent 55%);
+            pointer-events: none;
+            animation: rg-bg-drift 14s ease-in-out infinite alternate;
+        }
+
+    @@keyframes rg-bg-drift {
+        from
+
+    {
+        opacity: 0.6;
+        transform: scale(1);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1.05);
+    }
+
+    }
+
+    /* ── Card ─────────────────────────────────────────────────── */
+    .rg-card {
+        width: 100%;
+        max-width: 480px;
+        background: rgba(12, 12, 12, 0.96);
+        border: 1px solid rgba(255, 23, 68, 0.15);
+        border-radius: 22px;
+        overflow: hidden;
+        box-shadow: 0 32px 80px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.03), inset 0 1px 0 rgba(255,255,255,0.05);
+        animation: rg-enter 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    @@keyframes rg-enter {
+        from
+
+    {
+        opacity: 0;
+        transform: translateY(20px) scale(0.98);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+
+    }
+
+    /* ── Banner ───────────────────────────────────────────────── */
+    .rg-banner {
+        position: relative;
+        padding: 28px 28px 24px;
+        background: linear-gradient(145deg, #1f0000 0%, #0d0d0d 65%);
+        border-bottom: 1px solid rgba(255, 23, 68, 0.2);
+        text-align: center;
+        overflow: hidden;
+    }
+
+        .rg-banner::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at 50% 130%, rgba(255,23,68,0.15) 0%, transparent 55%);
+            pointer-events: none;
+        }
+
+    .rg-banner-grid {
+        position: absolute;
+        inset: 0;
+        background-image: linear-gradient(rgba(255,23,68,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(255,23,68,0.04) 1px, transparent 1px);
+        background-size: 32px 32px;
+        mask-image: radial-gradient(ellipse at 50% 100%, black 20%, transparent 70%);
+        pointer-events: none;
+    }
+
+    .rg-logo-ring {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 56px;
+        height: 56px;
+        margin: 0 auto 12px;
+    }
+
+        .rg-logo-ring::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 50%;
+            border: 1.5px solid rgba(255,23,68,0.35);
+            animation: rg-ring-pulse 3s ease-in-out infinite;
+        }
+
+    @@keyframes rg-ring-pulse {
+        0%, 100%
+
+    {
+        transform: scale(1);
+        opacity: 1;
+    }
+
+    50% {
+        transform: scale(1.12);
+        opacity: 0.4;
+    }
+
+    }
+
+    .rg-logo-icon {
+        font-size: 1.75rem;
+        animation: rg-icon-breathe 4s ease-in-out infinite alternate;
+        position: relative;
+        z-index: 1;
+    }
+
+    @@keyframes rg-icon-breathe {
+        from
+
+    {
+        filter: drop-shadow(0 0 8px rgba(255,23,68,0.3));
+    }
+
+    to {
+        filter: drop-shadow(0 0 18px rgba(255,23,68,0.6));
+    }
+
+    }
+
+    .rg-banner-title {
+        font-size: 1.15rem;
+        font-weight: 800;
+        color: #fff;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        position: relative;
+    }
+
+    .rg-banner-sub {
+        font-size: 0.7rem;
+        color: rgba(255,255,255,0.38);
+        margin-top: 4px;
+        letter-spacing: 0.5px;
+        position: relative;
+    }
+
+    /* ── Form area ────────────────────────────────────────────── */
+    .rg-form {
+        padding: 26px 28px 32px;
+    }
+
+    /* ── Section labels ───────────────────────────────────────── */
+    .rg-section {
+        font-size: 0.63rem;
+        font-weight: 700;
+        letter-spacing: 1.5px;
+        text-transform: uppercase;
+        color: rgba(255,23,68,0.72);
+        margin-bottom: 14px;
+        margin-top: 4px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+        .rg-section::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: linear-gradient(90deg, rgba(255,23,68,0.2), transparent);
+        }
+
+    /* ── Grid de campos ───────────────────────────────────────── */
+    .rg-row {
+        display: grid;
+        gap: 14px;
+        margin-bottom: 14px;
+    }
+
+    .rg-col2 {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .rg-col1 {
+        grid-template-columns: 1fr;
+    }
+
+    @@media (max-width: 480px) {
+        .rg-col2
+
+    {
+        grid-template-columns: 1fr;
+    }
+
+    .rg-form {
+        padding: 20px 18px 28px;
+    }
+
+    .rg-banner {
+        padding: 22px 18px 18px;
+    }
+
+    }
+
+    /* MudBlazor field overrides */
+    .rg-card .mud-input-root {
+        background: rgba(255,255,255,0.03) !important;
+        border-radius: 10px !important;
+        transition: background 0.2s, box-shadow 0.2s;
+    }
+
+        .rg-card .mud-input-root:hover {
+            background: rgba(255,255,255,0.055) !important;
+        }
+
+        .rg-card .mud-input-root.mud-input-root-focused {
+            background: rgba(255,23,68,0.05) !important;
+            box-shadow: 0 0 0 2px rgba(255,23,68,0.22) !important;
+        }
+
+    /* ── Password strength ────────────────────────────────────── */
+    .rg-strength-wrap {
+        margin-top: -8px;
+        margin-bottom: 8px;
+        padding: 0 2px;
+    }
+
+    .rg-strength-segments {
+        display: flex;
+        gap: 4px;
+        margin-bottom: 5px;
+    }
+
+    .rg-seg {
+        flex: 1;
+        height: 3px;
+        border-radius: 2px;
+        background: rgba(255,255,255,0.08);
+        transition: background 0.35s ease;
+    }
+
+    .rg-strength-label {
+        font-size: 0.63rem;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+    }
+
+    /* ── Submit button ────────────────────────────────────────── */
+    .rg-btn {
+        background: linear-gradient(135deg, #FF1744 0%, #B71C1C 100%) !important;
+        color: #fff !important;
+        font-weight: 700 !important;
+        border-radius: 10px !important;
+        height: 48px !important;
+        font-size: 0.9rem !important;
+        letter-spacing: 0.6px !important;
+        box-shadow: 0 4px 20px rgba(255,23,68,0.28) !important;
+        transition: all 0.25s ease !important;
+        width: 100%;
+        margin-top: 8px;
+    }
+
+        .rg-btn:hover:not(:disabled) {
+            transform: translateY(-2px) !important;
+            box-shadow: 0 8px 28px rgba(255,23,68,0.45) !important;
+            filter: brightness(1.08) !important;
+        }
+
+        .rg-btn:disabled {
+            opacity: 0.5 !important;
+        }
+
+    /* ── Feedback boxes ───────────────────────────────────────── */
+    .rg-error {
+        margin-top: 14px;
+        padding: 11px 14px;
+        border-radius: 10px;
+        border: 1px solid rgba(255,23,68,0.35);
+        background: rgba(255,23,68,0.07);
+        font-size: 0.78rem;
+        color: rgba(255,120,120,0.95);
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+        animation: rg-enter 0.2s ease;
+        line-height: 1.5;
+    }
+
+    .rg-success {
+        margin-top: 14px;
+        padding: 11px 14px;
+        border-radius: 10px;
+        border: 1px solid rgba(76,175,80,0.35);
+        background: rgba(76,175,80,0.07);
+        font-size: 0.78rem;
+        color: rgba(120,200,120,0.95);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        animation: rg-enter 0.2s ease;
+    }
+
+    /* ── Footer ───────────────────────────────────────────────── */
+    .rg-footer {
+        text-align: center;
+        margin-top: 18px;
+        font-size: 0.76rem;
+        color: rgba(255,255,255,0.3);
+    }
+
+        .rg-footer a {
+            color: rgba(255,80,80,0.8);
+            text-decoration: none;
+            font-weight: 600;
+            transition: color 0.2s;
+        }
+
+            .rg-footer a:hover {
+                color: #FF1744;
+            }
+
+    /* ── Divider ──────────────────────────────────────────────── */
+    .rg-divider {
+        height: 16px;
+    }
+</style>
+
+<div class="rg-page">
+    <div class="rg-card">
+
+        <!-- ── Banner ── -->
+        <div class="rg-banner">
+            <div class="rg-banner-grid"></div>
+
+            <div class="rg-logo-ring">
+                <span class="rg-logo-icon">🍷</span>
             </div>
 
-            <!-- Formulario -->
-            <div class="pa-8">
+            <div class="rg-banner-title">Daniel Liquor Store</div>
+            <div class="rg-banner-sub">Crea tu cuenta para empezar</div>
+        </div>
 
-                <MudText Typo="Typo.h5" Class="font-weight-bold mb-6 text-center dark-text-highlight">
-                    Crear Cuenta
-                </MudText>
+        <!-- ── Form ── -->
+        <div class="rg-form">
 
+            <!-- SECCIÓN: Datos personales -->
+            <div class="rg-section">👤 Datos personales</div>
+
+            <div class="rg-row rg-col2">
                 <MudTextField @bind-Value="model.Name"
-                              Label="Nombre"
+                              Label="Nombre *"
                               Variant="Variant.Outlined"
-                              Adornment="Adornment.End"
-                              AdornmentIcon="@Icons.Material.Filled.Person"
-                              AdornmentColor="Color.Primary"
-                              FullWidth
+                              Immediate="true"
                               Disabled="@isLoading"
-                              Class="mb-4" />
+                              FullWidth />
 
                 <MudTextField @bind-Value="model.LastName"
-                              Label="Apellido"
+                              Label="Apellido *"
                               Variant="Variant.Outlined"
-                              Adornment="Adornment.End"
-                              AdornmentIcon="@Icons.Material.Filled.PersonOutline"
-                              AdornmentColor="Color.Primary"
-                              FullWidth
+                              Immediate="true"
                               Disabled="@isLoading"
-                              Class="mb-4" />
+                              FullWidth />
+            </div>
 
-                <MudTextField @bind-Value="model.Age"
-                              Label="Edad (mínimo 18)"
-                              Variant="Variant.Outlined"
-                              InputType="InputType.Number"
-                              Adornment="Adornment.End"
-                              AdornmentIcon="@Icons.Material.Filled.Cake"
-                              AdornmentColor="Color.Primary"
-                              FullWidth
-                              Disabled="@isLoading"
-                              Class="mb-4" />
-
+            <div class="rg-row rg-col2">
                 <MudTextField @bind-Value="model.Email"
-                              Label="Correo Electrónico"
+                              Label="Correo electrónico *"
                               Variant="Variant.Outlined"
                               InputType="InputType.Email"
-                              Adornment="Adornment.End"
-                              AdornmentIcon="@Icons.Material.Filled.Email"
-                              AdornmentColor="Color.Primary"
-                              FullWidth
+                              Immediate="true"
                               Disabled="@isLoading"
-                              Class="mb-4" />
+                              FullWidth />
 
-                <MudTextField @bind-Value="model.Password"
-                              Label="Contraseña"
-                              HelperText="Mín. 8 caracteres, una mayúscula y un número"
+                <MudTextField T="int"
+                              @bind-Value="model.Age"
+                              Label="Edad *"
                               Variant="Variant.Outlined"
-                              InputType="@_passwordInput"
-                              Adornment="Adornment.End"
-                              AdornmentIcon="@_passwordInputIcon"
-                              AdornmentColor="Color.Primary"
-                              OnAdornmentClick="TogglePasswordVisibility"
-                              FullWidth
+                              Immediate="true"
                               Disabled="@isLoading"
-                              Class="mb-4" />
-
-                <MudTextField @bind-Value="model.ConfirmPassword"
-                              Label="Confirmar Contraseña"
-                              Variant="Variant.Outlined"
-                              InputType="@_confirmPasswordInput"
                               Adornment="Adornment.End"
-                              AdornmentIcon="@_confirmPasswordInputIcon"
-                              AdornmentColor="Color.Primary"
-                              OnAdornmentClick="ToggleConfirmPasswordVisibility"
-                              FullWidth
-                              Disabled="@isLoading"
-                              Class="mb-6" />
+                              AdornmentText="años"
+                              HelperText="Mín. 18"
+                              FullWidth />
+            </div>
 
-                <MudButton OnClick="HandleRegister"
-                           Color="Color.Error"
-                           Variant="Variant.Filled"
-                           Size="Size.Large"
-                           FullWidth
-                           Disabled="@isLoading"
-                           Class="py-3 btn-login-submit font-weight-bold text-transform-none">
-                    @if (isLoading)
+            <!-- SECCIÓN: Contraseña -->
+            <div class="rg-section" style="margin-top:6px">🔒 Contraseña</div>
+
+            <div class="rg-row rg-col1">
+                <div>
+                    <MudTextField T="string"
+                                  Value="@model.Password"
+                                  ValueChanged="@OnPasswordChanged"
+                                  Label="Contraseña *"
+                                  Variant="Variant.Outlined"
+                                  InputType="@(_showPass ? InputType.Text : InputType.Password)"
+                                  Adornment="Adornment.End"
+                                  AdornmentIcon="@(_showPass ? Icons.Material.Filled.Visibility : Icons.Material.Filled.VisibilityOff)"
+                                  OnAdornmentClick="@ToggleShowPass"
+                                  Immediate="true"
+                                  Disabled="@isLoading"
+                                  FullWidth />
+
+                    <!-- Segmentos de fortaleza -->
+                    @if (!string.IsNullOrEmpty(model.Password))
                     {
-                        <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
-                        <span>Registrando...</span>
+                        <div class="rg-strength-wrap">
+                            <div class="rg-strength-segments">
+                                @for (int i = 1; i <= 5; i++)
+                                {
+                                    int seg = i;
+                                    <div class="rg-seg"
+                                         style="background: @(seg <= StrengthScore ? StrengthColor : "rgba(255,255,255,0.08)")"></div>
+                                }
+                            </div>
+                            <div class="rg-strength-label" style="color:@StrengthColor">
+                                @StrengthLabel
+                            </div>
+                        </div>
                     }
-                    else
-                    {
-                        <span>Registrarse</span>
-                    }
-                </MudButton>
-
-                @if (!string.IsNullOrEmpty(errorMessage))
-                {
-                    <MudAlert Severity="Severity.Error"
-                              Variant="Variant.Outlined"
-                              Dense="true"
-                              Class="mt-4 rounded-lg">
-                        @errorMessage
-                    </MudAlert>
-                }
-
-                @if (success)
-                {
-                    <MudAlert Severity="Severity.Success"
-                              Variant="Variant.Outlined"
-                              Dense="true"
-                              Class="mt-4 rounded-lg">
-                        ¡Cuenta creada exitosamente! Redirigiendo al login...
-                    </MudAlert>
-                }
-
-                <div class="text-center mt-4">
-                    <MudLink Href="/login" Color="Color.Primary" Underline="Underline.Hover" Class="text-sm">
-                        ¿Ya tienes cuenta? Inicia sesión aquí
-                    </MudLink>
                 </div>
 
+                <MudTextField T="string"
+                              Value="@model.ConfirmPassword"
+                              ValueChanged="@OnConfirmChanged"
+                              Label="Confirmar contraseña *"
+                              Variant="Variant.Outlined"
+                              InputType="@(_showConfirm ? InputType.Text : InputType.Password)"
+                              Adornment="Adornment.End"
+                              AdornmentIcon="@(_showConfirm ? Icons.Material.Filled.Visibility : Icons.Material.Filled.VisibilityOff)"
+                              OnAdornmentClick="@ToggleShowConfirm"
+                              Immediate="true"
+                              Disabled="@isLoading"
+                              FullWidth />
             </div>
-        </MudPaper>
-    </MudContainer>
+
+            <div class="rg-divider"></div>
+
+            <!-- Botón -->
+            <MudButton Class="rg-btn"
+                       OnClick="HandleRegister"
+                       Disabled="@isLoading">
+                @if (isLoading)
+                {
+                    <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                    <span>Creando cuenta...</span>
+                }
+                else
+                {
+                    <span>Crear cuenta →</span>
+                }
+            </MudButton>
+
+            <!-- Feedback -->
+            @if (!string.IsNullOrEmpty(errorMessage))
+            {
+                <div class="rg-error">
+                    <span style="flex-shrink:0">⚠️</span>
+                    <span>@errorMessage</span>
+                </div>
+            }
+
+            @if (success)
+            {
+                <div class="rg-success">
+                    <span>✅</span>
+                    <span>¡Cuenta creada! Redirigiendo al login...</span>
+                </div>
+            }
+
+            <div class="rg-footer">
+                ¿Ya tienes cuenta?
+                <a href="/login">Inicia sesión aquí</a>
+            </div>
+
+        </div>
+    </div>
 </div>
 
 @code {
@@ -149,67 +505,69 @@
     private string? errorMessage;
     private bool isLoading;
     private bool success;
+    private bool _showPass;
+    private bool _showConfirm;
 
-    private bool _passwordVisibility;
-    private InputType _passwordInput = InputType.Password;
-    private string _passwordInputIcon = Icons.Material.Filled.VisibilityOff;
+    // ── Password handlers (sin @bind-Value para evitar conflicto) ──────────
+    private void OnPasswordChanged(string v) { model.Password = v; StateHasChanged(); }
+    private void OnConfirmChanged(string v) { model.ConfirmPassword = v; StateHasChanged(); }
+    private void ToggleShowPass() => _showPass = !_showPass;
+    private void ToggleShowConfirm() => _showConfirm = !_showConfirm;
 
-    private bool _confirmPasswordVisibility;
-    private InputType _confirmPasswordInput = InputType.Password;
-    private string _confirmPasswordInputIcon = Icons.Material.Filled.VisibilityOff;
-
-    private void TogglePasswordVisibility()
+    // ── Fortaleza de contraseña ─────────────────────────────────────────────
+    private int StrengthScore
     {
-        _passwordVisibility = !_passwordVisibility;
-        _passwordInput = _passwordVisibility ? InputType.Text : InputType.Password;
-        _passwordInputIcon = _passwordVisibility
-            ? Icons.Material.Filled.Visibility
-            : Icons.Material.Filled.VisibilityOff;
+        get
+        {
+            if (string.IsNullOrEmpty(model.Password)) return 0;
+            int s = 0;
+            if (model.Password.Length >= 8) s++;
+            if (model.Password.Length >= 12) s++;
+            if (model.Password.Any(char.IsUpper)) s++;
+            if (model.Password.Any(char.IsDigit)) s++;
+            if (model.Password.Any(ch => !char.IsLetterOrDigit(ch))) s++;
+            return s;
+        }
     }
 
-    private void ToggleConfirmPasswordVisibility()
+    private string StrengthColor => StrengthScore switch
     {
-        _confirmPasswordVisibility = !_confirmPasswordVisibility;
-        _confirmPasswordInput = _confirmPasswordVisibility ? InputType.Text : InputType.Password;
-        _confirmPasswordInputIcon = _confirmPasswordVisibility
-            ? Icons.Material.Filled.Visibility
-            : Icons.Material.Filled.VisibilityOff;
-    }
+        <= 1 => "#F44336",
+        2 => "#FF9800",
+        3 => "#FFC107",
+        4 => "#8BC34A",
+        _ => "#4CAF50"
+    };
 
+    private string StrengthLabel => StrengthScore switch
+    {
+        <= 1 => "Muy débil",
+        2 => "Débil",
+        3 => "Aceptable",
+        4 => "Fuerte",
+        _ => "Muy fuerte ✓"
+    };
+
+    // ── Submit ──────────────────────────────────────────────────────────────
     private async Task HandleRegister()
     {
-        // Validaciones rápidas del lado cliente antes de ir al servicio
+        errorMessage = null;
+
         if (string.IsNullOrWhiteSpace(model.Name) || string.IsNullOrWhiteSpace(model.LastName))
-        {
-            errorMessage = "Nombre y apellido son requeridos.";
-            return;
-        }
+        { errorMessage = "Nombre y apellido son requeridos."; return; }
 
         if (model.Age < 18)
-        {
-            errorMessage = "Debes tener al menos 18 años para registrarte.";
-            return;
-        }
+        { errorMessage = "Debes tener al menos 18 años para registrarte."; return; }
 
         if (string.IsNullOrWhiteSpace(model.Email))
-        {
-            errorMessage = "El correo electrónico es requerido.";
-            return;
-        }
+        { errorMessage = "El correo electrónico es requerido."; return; }
 
-        if (string.IsNullOrWhiteSpace(model.Password))
-        {
-            errorMessage = "La contraseña es requerida.";
-            return;
-        }
+        if (string.IsNullOrWhiteSpace(model.Password) || model.Password.Length < 8)
+        { errorMessage = "La contraseña debe tener al menos 8 caracteres."; return; }
 
         if (model.Password != model.ConfirmPassword)
-        {
-            errorMessage = "Las contraseñas no coinciden.";
-            return;
-        }
+        { errorMessage = "Las contraseñas no coinciden."; return; }
 
-        errorMessage = null;
         isLoading = true;
 
         try
@@ -217,8 +575,6 @@
             await AuthService.RegisterAsync(model);
             success = true;
             StateHasChanged();
-
-            // Pequeña pausa para que el usuario vea el mensaje de éxito
             await Task.Delay(1500);
             Nav.NavigateTo("/login");
         }
