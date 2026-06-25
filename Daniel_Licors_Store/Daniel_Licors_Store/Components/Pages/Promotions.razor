@@ -804,15 +804,16 @@
                                   Placeholder="Ej: Día de las Madres — 5% en Rones" />
                 </div>
                 <div class="pr-field-grid cols-2">
-                    <MudSelect @bind-Value="_form.PromotionType"
-                               Label="Tipo de promoción"
-                               Variant="Variant.Outlined"
-                               AnchorOrigin="Origin.BottomCenter"
-                               TransformOrigin="Origin.TopCenter">
-                        <MudSelectItem @key="@("Discount")" Value="@("Discount")">% Descuento</MudSelectItem>
-                        <MudSelectItem @key="@("SpecialPrice")" Value="@("SpecialPrice")">Precio Especial</MudSelectItem>
-                        <MudSelectItem @key="@("PayXGetY")" Value="@("PayXGetY")">Lleva X Paga Y</MudSelectItem>
-                    </MudSelect>
+                    <div class="pr-select-field">
+                        <label class="pr-select-label">Tipo de promoción</label>
+                        <select class="pr-native-select"
+                                value="@_form.PromotionType"
+                                @onchange="@(e => _form.PromotionType = e.Value?.ToString() ?? "Discount")">
+                            <option value="Discount">% Descuento</option>
+                            <option value="SpecialPrice">Precio Especial</option>
+                            <option value="PayXGetY">Lleva X Paga Y</option>
+                        </select>
+                    </div>
 
                     <div class="pr-active-toggle @(_form.IsActive ? "on" : "off")"
                          @onclick="() => _form.IsActive = !_form.IsActive">
