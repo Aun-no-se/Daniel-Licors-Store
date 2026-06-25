@@ -2,325 +2,918 @@
 @attribute [Authorize(Roles = "Admin,Empleado")]
 
 @using Microsoft.AspNetCore.Authorization
-@using Microsoft.AspNetCore.Components.Authorization
 @using Microsoft.AspNetCore.Components.Forms
 @using Daniel_Licors_Store.Models.Promotion
 @using Daniel_Licors_Store.Models.Product
 @using MudBlazor
 
-<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="promo-page mt-6 mb-12">
+<style>
+    /* ── Variables ─────────────────────────────────────────────── */
+    :root {
+        --pr-red: #FF1744;
+        --pr-red-dim: rgba(255,23,68,0.14);
+        --pr-red-border: rgba(255,23,68,0.28);
+        --pr-bg: rgba(10,10,10,0.97);
+        --pr-surface: rgba(255,255,255,0.035);
+        --pr-border: rgba(255,255,255,0.08);
+    }
 
-    <!-- ── Encabezado ── -->
-    <div class="promo-page-header mb-8">
-        <div class="header-accent"></div>
-        <div class="header-content">
-            <MudText Typo="Typo.h4" Class="promo-page-title">Promociones</MudText>
-            <MudText Typo="Typo.body2" Class="promo-page-sub">
-                Descuentos, precios especiales y ofertas tipo «Lleva X Paga Y»
-            </MudText>
+    /* ── Page ───────────────────────────────────────────────────── */
+    .pr-page {
+        padding: 1.25rem 1rem 4rem;
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+
+    /* ── Header ─────────────────────────────────────────────────── */
+    .pr-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: .85rem;
+        margin-bottom: 1.75rem;
+    }
+
+    .pr-header-left {
+        display: flex;
+        align-items: center;
+        gap: .75rem;
+    }
+
+    .pr-header-accent {
+        width: 4px;
+        height: 34px;
+        border-radius: 4px;
+        background: linear-gradient(180deg, var(--pr-red), #7a0010);
+        box-shadow: 0 0 12px rgba(255,23,68,.45);
+    }
+
+    .pr-page-title {
+        margin: 0;
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #fff;
+    }
+
+    .pr-page-sub {
+        margin: 0;
+        font-size: .78rem;
+        color: rgba(255,255,255,.4);
+    }
+
+    .pr-btn-new {
+        background: linear-gradient(135deg, var(--pr-red), #b71c1c) !important;
+        color: #fff !important;
+        border-radius: 10px !important;
+        text-transform: none !important;
+        font-weight: 700 !important;
+        padding: 0 22px !important;
+        height: 40px !important;
+        box-shadow: 0 4px 16px rgba(255,23,68,.3) !important;
+    }
+
+        .pr-btn-new:hover {
+            filter: brightness(1.1) !important;
+            transform: translateY(-1px) !important;
+        }
+
+    /* ── Tabla de promociones ───────────────────────────────────── */
+    .pr-table-wrap {
+        background: rgba(255,255,255,0.025);
+        border: 1px solid var(--pr-border);
+        border-radius: 14px;
+        overflow: hidden;
+    }
+
+    .pr-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+        .pr-table thead tr {
+            background: rgba(255,23,68,0.07);
+            border-bottom: 1px solid var(--pr-red-border);
+        }
+
+        .pr-table th {
+            padding: .65rem 1rem;
+            font-size: .7rem;
+            font-weight: 700;
+            letter-spacing: 1.1px;
+            text-transform: uppercase;
+            color: rgba(255,23,68,.85);
+            text-align: left;
+        }
+
+        .pr-table td {
+            padding: .7rem 1rem;
+            font-size: .82rem;
+            color: rgba(255,255,255,.82);
+            border-bottom: 1px solid rgba(255,255,255,.05);
+            vertical-align: middle;
+        }
+
+        .pr-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .pr-table tbody tr:hover td {
+            background: rgba(255,255,255,.03);
+        }
+
+    .pr-thumb {
+        width: 44px;
+        height: 44px;
+        object-fit: cover;
+        border-radius: 8px;
+        border: 1px solid var(--pr-border);
+    }
+
+    .pr-thumb-placeholder {
+        width: 44px;
+        height: 44px;
+        border-radius: 8px;
+        background: rgba(255,23,68,.08);
+        border: 1px dashed var(--pr-red-border);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+    }
+
+    .pr-type-chip {
+        display: inline-block;
+        padding: 2px 10px;
+        border-radius: 20px;
+        font-size: .68rem;
+        font-weight: 700;
+        letter-spacing: .5px;
+    }
+
+    .pr-chip-discount {
+        background: rgba(255,23,68,.15);
+        color: #ff6b6b;
+    }
+
+    .pr-chip-specialprice {
+        background: rgba(255,193,7,.12);
+        color: #ffc107;
+    }
+
+    .pr-chip-payxgety {
+        background: rgba(76,175,80,.12);
+        color: #66bb6a;
+    }
+
+    .pr-chip-other {
+        background: rgba(33,150,243,.12);
+        color: #64b5f6;
+    }
+
+    .pr-vigente-dot {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        font-size: .75rem;
+    }
+
+        .pr-vigente-dot::before {
+            content: '';
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: #4caf50;
+            box-shadow: 0 0 6px rgba(76,175,80,.6);
+        }
+
+        .pr-vigente-dot.off::before {
+            background: #555;
+            box-shadow: none;
+        }
+
+    .pr-actions {
+        display: flex;
+        gap: .25rem;
+    }
+
+    /* ── Empty state ─────────────────────────────────────────────── */
+    .pr-empty {
+        text-align: center;
+        padding: 4rem 1rem;
+        color: rgba(255,255,255,.3);
+    }
+
+    .pr-empty-icon {
+        font-size: 3rem !important;
+        margin-bottom: .75rem;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       FORMULARIO — mismo estilo dark glassmorphism que ProductDialog
+       ══════════════════════════════════════════════════════════════ */
+    .pr-form-wrap {
+        margin-top: 2rem;
+        background: rgba(10,10,10,.96);
+        border: 1px solid var(--pr-red-border);
+        border-radius: 20px;
+        overflow: hidden;
+        box-shadow: 0 32px 80px rgba(0,0,0,.8), 0 0 0 1px rgba(255,255,255,.04);
+        animation: pr-slide-up .35s cubic-bezier(.22,1,.36,1);
+    }
+
+    @@keyframes pr-slide-up {
+        from {
+            opacity: 0;
+            transform: translateY(14px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    /* Header del form */
+    .pr-form-header {
+        padding: 20px 24px 16px;
+        background: linear-gradient(135deg,#1a0000 0%,#0d0d0d 60%);
+        border-bottom: 1px solid var(--pr-red-border);
+        position: relative;
+        overflow: hidden;
+    }
+
+        .pr-form-header::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at 0% 50%, rgba(255,23,68,.12) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+    .pr-form-header-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .pr-form-accent {
+        width: 4px;
+        height: 26px;
+        border-radius: 4px;
+        flex-shrink: 0;
+        background: linear-gradient(180deg,#FF1744,#B71C1C);
+        box-shadow: 0 0 12px rgba(255,23,68,.5);
+    }
+
+    .pr-form-title {
+        margin: 0;
+        font-size: 1.15rem;
+        font-weight: 700;
+        color: #fff;
+    }
+
+    .pr-form-subtitle {
+        margin: 0;
+        font-size: .72rem;
+        color: rgba(255,255,255,.4);
+        margin-top: 2px;
+    }
+
+    .pr-form-badge {
+        font-size: .62rem;
+        font-weight: 700;
+        letter-spacing: 1.2px;
+        text-transform: uppercase;
+        padding: 3px 10px;
+        border-radius: 20px;
+        border: 1px solid;
+    }
+
+    .pr-badge-new {
+        color: #4caf50;
+        border-color: rgba(76,175,80,.4);
+        background: rgba(76,175,80,.08);
+    }
+
+    .pr-badge-edit {
+        color: #FF8A80;
+        border-color: rgba(255,138,128,.4);
+        background: rgba(255,138,128,.08);
+    }
+
+    /* Body del form */
+    .pr-form-body {
+        padding: 22px 22px 10px;
+    }
+
+    /* Section labels */
+    .pr-section-label {
+        font-size: .67rem;
+        font-weight: 700;
+        letter-spacing: 1.4px;
+        text-transform: uppercase;
+        color: rgba(255,23,68,.85);
+        margin: 18px 0 12px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+        .pr-section-label::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: linear-gradient(90deg,rgba(255,23,68,.2),transparent);
+        }
+
+    /* Grid de campos */
+    .pr-field-grid {
+        display: grid;
+        gap: 14px;
+        margin-bottom: 14px;
+    }
+
+        .pr-field-grid.cols-2 {
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .pr-field-grid.cols-3 {
+            grid-template-columns: 1fr 1fr 1fr;
+        }
+
+        .pr-field-grid.cols-1 {
+            grid-template-columns: 1fr;
+        }
+
+    @@media (max-width: 600px) {
+        .pr-field-grid.cols-2,
+        .pr-field-grid.cols-3 {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    /* Input overrides */
+    .pr-form-wrap .mud-input-root {
+        background: rgba(255,255,255,.035) !important;
+        border-radius: 10px !important;
+    }
+
+        .pr-form-wrap .mud-input-root:hover {
+            background: rgba(255,255,255,.055) !important;
+        }
+
+        .pr-form-wrap .mud-input-root.mud-input-root-focused {
+            background: rgba(255,23,68,.06) !important;
+            box-shadow: 0 0 0 2px rgba(255,23,68,.25) !important;
+        }
+
+    /* Date inputs nativos */
+    .pr-date-field {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .pr-date-label {
+        font-size: .72rem;
+        color: rgba(255,255,255,.55);
+        padding-left: 2px;
+    }
+
+    .pr-date-input {
+        background: rgba(255,255,255,.035);
+        border: 1px solid rgba(255,255,255,.12);
+        border-radius: 10px;
+        color: #fff;
+        padding: 12px 14px;
+        font-size: .88rem;
+        width: 100%;
+        box-sizing: border-box;
+        -webkit-appearance: none;
+        color-scheme: dark;
+        transition: border-color .2s, box-shadow .2s;
+    }
+
+        .pr-date-input:focus {
+            outline: none;
+            border-color: rgba(255,23,68,.5);
+            box-shadow: 0 0 0 2px rgba(255,23,68,.2);
+            background: rgba(255,23,68,.05);
+        }
+
+    /* Toggle activo */
+    .pr-active-toggle {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        background: rgba(255,255,255,.03);
+        border: 1px solid rgba(255,255,255,.08);
+        border-radius: 10px;
+        padding: 10px 14px;
+        cursor: pointer;
+        user-select: none;
+        transition: all .2s;
+    }
+
+        .pr-active-toggle.on {
+            background: rgba(76,175,80,.08);
+            border-color: rgba(76,175,80,.3);
+        }
+
+        .pr-active-toggle.off {
+            opacity: .7;
+        }
+
+    .pr-toggle-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        flex-shrink: 0;
+        transition: all .2s;
+    }
+
+        .pr-toggle-dot.on {
+            background: #4caf50;
+            box-shadow: 0 0 8px rgba(76,175,80,.5);
+        }
+
+        .pr-toggle-dot.off {
+            background: rgba(255,255,255,.2);
+        }
+
+    /* Zona imagen */
+    .pr-img-zone {
+        border: 2px dashed rgba(255,23,68,.28);
+        border-radius: 14px;
+        overflow: hidden;
+        min-height: 190px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        background: rgba(255,255,255,.02);
+        transition: all .22s;
+        position: relative;
+    }
+
+        .pr-img-zone:hover, .pr-img-zone.has-image {
+            border-style: solid;
+            border-color: rgba(255,23,68,.5);
+        }
+
+        .pr-img-zone img {
+            width: 100%;
+            max-height: 220px;
+            object-fit: contain;
+            display: block;
+        }
+
+    .pr-img-overlay {
+        position: absolute;
+        inset: 0;
+        background: rgba(0,0,0,.55);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        opacity: 0;
+        transition: opacity .22s;
+        border-radius: 12px;
+    }
+
+    .pr-img-zone:hover .pr-img-overlay {
+        opacity: 1;
+    }
+
+    .pr-overlay-btn {
+        background: rgba(255,255,255,.1);
+        border: 1px solid rgba(255,255,255,.2);
+        border-radius: 8px;
+        color: white;
+        font-size: .76rem;
+        padding: 7px 13px;
+        cursor: pointer;
+        backdrop-filter: blur(8px);
+        font-weight: 600;
+        transition: background .2s;
+    }
+
+        .pr-overlay-btn:hover {
+            background: rgba(255,23,68,.3);
+            border-color: rgba(255,23,68,.5);
+        }
+
+    .pr-img-placeholder {
+        padding: 24px 14px;
+        text-align: center;
+    }
+
+    .pr-img-icon {
+        font-size: 2.4rem;
+        opacity: .3;
+        margin-bottom: 6px;
+    }
+
+    .pr-img-text {
+        font-size: .82rem;
+        color: rgba(255,255,255,.5);
+    }
+
+    .pr-img-sub {
+        font-size: .7rem;
+        color: rgba(255,255,255,.28);
+        margin-top: 3px;
+    }
+
+    /* Tabla de picker de productos */
+    .pr-form-wrap .products-picker-table {
+        background: rgba(255,255,255,.02) !important;
+        border-radius: 10px;
+    }
+
+    /* Chips builder */
+    .pr-chips-wrap {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 16px;
+    }
+
+    /* Footer del form */
+    .pr-form-footer {
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        gap: 10px;
+        background: rgba(5,5,5,.9);
+        border-top: 1px solid rgba(255,255,255,.06);
+        padding: 14px 22px;
+    }
+
+    .pr-cancel-btn {
+        color: rgba(255,255,255,.4) !important;
+        border-radius: 10px !important;
+        height: 40px !important;
+        padding: 0 16px !important;
+        text-transform: none !important;
+    }
+
+        .pr-cancel-btn:hover {
+            color: rgba(255,255,255,.8) !important;
+            background: rgba(255,255,255,.05) !important;
+        }
+
+    .pr-save-btn {
+        background: linear-gradient(135deg,#FF1744,#B71C1C) !important;
+        color: #fff !important;
+        font-weight: 700 !important;
+        border-radius: 10px !important;
+        padding: 0 26px !important;
+        height: 40px !important;
+        text-transform: none !important;
+        box-shadow: 0 4px 16px rgba(255,23,68,.3) !important;
+    }
+
+        .pr-save-btn:hover:not(:disabled) {
+            filter: brightness(1.1) !important;
+            transform: translateY(-1px) !important;
+        }
+
+        .pr-save-btn:disabled {
+            opacity: .5 !important;
+        }
+
+    /* Mini-dialog */
+    .pr-linedialog-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,.72);
+        z-index: 9998;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 1rem;
+    }
+
+    .pr-linedialog-card {
+        background: rgba(18,5,5,.97);
+        border: 1px solid var(--pr-red-border);
+        border-radius: 16px;
+        padding: 24px;
+        width: 100%;
+        max-width: 380px;
+        box-shadow: 0 24px 60px rgba(0,0,0,.8);
+        animation: pr-slide-up .28s ease;
+    }
+
+    .muted-text {
+        color: rgba(255,255,255,.4) !important;
+    }
+
+    .text-success-custom {
+        color: #66bb6a;
+    }
+</style>
+
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="pr-page">
+
+    <!-- ── HEADER ─────────────────────────────────────────────────── -->
+    <div class="pr-header">
+        <div class="pr-header-left">
+            <div class="pr-header-accent"></div>
+            <div>
+                <p class="pr-page-title">Promociones</p>
+                <p class="pr-page-sub">Ofertas especiales de descuento y precios especiales</p>
+            </div>
         </div>
-        <div class="header-actions">
-            <MudButton Color="Color.Warning"
-                       Variant="Variant.Filled"
-                       StartIcon="@Icons.Material.Filled.Add"
-                       OnClick="ShowCreateSection"
-                       Class="btn-new-promo">
-                Nueva Promoción
-            </MudButton>
-        </div>
+        <MudButton Class="pr-btn-new"
+                   StartIcon="@Icons.Material.Filled.Add"
+                   OnClick="ShowCreateSection">
+            Nueva Promoción
+        </MudButton>
     </div>
 
+    <!-- ── LOADING ────────────────────────────────────────────────── -->
     @if (_loading)
     {
-        <div class="d-flex justify-center align-center flex-column py-16">
-            <MudProgressCircular Indeterminate Size="Size.Large" Color="Color.Warning" />
-            <MudText Typo="Typo.body2" Class="mt-4 muted-text">Cargando promociones...</MudText>
+        <div style="display:flex;flex-direction:column;align-items:center;padding:4rem 0;gap:1rem;color:rgba(255,255,255,.4)">
+            <MudProgressCircular Indeterminate Size="Size.Large" Color="Color.Error" />
+            <span>Cargando promociones...</span>
         </div>
     }
     else if (!_promos.Any())
     {
-        <div class="empty-promos-state">
-            <MudIcon Icon="@Icons.Material.Filled.LocalOffer" Class="empty-icon" />
-            <MudText Typo="Typo.h6" Class="font-weight-bold mt-3 mb-1">Sin promociones aún</MudText>
-            <MudText Typo="Typo.body2" Class="muted-text mb-4">Crea tu primera promoción para empezar a vender más.</MudText>
-            <MudButton Color="Color.Warning" Variant="Variant.Filled" OnClick="ShowCreateSection">
-                Crear promoción
-            </MudButton>
+        <div class="pr-empty">
+            <MudIcon Icon="@Icons.Material.Filled.LocalOffer" Class="pr-empty-icon" />
+            <p style="font-size:.95rem;font-weight:600;margin:.5rem 0 .25rem">Sin promociones aún</p>
+            <p style="font-size:.8rem;">Crea tu primera promoción para empezar a ofrecer ofertas especiales.</p>
+            <MudButton Class="pr-btn-new" Style="margin-top:1rem" OnClick="ShowCreateSection">Crear promoción</MudButton>
         </div>
     }
     else
     {
-        <!-- ── Grid de cards de promociones ── -->
-        <div class="promos-grid">
-            @foreach (var promo in _promos)
-            {
-                <div class="promo-card @(promo.IsVigente ? "promo-card--active" : "")">
-
-                    <!-- Imagen de la promo -->
-                    <div class="promo-card-img">
-                        @if (!string.IsNullOrWhiteSpace(promo.ImageUrl))
-                        {
-                            <img src="@promo.ImageUrl" alt="@promo.Title" class="promo-img-real" />
-                        }
-                        else
-                        {
-                            <div class="promo-img-placeholder">
-                                <MudIcon Icon="@Icons.Material.Filled.LocalOffer"
-                                         Style="font-size:40px; color:rgba(255,165,0,0.3);" />
-                            </div>
-                        }
-                        <!-- Badge tipo -->
-                        <span class="promo-type-badge promo-type-@(promo.PromotionType?.ToLower() ?? "default")">
-                            @GetTypeLabel(promo.PromotionType)
-                        </span>
-                        <!-- Estado -->
-                        @if (promo.IsVigente)
-                        {
-                            <span class="promo-status-badge promo-status--active">● Activa</span>
-                        }
-                        else if (!promo.IsActive)
-                        {
-                            <span class="promo-status-badge promo-status--inactive">Inactiva</span>
-                        }
-                        else
-                        {
-                            <span class="promo-status-badge promo-status--expired">Vencida</span>
-                        }
-                    </div>
-
-                    <!-- Cuerpo -->
-                    <div class="promo-card-body">
-                        <div class="promo-card-title">@promo.Title</div>
-                        @if (!string.IsNullOrWhiteSpace(promo.Description))
-                        {
-                            <div class="promo-card-desc">@promo.Description</div>
-                        }
-
-                        <div class="promo-card-meta">
-                            <MudIcon Icon="@Icons.Material.Filled.Inventory2"
-                                     Size="Size.Small" Class="mr-1 muted-text" />
-                            <span class="muted-text" style="font-size:12px;">
-                                @promo.ProductCount producto@(promo.ProductCount != 1 ? "s" : "")
-                                @if (!string.IsNullOrWhiteSpace(promo.ProductsSummary))
+        <!-- ── TABLA ──────────────────────────────────────────────── -->
+        <div class="pr-table-wrap">
+            <table class="pr-table">
+                <thead>
+                    <tr>
+                        <th>Imagen</th>
+                        <th>Título</th>
+                        <th>Tipo</th>
+                        <th>Productos</th>
+                        <th>Inicio</th>
+                        <th>Fin</th>
+                        <th>Estado</th>
+                        <th>Vigente</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var promo in _promos)
+                    {
+                        <tr>
+                            <td>
+                                @if (!string.IsNullOrEmpty(promo.ImageUrl))
                                 {
-                                    <span> · @promo.ProductsSummary</span>
+                                    <img src="@promo.ImageUrl" class="pr-thumb" alt="@promo.Title" />
                                 }
-                            </span>
-                        </div>
-
-                        <div class="promo-card-dates">
-                            <MudIcon Icon="@Icons.Material.Filled.DateRange"
-                                     Size="Size.Small" Class="mr-1" />
-                            <span>@FormatDate(promo.StartDate, "dd MMM") — @FormatDate(promo.EndDate)</span>
-                        </div>
-                    </div>
-
-                    <!-- Acciones -->
-                    <div class="promo-card-actions">
-                        <MudIconButton Icon="@Icons.Material.Filled.Edit"
-                                       Color="Color.Warning"
-                                       Size="Size.Small"
-                                       Title="Editar"
-                                       OnClick="@(() => EditPromo(promo.PromotionId))" />
-                        <MudIconButton Icon="@Icons.Material.Filled.Delete"
-                                       Color="Color.Error"
-                                       Size="Size.Small"
-                                       Title="Eliminar"
-                                       OnClick="@(() => DeletePromo(promo.PromotionId))" />
-                    </div>
-
-                </div>
-            }
+                                else
+                                {
+                                    <div class="pr-thumb-placeholder">🏷️</div>
+                                }
+                            </td>
+                            <td>
+                                <div style="font-weight:600;color:#fff">@promo.Title</div>
+                                @if (!string.IsNullOrEmpty(promo.Description))
+                                {
+                                    <div style="font-size:.72rem;color:rgba(255,255,255,.38);margin-top:2px">@promo.Description</div>
+                                }
+                            </td>
+                            <td>
+                                <span class="pr-type-chip @GetTypeChipClass(promo.PromotionType)">
+                                    @GetTypeLabel(promo.PromotionType)
+                                </span>
+                            </td>
+                            <td style="font-size:.78rem;color:rgba(255,255,255,.6)">
+                                @promo.ProductCount producto(s)<br />
+                                <span style="font-size:.7rem;color:rgba(255,255,255,.35)">@promo.ProductsSummary</span>
+                            </td>
+                            <td>@FormatDate(promo.StartDate)</td>
+                            <td>@FormatDate(promo.EndDate)</td>
+                            <td>
+                                <span class="pr-type-chip @(promo.IsActive ? "pr-chip-payxgety" : "pr-chip-other")">
+                                    @(promo.IsActive ? "Activa" : "Inactiva")
+                                </span>
+                            </td>
+                            <td>
+                                <span class="pr-vigente-dot @(promo.IsVigente ? "" : "off")">
+                                    @(promo.IsVigente ? "Vigente" : "No vigente")
+                                </span>
+                            </td>
+                            <td>
+                                <div class="pr-actions">
+                                    <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                                   Color="Color.Warning" Size="Size.Small"
+                                                   Title="Editar"
+                                                   OnClick="@(() => EditPromo(promo.PromotionId))" />
+                                    <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                                   Color="Color.Error" Size="Size.Small"
+                                                   Title="Eliminar"
+                                                   OnClick="@(() => DeletePromo(promo.PromotionId))" />
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
         </div>
     }
 
+    <!-- ══ ANCLA DE SCROLL ═══════════════════════════════════════ -->
+    <div id="promo-form-anchor" style="height:0"></div>
 
-    <!-- ── FORMULARIO CREAR / EDITAR ── -->
+    <!-- ══ FORMULARIO GLASSMORPHISM ══════════════════════════════ -->
     @if (_showForm)
     {
-        <div class="form-section mt-8">
+        <div class="pr-form-wrap">
 
-            <div class="form-section-header">
-                <MudIcon Icon="@Icons.Material.Filled.LocalOffer" Color="Color.Warning" Class="mr-2" />
-                <MudText Typo="Typo.h5" Class="font-weight-bold">
-                    @(_isEditMode ? "Editar Promoción" : "Nueva Promoción")
-                </MudText>
+            <!-- Header -->
+            <div class="pr-form-header">
+                <div class="pr-form-header-row">
+                    <div style="display:flex;align-items:center;gap:12px">
+                        <div class="pr-form-accent"></div>
+                        <div>
+                            <p class="pr-form-title">@(_isEditMode ? "Editar Promoción" : "Nueva Promoción")</p>
+                            <p class="pr-form-subtitle">
+                                @(_isEditMode ? $"Modificando ID #{_editingPromoId}" : "Completa los datos de la nueva promoción")
+                            </p>
+                        </div>
+                    </div>
+                    <span class="pr-form-badge @(_isEditMode ? "pr-badge-edit" : "pr-badge-new")">
+                        @(_isEditMode ? "EDITAR" : "NUEVA")
+                    </span>
+                </div>
             </div>
 
-            <MudDivider Class="my-4" />
+            <!-- Body -->
+            <div class="pr-form-body">
 
-            <MudGrid>
+                <!-- Imagen -->
+                <p class="pr-section-label">📷 Imagen de la promoción</p>
 
-                <!-- Columna izquierda: datos principales -->
-                <MudItem xs="12" md="8">
-
-                    <MudGrid>
-                        <MudItem xs="12" sm="7">
-                            <MudTextField @bind-Value="_form.Title"
-                                          Label="Título"
-                                          Variant="Variant.Outlined"
-                                          Required
-                                          Placeholder="Ej: Día de las Madres — 5% en Rones" />
-                        </MudItem>
-                        <MudItem xs="12" sm="5">
-                            <MudSelect @bind-Value="_form.PromotionType"
-                                       Label="Tipo"
-                                       Variant="Variant.Outlined">
-                                <MudSelectItem Value="@("Discount")">% Descuento</MudSelectItem>
-                                <MudSelectItem Value="@("SpecialPrice")">Precio Especial</MudSelectItem>
-                                <MudSelectItem Value="@("PayXGetY")">Lleva X Paga Y</MudSelectItem>
-                            </MudSelect>
-                        </MudItem>
-                        <MudItem xs="12">
-                            <MudTextField @bind-Value="_form.Description"
-                                          Label="Descripción (opcional)"
-                                          Lines="2"
-                                          Variant="Variant.Outlined" />
-                        </MudItem>
-                        <MudItem xs="12" sm="4">
-                            <MudDatePicker @bind-Date="_startDate"
-                                           Label="Fecha inicio"
-                                           Variant="Variant.Outlined"
-                                           DateFormat="dd/MM/yyyy" />
-                        </MudItem>
-                        <MudItem xs="12" sm="4">
-                            <MudDatePicker @bind-Date="_endDate"
-                                           Label="Fecha fin"
-                                           Variant="Variant.Outlined"
-                                           DateFormat="dd/MM/yyyy" />
-                        </MudItem>
-                        <MudItem xs="12" sm="4" Class="d-flex align-center">
-                            <MudSwitch @bind-Value="_form.IsActive"
-                                       Color="Color.Success"
-                                       Label="@(_form.IsActive ? "Activa" : "Inactiva")" />
-                        </MudItem>
-                    </MudGrid>
-
-                </MudItem>
-
-                <!-- Columna derecha: imagen -->
-                <MudItem xs="12" md="4">
-
-                    <div class="img-upload-panel">
-                        <div class="img-upload-preview @(string.IsNullOrWhiteSpace(_form.ImageUrl) ? "img-upload-empty" : "")">
-                            @if (!string.IsNullOrWhiteSpace(_form.ImageUrl))
-                            {
-                                <img src="@_form.ImageUrl" alt="Preview" class="img-upload-img" />
-                                <button class="img-upload-remove" @onclick="RemoveImage" title="Quitar imagen">✕</button>
-                            }
-                            else
-                            {
-                                <MudIcon Icon="@Icons.Material.Filled.AddPhotoAlternate"
-                                         Style="font-size:48px; color:rgba(255,152,0,0.4);" />
-                                <span class="img-upload-hint">Imagen de la promoción</span>
-                            }
-                        </div>
-
-                        <InputFile id="promo-img-input"
-                                   OnChange="HandleImageUpload"
-                                   accept="image/*"
-                                   style="display:none;" />
-
-                        <label for="promo-img-input" class="img-upload-btn">
-                            <MudIcon Icon="@Icons.Material.Filled.CloudUpload" Size="Size.Small" Class="mr-1" />
-                            @(string.IsNullOrWhiteSpace(_form.ImageUrl) ? "Subir imagen" : "Cambiar imagen")
-                        </label>
-
-                        @if (_uploadingImage)
+                <InputFile id="promo-img-input" OnChange="HandleImageUpload" accept="image/*" style="display:none" />
+                <label for="promo-img-input" style="display:block;cursor:pointer">
+                    <div class="pr-img-zone @(HasPromoImage ? "has-image" : "")">
+                        @if (HasPromoImage)
                         {
-                            <div class="d-flex align-center gap-2 mt-2">
-                                <MudProgressCircular Size="Size.Small" Indeterminate Color="Color.Warning" />
-                                <MudText Typo="Typo.caption" Class="muted-text">Subiendo...</MudText>
+                            <img src="@(_previewBase64 ?? _form.ImageUrl)" alt="Preview" />
+                            <div class="pr-img-overlay">
+                                <span class="pr-overlay-btn">🔄 Cambiar</span>
+                                <span class="pr-overlay-btn" @onclick:stopPropagation @onclick="RemoveImage">🗑 Quitar</span>
                             </div>
                         }
-
-                        @if (!string.IsNullOrWhiteSpace(_uploadError))
+                        else
                         {
-                            <MudText Typo="Typo.caption" Color="Color.Error" Class="mt-1">@_uploadError</MudText>
+                            <div class="pr-img-placeholder">
+                                <div class="pr-img-icon">🏷️</div>
+                                <div class="pr-img-text">Toca aquí para subir imagen</div>
+                                <div class="pr-img-sub">PNG, JPG, WEBP · máx 5 MB</div>
+                            </div>
                         }
                     </div>
+                </label>
+                @if (_uploadingImage)
+                {
+                    <div style="display:flex;align-items:center;gap:8px;margin-top:8px;font-size:.75rem;color:rgba(255,255,255,.45)">
+                        <MudProgressCircular Size="Size.Small" Indeterminate Color="Color.Error" /> Subiendo...
+                    </div>
+                }
+                @if (!string.IsNullOrEmpty(_uploadError))
+                {
+                    <div style="color:#ff6b6b;font-size:.75rem;margin-top:6px">@_uploadError</div>
+                }
 
-                </MudItem>
-
-            </MudGrid>
-
-            <MudDivider Class="my-5" />
-
-            <!-- ── Selector de productos ── -->
-            <MudText Typo="Typo.subtitle1" Class="font-weight-bold mb-3">
-                <MudIcon Icon="@Icons.Material.Filled.Inventory2" Size="Size.Small" Class="mr-1" />
-                Productos en esta promoción
-            </MudText>
-
-            <MudTable Items="_products" Dense Hover Bordered Class="mb-3 products-picker-table">
-                <HeaderContent>
-                    <MudTh>Producto</MudTh>
-                    <MudTh>Precio normal</MudTh>
-                    <MudTh Align="Align.Center">Agregar</MudTh>
-                </HeaderContent>
-                <RowTemplate>
-                    <MudTd>
-                        <MudText Typo="Typo.body2" Class="font-weight-bold">@context.Name</MudText>
-                    </MudTd>
-                    <MudTd>
-                        <MudText Color="Color.Success" Class="font-weight-bold">$@context.Price.ToString("N2")</MudText>
-                    </MudTd>
-                    <MudTd Align="Align.Center">
-                        <MudIconButton Icon="@Icons.Material.Filled.AddCircleOutline"
-                                       Color="Color.Warning"
-                                       OnClick="@(() => OpenPromoLineDialog(context))" />
-                    </MudTd>
-                </RowTemplate>
-            </MudTable>
-
-            <!-- Chips de productos agregados -->
-            @if (_promoBuilder.Any())
-            {
-                <MudText Typo="Typo.caption" Class="muted-text mb-2 d-block">Incluidos en la promoción:</MudText>
-                <div class="d-flex flex-wrap gap-2 mb-4">
-                    @foreach (var line in _promoBuilder)
-                    {
-                        <MudChip T="PromotionProductLine"
-                                 Value="@line"
-                                 Closeable="true"
-                                 Color="Color.Warning"
-                                 OnClose="@(() => _promoBuilder.Remove(line))">
-                            @GetLineLabel(line)
-                        </MudChip>
-                    }
+                <!-- Info básica -->
+                <p class="pr-section-label">📋 Información básica</p>
+                <div class="pr-field-grid cols-1">
+                    <MudTextField @bind-Value="_form.Title"
+                                  Label="Título de la promoción"
+                                  Variant="Variant.Outlined"
+                                  Placeholder="Ej: Día de las Madres — 5% en Rones" />
                 </div>
-            }
+                <div class="pr-field-grid cols-2">
+                    <MudSelect @bind-Value="_form.PromotionType"
+                               Label="Tipo de promoción"
+                               Variant="Variant.Outlined"
+                               AnchorOrigin="Origin.BottomCenter"
+                               TransformOrigin="Origin.TopCenter">
+                        <MudSelectItem @key="@("Discount")" Value="@("Discount")">% Descuento</MudSelectItem>
+                        <MudSelectItem @key="@("SpecialPrice")" Value="@("SpecialPrice")">Precio Especial</MudSelectItem>
+                        <MudSelectItem @key="@("PayXGetY")" Value="@("PayXGetY")">Lleva X Paga Y</MudSelectItem>
+                    </MudSelect>
 
-            <!-- Acciones del form -->
-            <div class="d-flex justify-end gap-x-3 mt-2">
-                <MudButton Color="Color.Secondary" Variant="Variant.Outlined" OnClick="ResetForm">
-                    Cancelar
-                </MudButton>
-                <MudButton Color="Color.Warning"
-                           Variant="Variant.Filled"
-                           StartIcon="@Icons.Material.Filled.Save"
+                    <div class="pr-active-toggle @(_form.IsActive ? "on" : "off")"
+                         @onclick="() => _form.IsActive = !_form.IsActive">
+                        <div class="pr-toggle-dot @(_form.IsActive ? "on" : "off")"></div>
+                        <div>
+                            <div style="font-size:.8rem;font-weight:600;color:rgba(255,255,255,.8)">Estado</div>
+                            <div style="font-size:.68rem;color:rgba(255,255,255,.38)">@(_form.IsActive ? "Activa" : "Inactiva")</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="pr-field-grid cols-1">
+                    <MudTextField @bind-Value="_form.Description"
+                                  Label="Descripción (opcional)"
+                                  Lines="2"
+                                  Variant="Variant.Outlined"
+                                  Placeholder="Breve descripción visible al cliente" />
+                </div>
+
+                <!-- Fechas — inputs nativos (evita bug removeChild en móvil) -->
+                <p class="pr-section-label">📅 Vigencia</p>
+                <div class="pr-field-grid cols-2">
+                    <div class="pr-date-field">
+                        <label class="pr-date-label">Fecha inicio</label>
+                        <input type="date" class="pr-date-input"
+                               value="@_startDateStr"
+                               @onchange="@(e => _startDateStr = e.Value?.ToString() ?? _startDateStr)" />
+                    </div>
+                    <div class="pr-date-field">
+                        <label class="pr-date-label">Fecha fin</label>
+                        <input type="date" class="pr-date-input"
+                               value="@_endDateStr"
+                               @onchange="@(e => _endDateStr = e.Value?.ToString() ?? _endDateStr)" />
+                    </div>
+                </div>
+
+                <!-- Selector de productos -->
+                <p class="pr-section-label">🛒 Productos en esta promoción</p>
+
+                <MudTable Items="_products" Dense Hover Bordered Class="mb-3 products-picker-table">
+                    <HeaderContent>
+                        <MudTh>Producto</MudTh>
+                        <MudTh>Precio</MudTh>
+                        <MudTh Align="Align.Center">Agregar</MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd>
+                            <MudText Typo="Typo.body2" Class="font-weight-bold">@context.Name</MudText>
+                        </MudTd>
+                        <MudTd>
+                            <MudText Color="Color.Success" Class="font-weight-bold">$@context.Price.ToString("N2")</MudText>
+                        </MudTd>
+                        <MudTd Align="Align.Center">
+                            <MudIconButton Icon="@Icons.Material.Filled.AddCircleOutline"
+                                           Color="Color.Error"
+                                           OnClick="@(() => OpenPromoLineDialog(context))" />
+                        </MudTd>
+                    </RowTemplate>
+                </MudTable>
+
+                @if (_promoBuilder.Any())
+                {
+                    <div style="font-size:.72rem;color:rgba(255,255,255,.4);margin-bottom:8px">Incluidos en la promoción:</div>
+                    <div class="pr-chips-wrap">
+                        @foreach (var line in _promoBuilder)
+                        {
+                            <MudChip T="PromotionProductLine"
+                                     Value="@line"
+                                     Closeable="true"
+                                     Color="Color.Error"
+                                     OnClose="@(() => _promoBuilder.Remove(line))">
+                                @GetLineLabel(line)
+                            </MudChip>
+                        }
+                    </div>
+                }
+
+            </div><!-- /pr-form-body -->
+            <!-- Footer -->
+            <div class="pr-form-footer">
+                <MudButton Class="pr-cancel-btn" OnClick="ResetForm">Cancelar</MudButton>
+                <MudButton Class="pr-save-btn"
                            Disabled="@(!_promoBuilder.Any())"
                            OnClick="SavePromo">
-                    @(_isEditMode ? "Actualizar Promoción" : "Guardar Promoción")
+                    @(_isEditMode ? "✦ Actualizar Promoción" : "✦ Guardar Promoción")
                 </MudButton>
             </div>
 
         </div>
     }
 
-
-    <!-- ── Mini-dialog: configurar línea de producto ── -->
+    <!-- ── Mini-dialog línea de producto ──────────────────────────── -->
     @if (_showLineDialog && _lineDialogProduct != null)
     {
-        <MudOverlay Visible="true" DarkBackground="true" ZIndex="9998" />
-        <div class="line-dialog-wrapper">
-            <MudPaper Elevation="24" Class="pa-5 rounded-xl line-dialog-card">
+        <div class="pr-linedialog-backdrop" @onclick="CloseLineDialog">
+            <div class="pr-linedialog-card" @onclick:stopPropagation>
 
-                <MudText Typo="Typo.h6" Class="font-weight-bold mb-1">@_lineDialogProduct.Name</MudText>
-                <MudText Typo="Typo.caption" Class="muted-text mb-4 d-block">
+                <div style="font-weight:700;font-size:1rem;color:#fff;margin-bottom:3px">@_lineDialogProduct.Name</div>
+                <div class="muted-text" style="font-size:.75rem;margin-bottom:16px">
                     Precio normal: $@_lineDialogProduct.Price.ToString("N2")
-                </MudText>
-                <MudDivider Class="mb-4" />
+                </div>
+                <hr style="border-color:rgba(255,255,255,.08);margin-bottom:16px" />
 
                 @if (_form.PromotionType == "Discount")
                 {
@@ -328,12 +921,12 @@
                                      Label="Descuento (%)" Min="0.01m" Max="99.99m"
                                      Variant="Variant.Outlined"
                                      Adornment="Adornment.End" AdornmentText="%" />
-                    @if (_lineDiscountPct > 0 && _lineDialogProduct != null)
+                    @if (_lineDiscountPct > 0)
                     {
-                        var resultado = _lineDialogProduct.Price * (1 - _lineDiscountPct / 100);
-                        <MudText Typo="Typo.body2" Class="mt-2 text-success-custom font-weight-bold">
-                            Precio resultante: $@resultado.ToString("N2")
-                        </MudText>
+                        var res = _lineDialogProduct.Price * (1 - _lineDiscountPct / 100);
+                        <div class="text-success-custom" style="font-size:.82rem;font-weight:600;margin-top:8px">
+                            Precio resultante: $@res.ToString("N2")
+                        </div>
                     }
                 }
                 else if (_form.PromotionType == "SpecialPrice")
@@ -345,431 +938,39 @@
                 }
                 else if (_form.PromotionType == "PayXGetY")
                 {
-                    <MudGrid>
-                        <MudItem xs="6">
-                            <MudNumericField @bind-Value="_lineReqQty" T="int"
-                                             Label="Lleva (cantidad)" Min="2"
-                                             Variant="Variant.Outlined" />
-                        </MudItem>
-                        <MudItem xs="6">
-                            <MudNumericField @bind-Value="_linePayQty" T="int"
-                                             Label="Paga (cantidad)" Min="1"
-                                             Variant="Variant.Outlined" />
-                        </MudItem>
-                    </MudGrid>
-                    <MudText Typo="Typo.body2" Class="mt-2 text-success-custom font-weight-bold">
+                    <div class="pr-field-grid cols-2" style="margin-bottom:10px">
+                        <MudNumericField @bind-Value="_lineReqQty" T="int"
+                                         Label="Lleva (qty)" Min="2"
+                                         Variant="Variant.Outlined" />
+                        <MudNumericField @bind-Value="_linePayQty" T="int"
+                                         Label="Paga (qty)" Min="1"
+                                         Variant="Variant.Outlined" />
+                    </div>
+                    <div class="text-success-custom" style="font-size:.82rem;font-weight:600">
                         Ejemplo: Lleva @_lineReqQty, paga @_linePayQty
-                    </MudText>
+                    </div>
                 }
 
-                <div class="d-flex justify-end gap-x-2 mt-5">
-                    <MudButton Color="Color.Error" Variant="Variant.Outlined" OnClick="CloseLineDialog">Cancelar</MudButton>
-                    <MudButton Color="Color.Warning" Variant="Variant.Filled" OnClick="ConfirmLineDialog">Agregar</MudButton>
+                <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:20px">
+                    <MudButton Color="Color.Default" Variant="Variant.Outlined" OnClick="CloseLineDialog">Cancelar</MudButton>
+                    <MudButton Class="pr-save-btn" OnClick="ConfirmLineDialog">Agregar</MudButton>
                 </div>
 
-            </MudPaper>
+            </div>
         </div>
     }
 
 </MudContainer>
 
-<style>
-    /* ── Variables ── */
-    :root {
-        --promo-orange: #ff9800;
-        --promo-orange-dim: rgba(255,152,0,0.15);
-        --promo-orange-border: rgba(255,152,0,0.25);
-        --card-bg: rgba(255,255,255,0.03);
-        --card-border: rgba(255,255,255,0.08);
-        --radius-card: 16px;
-    }
+@code {
+    // Helper para la imagen (base64 preview o URL guardada)
+    private bool HasPromoImage => !string.IsNullOrEmpty(_previewBase64 ?? _form.ImageUrl);
 
-    /* ── Page header ── */
-    .promo-page-header {
-        display: flex;
-        align-items: center;
-        gap: 16px;
-        flex-wrap: wrap;
-    }
-
-    .header-accent {
-        width: 5px;
-        height: 48px;
-        background: linear-gradient(180deg, #ff9800, #ff5722);
-        border-radius: 3px;
-        flex-shrink: 0;
-    }
-
-    .header-content {
-        flex: 1;
-        min-width: 0;
-    }
-
-    .promo-page-title {
-        font-weight: 800 !important;
-        letter-spacing: -0.5px;
-        color: #fff;
-    }
-
-    .promo-page-sub {
-        color: #a1a1aa !important;
-        margin-top: 2px;
-    }
-
-    .header-actions {
-        margin-left: auto;
-    }
-
-    .btn-new-promo {
-        font-weight: 700 !important;
-        border-radius: 10px !important;
-        text-transform: none !important;
-        letter-spacing: 0.2px;
-        box-shadow: 0 4px 16px rgba(255,152,0,0.3) !important;
-    }
-
-    /* ── Empty state ── */
-    .empty-promos-state {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        padding: 60px 20px;
-        border: 2px dashed rgba(255,152,0,0.2);
-        border-radius: 20px;
-        text-align: center;
-    }
-
-    .empty-icon {
-        font-size: 64px !important;
-        color: rgba(255,152,0,0.25) !important;
-    }
-
-    /* ── Grid de cards ── */
-    .promos-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-        gap: 16px;
-    }
-
-    @@media (max-width: 600px) {
-        .promos-grid {
-            grid-template-columns: 1fr;
-        }
-    }
-
-    /* ── Card de promo ── */
-    .promo-card {
-        background: var(--card-bg);
-        border: 1.5px solid var(--card-border);
-        border-radius: var(--radius-card);
-        overflow: hidden;
-        display: flex;
-        flex-direction: column;
-        transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
-    }
-
-        .promo-card:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.25);
-            border-color: var(--promo-orange-border);
-        }
-
-    .promo-card--active {
-        border-color: rgba(255,152,0,0.35) !important;
-        box-shadow: 0 0 0 2px rgba(255,152,0,0.12);
-    }
-
-    /* Imagen */
-    .promo-card-img {
-        position: relative;
-        width: 100%;
-        aspect-ratio: 16 / 9;
-        background: rgba(255,152,0,0.05);
-        overflow: hidden;
-        flex-shrink: 0;
-    }
-
-    .promo-img-real {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        transition: transform 0.35s ease;
-    }
-
-    .promo-card:hover .promo-img-real {
-        transform: scale(1.05);
-    }
-
-    .promo-img-placeholder {
-        width: 100%;
-        height: 100%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    /* Badges sobre la imagen */
-    .promo-type-badge {
-        position: absolute;
-        top: 10px;
-        left: 10px;
-        font-size: 10px;
-        font-weight: 700;
-        padding: 3px 9px;
-        border-radius: 20px;
-        text-transform: uppercase;
-        letter-spacing: 0.6px;
-        backdrop-filter: blur(8px);
-    }
-
-    .promo-type-discount {
-        background: rgba(229,57,53,0.85);
-        color: #fff;
-    }
-
-    .promo-type-specialprice {
-        background: rgba(255,152,0,0.85);
-        color: #1a1a1a;
-    }
-
-    .promo-type-payxgety {
-        background: rgba(76,175,80,0.85);
-        color: #fff;
-    }
-
-    .promo-type-default {
-        background: rgba(0,0,0,0.6);
-        color: #fff;
-    }
-
-    .promo-status-badge {
-        position: absolute;
-        top: 10px;
-        right: 10px;
-        font-size: 10px;
-        font-weight: 700;
-        padding: 3px 9px;
-        border-radius: 20px;
-        backdrop-filter: blur(8px);
-    }
-
-    .promo-status--active {
-        background: rgba(76,175,80,0.85);
-        color: #fff;
-    }
-
-    .promo-status--inactive {
-        background: rgba(100,100,100,0.75);
-        color: #ddd;
-    }
-
-    .promo-status--expired {
-        background: rgba(255,152,0,0.8);
-        color: #1a1a1a;
-    }
-
-    /* Cuerpo de la card */
-    .promo-card-body {
-        padding: 14px 16px 8px;
-        flex-grow: 1;
-        display: flex;
-        flex-direction: column;
-        gap: 5px;
-    }
-
-    .promo-card-title {
-        font-size: 15px;
-        font-weight: 700;
-        color: #fff;
-        line-height: 1.3;
-        display: -webkit-box;
-        -webkit-line-clamp: 2;
-        -webkit-box-orient: vertical;
-        overflow: hidden;
-    }
-
-    .promo-card-desc {
-        font-size: 12px;
-        color: #a1a1aa;
-        display: -webkit-box;
-        -webkit-line-clamp: 2;
-        -webkit-box-orient: vertical;
-        overflow: hidden;
-    }
-
-    .promo-card-meta,
-    .promo-card-dates {
-        display: flex;
-        align-items: center;
-        font-size: 11px;
-        color: #71717a;
-        margin-top: 2px;
-    }
-
-    /* Acciones footer de la card */
-    .promo-card-actions {
-        display: flex;
-        align-items: center;
-        justify-content: flex-end;
-        padding: 6px 10px 10px;
-        gap: 4px;
-        border-top: 1px solid rgba(255,255,255,0.05);
-    }
-
-    /* ── Formulario ── */
-    .form-section {
-        border: 1px solid var(--promo-orange-border);
-        background: rgba(255,152,0,0.025);
-        border-radius: 20px;
-        padding: 28px;
-    }
-
-    .form-section-header {
-        display: flex;
-        align-items: center;
-        margin-bottom: 4px;
-    }
-
-    /* ── Upload de imagen ── */
-    .img-upload-panel {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 10px;
-        padding: 16px;
-        border: 1.5px dashed var(--promo-orange-border);
-        border-radius: 14px;
-        background: rgba(255,152,0,0.03);
-        min-height: 200px;
-    }
-
-    .img-upload-preview {
-        width: 100%;
-        aspect-ratio: 16/9;
-        border-radius: 10px;
-        overflow: hidden;
-        background: rgba(255,255,255,0.04);
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        position: relative;
-        border: 1px solid rgba(255,255,255,0.07);
-    }
-
-    .img-upload-empty {
-        border-style: dashed !important;
-    }
-
-    .img-upload-img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-    }
-
-    .img-upload-hint {
-        font-size: 12px;
-        color: #71717a;
-        margin-top: 8px;
-    }
-
-    .img-upload-remove {
-        position: absolute;
-        top: 6px;
-        right: 6px;
-        background: rgba(229,57,53,0.85);
-        color: #fff;
-        border: none;
-        cursor: pointer;
-        width: 24px;
-        height: 24px;
-        border-radius: 50%;
-        font-size: 12px;
-        font-weight: 700;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: background 0.15s;
-    }
-
-        .img-upload-remove:hover {
-            background: #e53935;
-        }
-
-    .img-upload-btn {
-        display: inline-flex;
-        align-items: center;
-        background: rgba(255,152,0,0.15);
-        border: 1px solid var(--promo-orange-border);
-        color: var(--promo-orange);
-        font-size: 13px;
-        font-weight: 600;
-        padding: 8px 16px;
-        border-radius: 8px;
-        cursor: pointer;
-        transition: background 0.15s;
-        text-decoration: none;
-        user-select: none;
-    }
-
-        .img-upload-btn:hover {
-            background: rgba(255,152,0,0.25);
-        }
-
-    /* ── Mini dialog ── */
-    .line-dialog-wrapper {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 9999;
-        padding: 16px;
-    }
-
-    .line-dialog-card {
-        width: 100%;
-        max-width: 420px;
-        background: #1e1e2e !important;
-        border: 1px solid var(--promo-orange-border) !important;
-    }
-
-    /* ── Utilitarios ── */
-    .muted-text {
-        color: #a1a1aa !important;
-    }
-
-    .text-success-custom {
-        color: #66bb6a;
-    }
-
-    .gap-x-2 {
-        gap: 8px;
-    }
-
-    .gap-x-3 {
-        gap: 12px;
-    }
-
-    .gap-2 {
-        gap: 8px;
-    }
-
-    .desc-clamp {
-        display: -webkit-box;
-        -webkit-line-clamp: 1;
-        -webkit-box-orient: vertical;
-        overflow: hidden;
-        max-width: 220px;
-    }
-
-    .products-picker-table .mud-table-head th {
-        font-size: 12px;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-</style>
+    private string GetTypeChipClass(string? type) => type switch
+    {
+        "Discount" => "pr-chip-discount",
+        "SpecialPrice" => "pr-chip-specialprice",
+        "PayXGetY" => "pr-chip-payxgety",
+        _ => "pr-chip-other"
+    };
+}

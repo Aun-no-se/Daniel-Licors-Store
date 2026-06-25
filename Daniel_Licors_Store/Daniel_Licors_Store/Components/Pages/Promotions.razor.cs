@@ -4,6 +4,7 @@ using Daniel_Licors_Store.Models.Product;
 using Daniel_Licors_Store.Models.Promotion;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Forms;
+using Microsoft.JSInterop;
 using MudBlazor;
 using System.Globalization;
 
@@ -16,6 +17,7 @@ public partial class Promotions
     [Inject] public ISnackbar Snackbar { get; set; } = default!;
     [Inject] public IDialogService DialogService { get; set; } = default!;
     [Inject] public IWebHostEnvironment Env { get; set; } = default!;
+    [Inject] public IJSRuntime JS { get; set; } = default!;
 
     // ─── Cultura española ────────────────────────────────────
     private static readonly CultureInfo _es = new CultureInfo("es-DO");
@@ -32,21 +34,28 @@ public partial class Promotions
 
     private PromotionCreateModel _form = new();
 
-    private DateTime? _startDate = DateTime.Today;
-    private DateTime? _endDate = DateTime.Today.AddDays(7);
+    // ── Fechas como string para inputs nativos (evita bug removeChild de MudDatePicker en móvil)
+    private string _startDateStr = DateTime.Today.ToString("yyyy-MM-dd");
+    private string _endDateStr = DateTime.Today.AddDays(7).ToString("yyyy-MM-dd");
+
+    private DateTime StartDate => DateTime.TryParse(_startDateStr, out var d) ? d : DateTime.Today;
+    private DateTime EndDate => DateTime.TryParse(_endDateStr, out var d) ? d : DateTime.Today.AddDays(7);
 
     // ─── Upload de imagen ────────────────────────────────────
     private bool _uploadingImage = false;
     private string _uploadError = string.Empty;
+    private string? _previewBase64;      // preview inmediato en base64
 
     // ─── Mini-dialog de línea ────────────────────────────────
     private bool _showLineDialog;
     private ProductDetailDto? _lineDialogProduct;
-
     private decimal _lineDiscountPct;
     private decimal _lineSpecialPrice;
     private int _lineReqQty = 2;
     private int _linePayQty = 1;
+
+    // ─── Referencia al ancla del formulario ─────────────────
+    private ElementReference _formAnchor;
 
     // ════════════════════════════════════════════════════════
     // INIT
@@ -67,18 +76,9 @@ public partial class Promotions
     private async Task LoadPromos()
     {
         _loading = true;
-        try
-        {
-            _promos = await PromotionService.GetAdminPromotionsAsync();
-        }
-        catch (Exception ex)
-        {
-            Snackbar.Add($"Error cargando promociones: {ex.Message}", Severity.Error);
-        }
-        finally
-        {
-            _loading = false;
-        }
+        try { _promos = await PromotionService.GetAdminPromotionsAsync(); }
+        catch (Exception ex) { Snackbar.Add($"Error cargando promociones: {ex.Message}", Severity.Error); }
+        finally { _loading = false; }
     }
 
     // ════════════════════════════════════════════════════════
@@ -91,27 +91,23 @@ public partial class Promotions
         if (file == null) return;
 
         const long maxBytes = 5 * 1024 * 1024;
-        if (file.Size > maxBytes)
-        {
-            _uploadError = "La imagen no debe superar 5 MB.";
-            return;
-        }
-
-        var allowedTypes = new[] { "image/jpeg", "image/png", "image/webp", "image/gif" };
-        if (!allowedTypes.Contains(file.ContentType))
-        {
-            _uploadError = "Formato no permitido. Usa JPG, PNG, WEBP o GIF.";
-            return;
-        }
+        if (file.Size > maxBytes) { _uploadError = "La imagen no debe superar 5 MB."; return; }
+        if (!file.ContentType.StartsWith("image/")) { _uploadError = "Formato no permitido."; return; }
 
         _uploadingImage = true;
         StateHasChanged();
 
         try
         {
+            // Preview inmediato
+            using var msPreview = new MemoryStream();
+            await using var streamPrev = file.OpenReadStream(maxBytes);
+            await streamPrev.CopyToAsync(msPreview);
+            _previewBase64 = $"data:{file.ContentType};base64,{Convert.ToBase64String(msPreview.ToArray())}";
+
+            // Guardar en disco
             var uploadDir = Path.Combine(Env.WebRootPath, "images", "promociones");
             Directory.CreateDirectory(uploadDir);
-
             var ext = Path.GetExtension(file.Name).ToLowerInvariant();
             var fileName = $"promo_{Guid.NewGuid():N}{ext}";
             var fullPath = Path.Combine(uploadDir, fileName);
@@ -122,30 +118,32 @@ public partial class Promotions
 
             _form.ImageUrl = $"/images/promociones/{fileName}";
         }
-        catch (Exception ex)
-        {
-            _uploadError = $"Error al subir imagen: {ex.Message}";
-        }
-        finally
-        {
-            _uploadingImage = false;
-            StateHasChanged();
-        }
+        catch (Exception ex) { _uploadError = $"Error al subir imagen: {ex.Message}"; _previewBase64 = null; }
+        finally { _uploadingImage = false; StateHasChanged(); }
     }
 
     private void RemoveImage()
     {
         _form.ImageUrl = null;
+        _previewBase64 = null;
         _uploadError = string.Empty;
     }
 
     // ════════════════════════════════════════════════════════
     // FORMULARIO
     // ════════════════════════════════════════════════════════
-    private void ShowCreateSection()
+    private async Task ShowCreateSection()
     {
         ResetForm();
         _showForm = true;
+        await ScrollToForm();
+    }
+
+    private async Task ScrollToForm()
+    {
+        await Task.Delay(80); // espera a que Blazor renderice el anchor
+        try { await JS.InvokeVoidAsync("eval", "document.getElementById('promo-form-anchor')?.scrollIntoView({behavior:'smooth',block:'start'})"); }
+        catch { /* ignorar si JS falla */ }
     }
 
     private void ResetForm()
@@ -155,21 +153,18 @@ public partial class Promotions
         _editingPromoId = 0;
         _form = new PromotionCreateModel();
         _promoBuilder.Clear();
-        _startDate = DateTime.Today;
-        _endDate = DateTime.Today.AddDays(7);
+        _startDateStr = DateTime.Today.ToString("yyyy-MM-dd");
+        _endDateStr = DateTime.Today.AddDays(7).ToString("yyyy-MM-dd");
         _uploadError = string.Empty;
+        _previewBase64 = null;
     }
 
     private async Task SavePromo()
     {
-        if (!_promoBuilder.Any())
-        {
-            Snackbar.Add("Agrega al menos un producto a la promoción", Severity.Warning);
-            return;
-        }
+        if (!_promoBuilder.Any()) { Snackbar.Add("Agrega al menos un producto a la promoción", Severity.Warning); return; }
 
-        _form.StartDate = _startDate ?? DateTime.Today;
-        _form.EndDate = _endDate ?? DateTime.Today.AddDays(7);
+        _form.StartDate = StartDate;
+        _form.EndDate = EndDate;
         _form.Products = _promoBuilder;
 
         try
@@ -184,14 +179,10 @@ public partial class Promotions
                 await PromotionService.CreatePromotionAsync(_form);
                 Snackbar.Add("Promoción creada correctamente", Severity.Success);
             }
-
             ResetForm();
             await LoadPromos();
         }
-        catch (Exception ex)
-        {
-            Snackbar.Add($"Error guardando promoción: {ex.Message}", Severity.Error);
-        }
+        catch (Exception ex) { Snackbar.Add($"Error guardando promoción: {ex.Message}", Severity.Error); }
     }
 
     private async Task EditPromo(int id)
@@ -213,15 +204,14 @@ public partial class Promotions
                 IsActive = promo.IsActive,
                 ImageUrl = promo.ImageUrl
             };
-
-            _startDate = promo.StartDate;
-            _endDate = promo.EndDate;
+            _previewBase64 = null;
+            _startDateStr = promo.StartDate.ToString("yyyy-MM-dd");
+            _endDateStr = promo.EndDate.ToString("yyyy-MM-dd");
 
             _promoBuilder.Clear();
             foreach (var pp in promo.PromotionProducts)
             {
                 var product = _products.FirstOrDefault(p => p.ProductId == pp.ProductId);
-
                 _promoBuilder.Add(new PromotionProductLine
                 {
                     ProductId = pp.ProductId,
@@ -233,11 +223,9 @@ public partial class Promotions
                     PayQuantity = pp.PayQuantity
                 });
             }
+            await ScrollToForm();
         }
-        catch (Exception ex)
-        {
-            Snackbar.Add($"Error cargando promoción: {ex.Message}", Severity.Error);
-        }
+        catch (Exception ex) { Snackbar.Add($"Error cargando promoción: {ex.Message}", Severity.Error); }
     }
 
     private async Task DeletePromo(int id)
@@ -248,25 +236,16 @@ public partial class Promotions
             ["ButtonText"] = "Eliminar",
             ["ButtonColor"] = Color.Error
         };
-
         var dialog = DialogService.Show<ConfirmDialog>("Confirmar eliminación", parameters);
         var result = await dialog.Result;
         if (result.Canceled) return;
 
-        try
-        {
-            await PromotionService.DeletePromotionAsync(id);
-            Snackbar.Add("Promoción eliminada", Severity.Success);
-            await LoadPromos();
-        }
-        catch (Exception ex)
-        {
-            Snackbar.Add($"Error eliminando: {ex.Message}", Severity.Error);
-        }
+        try { await PromotionService.DeletePromotionAsync(id); Snackbar.Add("Promoción eliminada", Severity.Success); await LoadPromos(); }
+        catch (Exception ex) { Snackbar.Add($"Error eliminando: {ex.Message}", Severity.Error); }
     }
 
     // ════════════════════════════════════════════════════════
-    // MINI-DIALOG LÍNEA DE PRODUCTO
+    // MINI-DIALOG LÍNEA
     // ════════════════════════════════════════════════════════
     private void OpenPromoLineDialog(ProductDetailDto product)
     {
@@ -278,16 +257,11 @@ public partial class Promotions
         _showLineDialog = true;
     }
 
-    private void CloseLineDialog()
-    {
-        _showLineDialog = false;
-        _lineDialogProduct = null;
-    }
+    private void CloseLineDialog() { _showLineDialog = false; _lineDialogProduct = null; }
 
     private void ConfirmLineDialog()
     {
         if (_lineDialogProduct == null) return;
-
         var existing = _promoBuilder.FirstOrDefault(x => x.ProductId == _lineDialogProduct.ProductId);
         if (existing != null) _promoBuilder.Remove(existing);
 
@@ -297,17 +271,12 @@ public partial class Promotions
             ProductName = _lineDialogProduct.Name,
             OriginalPrice = _lineDialogProduct.Price
         };
-
         switch (_form.PromotionType)
         {
             case "Discount": line.DiscountPercentage = _lineDiscountPct; break;
             case "SpecialPrice": line.SpecialPrice = _lineSpecialPrice; break;
-            case "PayXGetY":
-                line.RequiredQuantity = _lineReqQty;
-                line.PayQuantity = _linePayQty;
-                break;
+            case "PayXGetY": line.RequiredQuantity = _lineReqQty; line.PayQuantity = _linePayQty; break;
         }
-
         _promoBuilder.Add(line);
         CloseLineDialog();
     }
@@ -315,8 +284,7 @@ public partial class Promotions
     // ════════════════════════════════════════════════════════
     // HELPERS UI
     // ════════════════════════════════════════════════════════
-    private string FormatDate(DateTime d, string fmt = "dd MMM yyyy")
-        => d.ToString(fmt, _es);
+    private string FormatDate(DateTime d, string fmt = "dd MMM yyyy") => d.ToString(fmt, _es);
 
     private Color GetTypeColor(string? type) => type switch
     {
@@ -336,12 +304,9 @@ public partial class Promotions
 
     private string GetLineLabel(PromotionProductLine line)
     {
-        if (line.DiscountPercentage.HasValue)
-            return $"{line.ProductName} — {line.DiscountPercentage:0.##}% OFF";
-        if (line.SpecialPrice.HasValue)
-            return $"{line.ProductName} — ${line.SpecialPrice:N2}";
-        if (line.RequiredQuantity.HasValue)
-            return $"{line.ProductName} — Lleva {line.RequiredQuantity} Paga {line.PayQuantity}";
+        if (line.DiscountPercentage.HasValue) return $"{line.ProductName} — {line.DiscountPercentage:0.##}% OFF";
+        if (line.SpecialPrice.HasValue) return $"{line.ProductName} — ${line.SpecialPrice:N2}";
+        if (line.RequiredQuantity.HasValue) return $"{line.ProductName} — Lleva {line.RequiredQuantity} Paga {line.PayQuantity}";
         return line.ProductName;
     }
 }
