@@ -3,7 +3,6 @@
 @using Daniel_Licors_Store.Models.Admin
 @using MudBlazor
 @inject AdminDashboardService DashboardService
-@inject NavigationManager Nav
 
 <style>
     .dl-dashboard {
@@ -41,47 +40,19 @@
         letter-spacing: 0.08em;
     }
 
-    .dl-topbar-actions {
-        display: flex;
-        gap: 12px;
-        align-items: center;
-        flex-wrap: wrap;
+
+
+    .dl-btn-primary:hover {
+        transform: translateY(-1px) !important;
+        box-shadow: 0 6px 20px rgba(212,175,55,0.4) !important;
     }
 
-    .dl-btn-primary {
-        background: linear-gradient(135deg, #d4af37, #b8952a) !important;
-        color: #0f0f14 !important;
-        font-weight: 700 !important;
-        border-radius: 10px !important;
-        padding: 10px 22px !important;
-        text-transform: none !important;
-        font-size: 0.85rem !important;
-        letter-spacing: 0 !important;
-        box-shadow: 0 4px 14px rgba(212,175,55,0.3) !important;
-        transition: all 0.2s ease !important;
+
+    .dl-btn-secondary:hover {
+        background: rgba(255,255,255,0.1) !important;
+        border-color: rgba(212,175,55,0.3) !important;
+        color: #f5f0e8 !important;
     }
-
-        .dl-btn-primary:hover {
-            transform: translateY(-1px) !important;
-            box-shadow: 0 6px 20px rgba(212,175,55,0.4) !important;
-        }
-
-    .dl-btn-secondary {
-        background: rgba(255,255,255,0.06) !important;
-        color: #c8c8d8 !important;
-        border: 1px solid rgba(255,255,255,0.1) !important;
-        border-radius: 10px !important;
-        font-weight: 600 !important;
-        text-transform: none !important;
-        font-size: 0.85rem !important;
-        padding: 10px 20px !important;
-    }
-
-        .dl-btn-secondary:hover {
-            background: rgba(255,255,255,0.1) !important;
-            border-color: rgba(212,175,55,0.3) !important;
-            color: #f5f0e8 !important;
-        }
 
     /* ── MAIN CONTENT ── */
     .dl-content {
@@ -471,106 +442,44 @@
         }
 
     /* ── EMPLOYEE TABLE ── */
-    .dl-employee-full {
-        margin-bottom: 28px;
+
+
+    .dl-emp-row:last-child {
+        border-bottom: none;
     }
 
-    .dl-emp-row {
-        display: flex;
-        align-items: center;
-        gap: 16px;
-        padding: 14px 0;
-        border-bottom: 1px solid rgba(255,255,255,0.04);
+
+
+
+
+
+    .dl-emp-role.Admin {
+        background: rgba(212,175,55,0.12);
+        color: #d4af37;
     }
 
-        .dl-emp-row:last-child {
-            border-bottom: none;
-        }
-
-    .dl-emp-avatar {
-        width: 36px;
-        height: 36px;
-        border-radius: 10px;
-        background: linear-gradient(135deg, #d4af37, #b8952a);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 0.85rem;
-        font-weight: 800;
-        color: #0f0f14;
-        flex-shrink: 0;
+    .dl-emp-role.Empleado {
+        background: rgba(79,163,224,0.12);
+        color: #4fa3e0;
     }
 
-    .dl-emp-name {
-        font-size: 0.85rem;
-        font-weight: 700;
-        color: #f5f0e8;
+
+
+    .dl-emp-last .action {
+        color: #c8c8d8;
+        font-weight: 600;
+        font-size: 0.75rem;
     }
 
-    .dl-emp-email {
-        font-size: 0.72rem;
-        color: #6a6a8a;
+
+    .dl-emp-active-dot.active {
+        background: #2ecc71;
+        box-shadow: 0 0 6px rgba(46,204,113,0.5);
     }
 
-    .dl-emp-info {
-        flex: 1;
-        min-width: 0;
+    .dl-emp-active-dot.inactive {
+        background: #555;
     }
-
-    .dl-emp-role {
-        padding: 2px 10px;
-        border-radius: 20px;
-        font-size: 0.68rem;
-        font-weight: 700;
-        text-transform: uppercase;
-    }
-
-        .dl-emp-role.Admin {
-            background: rgba(212,175,55,0.12);
-            color: #d4af37;
-        }
-
-        .dl-emp-role.Empleado {
-            background: rgba(79,163,224,0.12);
-            color: #4fa3e0;
-        }
-
-    .dl-emp-actions {
-        font-size: 0.8rem;
-        font-weight: 700;
-        color: #f5f0e8;
-        min-width: 40px;
-        text-align: right;
-    }
-
-    .dl-emp-last {
-        font-size: 0.72rem;
-        color: #6a6a8a;
-        min-width: 160px;
-        text-align: right;
-    }
-
-        .dl-emp-last .action {
-            color: #c8c8d8;
-            font-weight: 600;
-            font-size: 0.75rem;
-        }
-
-    .dl-emp-active-dot {
-        width: 8px;
-        height: 8px;
-        border-radius: 50%;
-        flex-shrink: 0;
-    }
-
-        .dl-emp-active-dot.active {
-            background: #2ecc71;
-            box-shadow: 0 0 6px rgba(46,204,113,0.5);
-        }
-
-        .dl-emp-active-dot.inactive {
-            background: #555;
-        }
 
     /* ── STOCK ALERTS ── */
     .dl-alerts-row {
@@ -640,12 +549,6 @@
     }
 
     /* ── EMPTY STATE ── */
-    .dl-empty {
-        text-align: center;
-        padding: 40px;
-        color: #6a6a8a;
-        font-size: 0.85rem;
-    }
 </style>
 
 <div class="dl-dashboard">
@@ -665,18 +568,7 @@
                 <h1>Panel de Control</h1>
                 <span>Daniel Licors Store · Sucursal Haina</span>
             </div>
-            <div class="dl-topbar-actions">
-                <MudButton Class="dl-btn-secondary"
-                           StartIcon="@Icons.Material.Filled.PersonSearch"
-                           OnClick='() => ScrollTo("empleados")'>
-                    Seguimiento Empleados
-                </MudButton>
-                <MudButton Class="dl-btn-primary"
-                           StartIcon="@Icons.Material.Filled.PersonAdd"
-                           Href="/admin/create-user">
-                    Crear Usuario
-                </MudButton>
-            </div>
+
         </div>
 
         <div class="dl-content">
@@ -890,50 +782,9 @@
                 </div>
             </div>
 
-            <!-- ── EMPLOYEE TRACKING ── -->
-            <div id="empleados">
-                <p class="dl-section-label">Seguimiento de Empleados</p>
-                <div class="dl-card dl-employee-full">
-                    <div class="dl-card-title">
-                        Actividad del equipo
-                        <div class="dl-card-subtitle">Acciones registradas en el sistema por usuario</div>
-                    </div>
-                    @if (employees.Any())
-                    {
-                        @foreach (var emp in employees)
-                        {
-                            <div class="dl-emp-row">
-                                <div class="dl-emp-active-dot @(emp.IsActive ? "active" : "inactive")"></div>
-                                <div class="dl-emp-avatar">@emp.FullName.FirstOrDefault()</div>
-                                <div class="dl-emp-info">
-                                    <div class="dl-emp-name">@emp.FullName</div>
-                                    <div class="dl-emp-email">@emp.Email</div>
-                                </div>
-                                <span class="dl-emp-role @emp.RoleName">@emp.RoleName</span>
-                                <div class="dl-emp-last">
-                                    @if (emp.LastActivityAt.HasValue)
-                                    {
-                                        <div class="action">@emp.LastAction · @emp.LastEntity</div>
-                                        <div>@emp.LastActivityAt.Value.ToString("dd MMM, hh:mm tt")</div>
-                                    }
-                                    else
-                                    {
-                                        <div>Sin actividad registrada</div>
-                                    }
-                                </div>
-                                <div class="dl-emp-actions">@emp.TotalActions</div>
-                            </div>
-                        }
-                    }
-                    else
-                    {
-                        <div class="dl-empty">No hay empleados registrados en el sistema aún</div>
-                    }
-                </div>
-            </div>
 
         </div>
-    
+
         <!-- /dl-content -->
     }
 
@@ -945,7 +796,6 @@
     ChartData categoryChart = new();
     List<TopProductDto> topProducts = new();
     List<RecentOrderDto> recentOrders = new();
-    List<EmployeeActivityDto> employees = new();
 
     ChartOptions lineOptions = new ChartOptions
     {
@@ -963,7 +813,6 @@
             categoryChart = await DashboardService.GetCategoryChartAsync();
             topProducts = await DashboardService.GetTopProductsAsync(8);
             recentOrders = await DashboardService.GetRecentOrdersAsync(10);
-            employees = await DashboardService.GetEmployeeActivityAsync();
         }
         finally
         {
@@ -988,9 +837,4 @@
         _ => status
     };
 
-    async Task ScrollTo(string id)
-    {
-        await Task.CompletedTask;
-        Nav.NavigateTo($"/admin/dashboard#{id}", false);
-    }
 }
