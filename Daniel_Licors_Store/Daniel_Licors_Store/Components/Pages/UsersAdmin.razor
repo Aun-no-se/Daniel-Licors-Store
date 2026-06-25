@@ -1,0 +1,923 @@
+@page "/admin/usuarios"
+@using Daniel_Licors_Store.Models.Admin
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize(Roles = "Admin")]
+
+<PageTitle>Gestión de Cuentas · Daniel Licors</PageTitle>
+
+<div class="dl-users-page">
+
+    @if (loading)
+    {
+        <div class="dl-users-loading">
+            <MudProgressCircular Indeterminate="true" Color="Color.Primary" Size="Size.Large" />
+            <p>Cargando cuentas...</p>
+        </div>
+    }
+    else
+    {
+        <!-- ══ HEADER ══════════════════════════════════════════════════════ -->
+        <div class="dl-users-header">
+            <div class="dl-users-title-block">
+                <MudIcon Icon="@Icons.Material.Filled.ManageAccounts" Class="dl-users-title-icon" />
+                <div>
+                    <h1 class="dl-users-title">Gestión de Cuentas</h1>
+                    <p class="dl-users-subtitle">Supervisión completa de usuarios, roles y actividad</p>
+                </div>
+            </div>
+            <MudButton Variant="Variant.Filled"
+                       StartIcon="@Icons.Material.Filled.PersonAdd"
+                       Class="dl-users-btn-new"
+                       Href="/admin/crear-usuario">
+                Nueva Cuenta
+            </MudButton>
+        </div>
+
+        <!-- ══ KPI CARDS ════════════════════════════════════════════════════ -->
+        <div class="dl-users-kpi-grid">
+            <!-- Total general -->
+            <div class="dl-users-kpi">
+                <div class="dl-users-kpi-icon total">
+                    <MudIcon Icon="@Icons.Material.Filled.Group" />
+                </div>
+                <div>
+                    <div class="dl-users-kpi-val">@TotalUsers</div>
+                    <div class="dl-users-kpi-label">Total de cuentas</div>
+                </div>
+            </div>
+            <!-- Activas -->
+            <div class="dl-users-kpi">
+                <div class="dl-users-kpi-icon active">
+                    <MudIcon Icon="@Icons.Material.Filled.CheckCircle" />
+                </div>
+                <div>
+                    <div class="dl-users-kpi-val">@TotalActive</div>
+                    <div class="dl-users-kpi-label">Cuentas activas</div>
+                </div>
+            </div>
+            <!-- Inactivas -->
+            <div class="dl-users-kpi">
+                <div class="dl-users-kpi-icon inactive">
+                    <MudIcon Icon="@Icons.Material.Filled.Cancel" />
+                </div>
+                <div>
+                    <div class="dl-users-kpi-val">@TotalInactive</div>
+                    <div class="dl-users-kpi-label">Deshabilitadas</div>
+                </div>
+            </div>
+            <!-- Por rol -->
+            @foreach (var rs in roleSummaries)
+            {
+                <div class="dl-users-kpi">
+                    <div class="dl-users-kpi-icon role @rs.RoleName.ToLower()">
+                        <MudIcon Icon="@RoleIcon(rs.RoleName)" />
+                    </div>
+                    <div>
+                        <div class="dl-users-kpi-val">@rs.Total</div>
+                        <div class="dl-users-kpi-label">
+                            @rs.RoleName
+                            <span class="dl-kpi-sub">@rs.Active activos · @rs.Inactive inactivos</span>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <!-- ══ TABS ═════════════════════════════════════════════════════════ -->
+        <MudTabs @bind-ActivePanelIndex="activeTab" Class="dl-users-tabs" PanelClass="dl-users-tabpanel">
+
+            <!-- ── TAB 1: TODAS LAS CUENTAS ─────────────────────────────── -->
+            <MudTabPanel Text="Cuentas" Icon="@Icons.Material.Filled.People">
+
+                <!-- Filtros -->
+                <div class="dl-users-filters">
+                    <MudTextField T="string"
+                                  Value="searchText"
+                                  ValueChanged="OnSearchChanged"
+                                  Placeholder="Buscar por nombre o email..."
+                                  Adornment="Adornment.Start"
+                                  AdornmentIcon="@Icons.Material.Filled.Search"
+                                  Variant="Variant.Outlined"
+                                  Clearable="true"
+                                  Class="dl-filter-search" />
+
+                    <MudSelect T="string"
+                               Value="roleFilter"
+                               ValueChanged="OnRoleFilterChanged"
+                               Placeholder="Todos los roles"
+                               Variant="Variant.Outlined"
+                               Clearable="true"
+                               Class="dl-filter-select">
+                        <MudSelectItem T="string" Value="@("Admin")">Admin</MudSelectItem>
+                        <MudSelectItem T="string" Value="@("Empleado")">Empleado</MudSelectItem>
+                        <MudSelectItem T="string" Value="@("Cliente")">Cliente</MudSelectItem>
+                    </MudSelect>
+
+                    <MudSelect T="string"
+                               Value="statusFilter"
+                               ValueChanged="OnStatusFilterChanged"
+                               Placeholder="Todos los estados"
+                               Variant="Variant.Outlined"
+                               Clearable="true"
+                               Class="dl-filter-select">
+                        <MudSelectItem T="string" Value="@("active")">Activas</MudSelectItem>
+                        <MudSelectItem T="string" Value="@("inactive")">Deshabilitadas</MudSelectItem>
+                    </MudSelect>
+
+                    <MudSelect T="string"
+                               Value="sortBy"
+                               ValueChanged="OnSortChanged"
+                               Label="Ordenar por"
+                               Variant="Variant.Outlined"
+                               Class="dl-filter-select">
+                        <MudSelectItem T="string" Value="@("LastActivity")">Última actividad</MudSelectItem>
+                        <MudSelectItem T="string" Value="@("Name")">Nombre</MudSelectItem>
+                        <MudSelectItem T="string" Value="@("Created")">Fecha creación</MudSelectItem>
+                    </MudSelect>
+                </div>
+
+                <!-- Contador -->
+                <div class="dl-users-count">
+                    @allUsers.Count cuenta(s) encontrada(s)
+                </div>
+
+                <!-- Lista de usuarios -->
+                <div class="dl-users-list">
+                    @foreach (var user in allUsers)
+                    {
+                        var isSelected = selectedUser?.UserId == user.UserId;
+                        <div class="dl-user-card @(isSelected ? "selected" : "") @(!user.IsActive ? "disabled-account" : "")"
+                             @onclick="() => SelectUserAsync(user)">
+
+                            <!-- Avatar -->
+                            <div class="dl-user-avatar @user.RoleName.ToLower()">
+                                @user.Initials
+                            </div>
+
+                            <!-- Info principal -->
+                            <div class="dl-user-info">
+                                <div class="dl-user-name">
+                                    @user.FullName @user.LastName
+                                    @if (!user.IsActive)
+                                    {
+                                        <span class="dl-badge-disabled">DESHABILITADA</span>
+                                    }
+                                </div>
+                                <div class="dl-user-email">@user.Email</div>
+                                <div class="dl-user-meta">
+                                    Registrado @user.CreatedAt.ToString("dd MMM yyyy")
+                                    @if (user.TotalOrders > 0)
+                                    {
+                                        <span>· @user.TotalOrders pedido(s)</span>
+                                    }
+                                </div>
+                            </div>
+
+                            <!-- Rol -->
+                            <span class="dl-role-chip @RoleChipClass(user.RoleName)">
+                                <MudIcon Icon="@RoleIcon(user.RoleName)" Size="Size.Small" />
+                                @user.RoleName
+                            </span>
+
+                            <!-- Última actividad -->
+                            <div class="dl-user-activity">
+                                @if (user.LastActivityAt.HasValue)
+                                {
+                                    <div class="dl-act-label">@user.LastAction</div>
+                                    <div class="dl-act-entity">@user.LastEntity @(user.LastEntityId != null ? $"#{user.LastEntityId}" : "")</div>
+                                    <div class="dl-act-time">@FormatRelativeTime(user.LastActivityAt)</div>
+                                }
+                                else
+                                {
+                                    <div class="dl-act-none">Sin actividad registrada</div>
+                                }
+                            </div>
+
+                            <!-- Total acciones -->
+                            <div class="dl-user-actions-count">
+                                <div class="dl-act-num">@user.TotalActions</div>
+                                <div class="dl-act-num-label">acciones</div>
+                            </div>
+
+                            <!-- Dot de estado -->
+                            <div class="dl-status-dot @(user.IsActive ? "on" : "off")"
+                                 title="@(user.IsActive ? "Cuenta activa" : "Cuenta deshabilitada")">
+                            </div>
+
+                            <!-- Botón toggle estado -->
+                            <MudIconButton Icon="@(user.IsActive? Icons.Material.Filled.LockOpen : Icons.Material.Filled.Lock)"
+                                           Color="@(user.IsActive ? Color.Success : Color.Error)"
+                                           Size="Size.Small"
+                                           Title="@(user.IsActive ? "Deshabilitar cuenta" : "Activar cuenta")"
+                                           OnClick="@(async () => await ToggleUserStatusAsync(user))"
+                                           Class="dl-toggle-btn" />
+
+                        </div>
+
+                        <!-- Panel expandible de logs del usuario seleccionado -->
+                        @if (isSelected)
+                        {
+                            <div class="dl-user-logs-panel">
+                                <div class="dl-logs-panel-header">
+                                    <MudIcon Icon="@Icons.Material.Filled.History" Size="Size.Small" />
+                                    Historial de actividad — @user.FullName @user.LastName
+                                    <span class="dl-logs-count">@selectedUserLogs.Count acción(es)</span>
+                                </div>
+
+                                @if (auditLoading)
+                                {
+                                    <div class="dl-logs-loading">
+                                        <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+                                    </div>
+                                }
+                                else if (!selectedUserLogs.Any())
+                                {
+                                    <div class="dl-logs-empty">
+                                        <MudIcon Icon="@Icons.Material.Filled.EventBusy" />
+                                        Esta cuenta no tiene acciones registradas aún.
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="dl-logs-timeline">
+                                        @foreach (var log in selectedUserLogs)
+                                        {
+                                            <div class="dl-log-entry">
+                                                <div class="dl-log-icon-wrap">
+                                                    <MudIcon Icon="@ActionIcon(log.Action)" Size="Size.Small" />
+                                                </div>
+                                                <div class="dl-log-body">
+                                                    <span class="dl-log-action">@log.Action</span>
+                                                    @if (!string.IsNullOrEmpty(log.Entity))
+                                                    {
+                                                        <span class="dl-log-entity">
+                                                            en @log.Entity
+                                                            @(log.EntityId != null ? $"#{log.EntityId}" : "")
+                                                        </span>
+                                                    }
+                                                </div>
+                                                <div class="dl-log-time">@log.CreatedAt.ToString("dd MMM, hh:mm tt")</div>
+                                            </div>
+                                        }
+                                    </div>
+                                }
+                            </div>
+                        }
+                    }
+
+                    @if (!allUsers.Any())
+                    {
+                        <div class="dl-users-empty">
+                            <MudIcon Icon="@Icons.Material.Filled.SearchOff" Class="dl-empty-icon" />
+                            <p>No se encontraron cuentas con esos filtros.</p>
+                        </div>
+                    }
+                </div>
+
+            </MudTabPanel>
+
+            <!-- ── TAB 2: FEED GLOBAL DE AUDITORÍA ──────────────────────── -->
+            <MudTabPanel Text="Auditoría Global" Icon="@Icons.Material.Filled.Security">
+
+                <div class="dl-global-feed-header">
+                    <MudIcon Icon="@Icons.Material.Filled.Timeline" />
+                    Últimas 100 acciones en el sistema
+                </div>
+
+                @if (!globalFeed.Any())
+                {
+                    <div class="dl-users-empty">
+                        <MudIcon Icon="@Icons.Material.Filled.EventBusy" Class="dl-empty-icon" />
+                        <p>No hay acciones registradas aún.</p>
+                    </div>
+                }
+                else
+                {
+                    <div class="dl-global-timeline">
+                        @foreach (var log in globalFeed)
+                        {
+                            <div class="dl-glog-row">
+                                <div class="dl-glog-dot @log.RoleName.ToLower()"></div>
+                                <div class="dl-glog-user">
+                                    <span class="dl-glog-name">@log.UserName</span>
+                                    <span class="dl-role-chip @RoleChipClass(log.RoleName) sm">@log.RoleName</span>
+                                </div>
+                                <div class="dl-glog-action">
+                                    <MudIcon Icon="@ActionIcon(log.Action)" Size="Size.Small" />
+                                    <span class="dl-glog-act-text">@log.Action</span>
+                                    @if (!string.IsNullOrEmpty(log.Entity))
+                                    {
+                                        <span class="dl-glog-entity">
+                                            · @log.Entity @(log.EntityId != null ? $"#{log.EntityId}" : "")
+                                        </span>
+                                    }
+                                </div>
+                                <div class="dl-glog-time">
+                                    @log.CreatedAt.ToString("dd MMM, hh:mm tt")
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+
+            </MudTabPanel>
+
+        </MudTabs>
+    }
+</div>
+
+<!-- ══ ESTILOS ══════════════════════════════════════════════════════════════ -->
+<style>
+    /* ── Página ──────────────────────────────────────────────────────── */
+    .dl-users-page {
+        padding: 1.25rem 1rem 3rem;
+        max-width: 1200px;
+        margin: 0 auto;
+        font-family: var(--mud-typography-default-family, 'Inter', sans-serif);
+    }
+
+    .dl-users-loading {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 1rem;
+        padding: 4rem 0;
+        color: #888;
+    }
+
+    /* ── Header ──────────────────────────────────────────────────────── */
+    .dl-users-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 1rem;
+        margin-bottom: 1.75rem;
+    }
+
+    .dl-users-title-block {
+        display: flex;
+        align-items: center;
+        gap: .85rem;
+    }
+
+    .dl-users-title-icon {
+        font-size: 2.4rem;
+        color: var(--mud-palette-primary);
+    }
+
+    .dl-users-title {
+        margin: 0;
+        font-size: 1.55rem;
+        font-weight: 700;
+        color: #1a1a2e;
+    }
+
+    .dl-users-subtitle {
+        margin: 0;
+        font-size: .83rem;
+        color: #777;
+    }
+
+    .dl-users-btn-new {
+        background: var(--mud-palette-primary) !important;
+        color: #fff !important;
+        border-radius: 8px !important;
+        text-transform: none !important;
+    }
+
+    /* ── KPI Grid ────────────────────────────────────────────────────── */
+    .dl-users-kpi-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+        gap: .85rem;
+        margin-bottom: 1.75rem;
+    }
+
+    .dl-users-kpi {
+        background: #fff;
+        border-radius: 12px;
+        padding: 1rem 1.1rem;
+        display: flex;
+        align-items: center;
+        gap: .85rem;
+        box-shadow: 0 2px 10px rgba(0,0,0,.07);
+        transition: transform .18s;
+    }
+
+        .dl-users-kpi:hover {
+            transform: translateY(-2px);
+        }
+
+    .dl-users-kpi-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+
+        .dl-users-kpi-icon.total {
+            background: #ede9fe;
+            color: #7c3aed;
+        }
+
+        .dl-users-kpi-icon.active {
+            background: #d1fae5;
+            color: #059669;
+        }
+
+        .dl-users-kpi-icon.inactive {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+
+        .dl-users-kpi-icon.admin {
+            background: #fef3c7;
+            color: #d97706;
+        }
+
+        .dl-users-kpi-icon.empleado {
+            background: #dbeafe;
+            color: #2563eb;
+        }
+
+        .dl-users-kpi-icon.cliente {
+            background: #fce7f3;
+            color: #db2777;
+        }
+
+    .dl-users-kpi-val {
+        font-size: 1.5rem;
+        font-weight: 700;
+        line-height: 1;
+        color: #1a1a2e;
+    }
+
+    .dl-users-kpi-label {
+        font-size: .73rem;
+        color: #888;
+        margin-top: .15rem;
+    }
+
+    .dl-kpi-sub {
+        display: block;
+        font-size: .69rem;
+        color: #aaa;
+    }
+
+    /* ── Tabs ────────────────────────────────────────────────────────── */
+    .dl-users-tabs {
+        background: transparent !important;
+    }
+
+    .dl-users-tabpanel {
+        padding: 1rem 0 !important;
+    }
+
+    /* ── Filtros ─────────────────────────────────────────────────────── */
+    .dl-users-filters {
+        display: flex;
+        flex-wrap: wrap;
+        gap: .65rem;
+        margin-bottom: .85rem;
+    }
+
+    .dl-filter-search {
+        flex: 1 1 260px;
+    }
+
+    .dl-filter-select {
+        flex: 1 1 160px;
+        max-width: 200px;
+    }
+
+    .dl-users-count {
+        font-size: .78rem;
+        color: #888;
+        margin-bottom: .75rem;
+        padding-left: .25rem;
+    }
+
+    /* ── Lista de usuarios ───────────────────────────────────────────── */
+    .dl-users-list {
+        display: flex;
+        flex-direction: column;
+        gap: .5rem;
+    }
+
+    .dl-user-card {
+        background: #fff;
+        border-radius: 12px;
+        padding: .9rem 1rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,.06);
+        cursor: pointer;
+        transition: all .18s;
+        border: 2px solid transparent;
+        flex-wrap: wrap;
+    }
+
+        .dl-user-card:hover {
+            box-shadow: 0 4px 16px rgba(0,0,0,.1);
+            border-color: #e0d7f8;
+        }
+
+        .dl-user-card.selected {
+            border-color: var(--mud-palette-primary);
+            background: #f9f7ff;
+        }
+
+        .dl-user-card.disabled-account {
+            opacity: .65;
+        }
+
+    /* Avatar */
+    .dl-user-avatar {
+        width: 42px;
+        height: 42px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: .95rem;
+        color: #fff;
+        flex-shrink: 0;
+        text-transform: uppercase;
+    }
+
+        .dl-user-avatar.admin {
+            background: linear-gradient(135deg,#f59e0b,#d97706);
+        }
+
+        .dl-user-avatar.empleado {
+            background: linear-gradient(135deg,#3b82f6,#1d4ed8);
+        }
+
+        .dl-user-avatar.cliente {
+            background: linear-gradient(135deg,#ec4899,#be185d);
+        }
+
+    /* Info */
+    .dl-user-info {
+        flex: 1 1 180px;
+        min-width: 0;
+    }
+
+    .dl-user-name {
+        font-weight: 600;
+        font-size: .92rem;
+        color: #1a1a2e;
+        display: flex;
+        align-items: center;
+        gap: .4rem;
+        flex-wrap: wrap;
+    }
+
+    .dl-user-email {
+        font-size: .78rem;
+        color: #666;
+        margin-top: .1rem;
+    }
+
+    .dl-user-meta {
+        font-size: .72rem;
+        color: #aaa;
+        margin-top: .1rem;
+    }
+
+    .dl-badge-disabled {
+        background: #fee2e2;
+        color: #dc2626;
+        border-radius: 4px;
+        font-size: .65rem;
+        padding: 1px 6px;
+        font-weight: 600;
+    }
+
+    /* Chips de rol */
+    .dl-role-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: .3rem;
+        padding: .25rem .65rem;
+        border-radius: 20px;
+        font-size: .72rem;
+        font-weight: 600;
+        flex-shrink: 0;
+        white-space: nowrap;
+    }
+
+        .dl-role-chip.sm {
+            font-size: .65rem;
+            padding: .15rem .45rem;
+        }
+
+    .dl-chip-admin {
+        background: #fef3c7;
+        color: #b45309;
+    }
+
+    .dl-chip-empleado {
+        background: #dbeafe;
+        color: #1d4ed8;
+    }
+
+    .dl-chip-cliente {
+        background: #fce7f3;
+        color: #be185d;
+    }
+
+    .dl-chip-default {
+        background: #f3f4f6;
+        color: #6b7280;
+    }
+
+    /* Actividad */
+    .dl-user-activity {
+        flex: 1 1 160px;
+        min-width: 0;
+    }
+
+    .dl-act-label {
+        font-size: .75rem;
+        font-weight: 600;
+        color: #374151;
+    }
+
+    .dl-act-entity {
+        font-size: .72rem;
+        color: #6b7280;
+    }
+
+    .dl-act-time {
+        font-size: .68rem;
+        color: #9ca3af;
+    }
+
+    .dl-act-none {
+        font-size: .72rem;
+        color: #c0c0c0;
+        font-style: italic;
+    }
+
+    /* Contador de acciones */
+    .dl-user-actions-count {
+        text-align: center;
+        min-width: 52px;
+    }
+
+    .dl-act-num {
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: #7c3aed;
+    }
+
+    .dl-act-num-label {
+        font-size: .65rem;
+        color: #aaa;
+    }
+
+    /* Status dot */
+    .dl-status-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        flex-shrink: 0;
+    }
+
+        .dl-status-dot.on {
+            background: #10b981;
+            box-shadow: 0 0 0 3px #d1fae5;
+        }
+
+        .dl-status-dot.off {
+            background: #ef4444;
+            box-shadow: 0 0 0 3px #fee2e2;
+        }
+
+    .dl-toggle-btn {
+        flex-shrink: 0;
+    }
+
+    /* ── Panel logs usuario ──────────────────────────────────────────── */
+    .dl-user-logs-panel {
+        background: #f9f7ff;
+        border-radius: 0 0 12px 12px;
+        border: 2px solid var(--mud-palette-primary);
+        border-top: none;
+        padding: 1rem 1.1rem;
+        margin-top: -6px;
+        margin-bottom: .25rem;
+    }
+
+    .dl-logs-panel-header {
+        display: flex;
+        align-items: center;
+        gap: .5rem;
+        font-size: .82rem;
+        font-weight: 600;
+        color: #5b21b6;
+        margin-bottom: .85rem;
+    }
+
+    .dl-logs-count {
+        margin-left: auto;
+        background: #ede9fe;
+        color: #7c3aed;
+        border-radius: 12px;
+        padding: .1rem .55rem;
+        font-size: .7rem;
+    }
+
+    .dl-logs-loading {
+        padding: .5rem 0;
+    }
+
+    .dl-logs-empty {
+        display: flex;
+        align-items: center;
+        gap: .5rem;
+        color: #aaa;
+        font-size: .8rem;
+        padding: .5rem 0;
+    }
+
+    .dl-logs-timeline {
+        display: flex;
+        flex-direction: column;
+        gap: .4rem;
+    }
+
+    .dl-log-entry {
+        display: flex;
+        align-items: center;
+        gap: .75rem;
+        padding: .45rem .6rem;
+        background: #fff;
+        border-radius: 8px;
+        box-shadow: 0 1px 4px rgba(0,0,0,.05);
+    }
+
+    .dl-log-icon-wrap {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        background: #ede9fe;
+        color: #7c3aed;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+
+    .dl-log-body {
+        flex: 1;
+        font-size: .78rem;
+    }
+
+    .dl-log-action {
+        font-weight: 600;
+        color: #374151;
+    }
+
+    .dl-log-entity {
+        color: #6b7280;
+        margin-left: .3rem;
+    }
+
+    .dl-log-time {
+        font-size: .7rem;
+        color: #9ca3af;
+        white-space: nowrap;
+        flex-shrink: 0;
+    }
+
+    /* ── Empty state ─────────────────────────────────────────────────── */
+    .dl-users-empty {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: .75rem;
+        padding: 3rem 0;
+        color: #bbb;
+    }
+
+    .dl-empty-icon {
+        font-size: 2.5rem !important;
+    }
+
+    /* ── Feed global ─────────────────────────────────────────────────── */
+    .dl-global-feed-header {
+        display: flex;
+        align-items: center;
+        gap: .5rem;
+        font-size: .85rem;
+        font-weight: 600;
+        color: #374151;
+        margin-bottom: 1rem;
+    }
+
+    .dl-global-timeline {
+        display: flex;
+        flex-direction: column;
+        gap: .35rem;
+    }
+
+    .dl-glog-row {
+        display: flex;
+        align-items: center;
+        gap: .85rem;
+        padding: .6rem .85rem;
+        background: #fff;
+        border-radius: 10px;
+        box-shadow: 0 1px 5px rgba(0,0,0,.06);
+        flex-wrap: wrap;
+    }
+
+    .dl-glog-dot {
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        flex-shrink: 0;
+    }
+
+        .dl-glog-dot.admin {
+            background: #f59e0b;
+        }
+
+        .dl-glog-dot.empleado {
+            background: #3b82f6;
+        }
+
+        .dl-glog-dot.cliente {
+            background: #ec4899;
+        }
+
+        .dl-glog-dot.– {
+            background: #d1d5db;
+        }
+
+    .dl-glog-user {
+        display: flex;
+        align-items: center;
+        gap: .45rem;
+        min-width: 140px;
+    }
+
+    .dl-glog-name {
+        font-size: .8rem;
+        font-weight: 600;
+        color: #1a1a2e;
+    }
+
+    .dl-glog-action {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        gap: .35rem;
+        font-size: .78rem;
+        color: #374151;
+        flex-wrap: wrap;
+    }
+
+    .dl-glog-act-text {
+        font-weight: 500;
+    }
+
+    .dl-glog-entity {
+        color: #6b7280;
+    }
+
+    .dl-glog-time {
+        font-size: .7rem;
+        color: #9ca3af;
+        white-space: nowrap;
+        flex-shrink: 0;
+    }
+
+    /* ── Responsive ──────────────────────────────────────────────────── */
+    @@media (max-width: 640px) {
+        .dl-user-card {
+            padding: .75rem;
+            gap: .65rem;
+        }
+
+        .dl-users-kpi-grid {
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .dl-filter-select {
+            max-width: 100%;
+        }
+
+        .dl-user-activity, .dl-user-actions-count {
+            display: none;
+        }
+    }
+</style>

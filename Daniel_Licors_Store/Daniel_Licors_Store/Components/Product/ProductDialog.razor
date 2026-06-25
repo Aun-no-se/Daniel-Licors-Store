@@ -8,7 +8,6 @@
 @inject ICatalogService CatalogService
 @inject IWebHostEnvironment Env
 @inject ProductStateService ProductState
-@inject IJSRuntime JS
 @inject IProductService ProductService
 
 <style>
@@ -510,41 +509,38 @@
                     <div class="pd-section-label">📷 Imagen del producto</div>
                 </div>
 
-                <div class="pd-image-zone @(HasImage ? "has-image" : "") @(isDragOver ? "drag-over" : "")"
-                     style="margin:0 20px 0"
-                     @onclick="TriggerFilePicker"
-                     @ondragover:preventDefault
-                     @ondragover="() => isDragOver = true"
-                     @ondragleave="() => isDragOver = false"
-                     @ondrop:preventDefault
-                     @ondrop="HandleDrop">
-
-                    @if (HasImage)
-                    {
-                        <img src="@(previewImage ?? Model.ImageUrl)" alt="Preview" />
-                        <div class="pd-image-overlay">
-                            <button class="pd-overlay-btn" @onclick:stopPropagation @onclick="TriggerFilePicker">
-                                🔄 Cambiar
-                            </button>
-                            <button class="pd-overlay-btn" @onclick:stopPropagation @onclick="ClearImage">
-                                🗑 Quitar
-                            </button>
-                        </div>
-                    }
-                    else
-                    {
-                        <div class="pd-image-placeholder">
-                            <div class="pd-image-icon">🍾</div>
-                            <div class="pd-image-text-main">Arrastra o toca para subir imagen</div>
-                            <div class="pd-image-text-sub">PNG, JPG, WEBP · máx 10 MB</div>
-                        </div>
-                    }
-                </div>
-
+                <!-- InputFile PRIMERO, fuera del label — el label lo activa nativamente (funciona en móvil) -->
                 <InputFile id="pd-file-input"
                            class="pd-hidden-input"
                            OnChange="OnImageSelected"
                            accept="image/*" />
+
+                <label for="pd-file-input" style="display:block; margin:0 20px; cursor:pointer">
+                    <div class="pd-image-zone @(HasImage ? "has-image" : "") @(isDragOver ? "drag-over" : "")"
+                         @ondragover:preventDefault
+                         @ondragover="() => isDragOver = true"
+                         @ondragleave="() => isDragOver = false"
+                         @ondrop:preventDefault
+                         @ondrop="HandleDrop">
+
+                        @if (HasImage)
+                        {
+                            <img src="@(previewImage ?? Model.ImageUrl)" alt="Preview" />
+                            <div class="pd-image-overlay">
+                                <span class="pd-overlay-btn">🔄 Cambiar</span>
+                                <span class="pd-overlay-btn" @onclick:stopPropagation @onclick="ClearImage">🗑 Quitar</span>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="pd-image-placeholder">
+                                <div class="pd-image-icon">🍾</div>
+                                <div class="pd-image-text-main">Toca aquí para subir imagen</div>
+                                <div class="pd-image-text-sub">PNG, JPG, WEBP · máx 10 MB</div>
+                            </div>
+                        }
+                    </div>
+                </label>
 
                 <!-- ── Info Básica ── -->
                 <div class="pd-section">
@@ -563,10 +559,12 @@
                                    Label="Categoría"
                                    @bind-Value="Model.CategoryId"
                                    Variant="Variant.Outlined"
+                                   AnchorOrigin="Origin.BottomCenter"
+                                   TransformOrigin="Origin.TopCenter"
                                    FullWidth>
                             @foreach (var c in categories)
                             {
-                                <MudSelectItem Value="@c.CategoryId">@c.Name</MudSelectItem>
+                                <MudSelectItem @key="c.CategoryId" Value="@c.CategoryId">@c.Name</MudSelectItem>
                             }
                         </MudSelect>
 
@@ -574,11 +572,13 @@
                                    Label="Marca"
                                    @bind-Value="Model.BrandId"
                                    Variant="Variant.Outlined"
+                                   AnchorOrigin="Origin.BottomCenter"
+                                   TransformOrigin="Origin.TopCenter"
                                    FullWidth>
-                            <MudSelectItem T="int?" Value="@(null)">Sin marca</MudSelectItem>
+                            <MudSelectItem @key="@("none")" T="int?" Value="@(null)">Sin marca</MudSelectItem>
                             @foreach (var b in brands)
                             {
-                                <MudSelectItem T="int?" Value="@b.BrandId">@b.Name</MudSelectItem>
+                                <MudSelectItem @key="b.BrandId" T="int?" Value="@b.BrandId">@b.Name</MudSelectItem>
                             }
                         </MudSelect>
                     </div>
@@ -789,12 +789,6 @@
     }
 
     // ── Image handling ───────────────────────────────────────────────
-    async Task TriggerFilePicker()
-    {
-        await JS.InvokeVoidAsync("eval",
-            "document.getElementById('pd-file-input')?.click()");
-    }
-
     void ClearImage()
     {
         previewImage = null;

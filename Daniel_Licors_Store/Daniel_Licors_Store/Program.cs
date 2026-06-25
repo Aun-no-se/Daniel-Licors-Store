@@ -78,6 +78,7 @@ builder.Services.AddScoped<IWhatsAppService, WhatsAppService>();
 builder.Services.AddScoped<ProductStateService>();
 builder.Services.AddScoped<AdminDashboardService>();
 builder.Services.AddScoped<StockGeneralService>();
+builder.Services.AddScoped<UserManagementService>();
 
 // ── APP ───────────────────────────────────────────────────────────────────────
 var app = builder.Build();
