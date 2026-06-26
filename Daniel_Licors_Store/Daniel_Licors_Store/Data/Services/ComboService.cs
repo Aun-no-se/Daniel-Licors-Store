@@ -1,4 +1,5 @@
 ﻿using Daniel_Licors_Store.Data.Entities;
+using Daniel_Licors_Store.Data.Services;
 using Daniel_Licors_Store.Data.Services.Interfaces;
 using Daniel_Licors_Store.Models.Combo;
 using Microsoft.EntityFrameworkCore;
@@ -8,10 +9,12 @@ namespace Daniel_Licors_Store.Data.Services
     public class ComboService : IComboService
     {
         private readonly ApplicationDbContext _context;
+        private readonly AuditService _audit;
 
-        public ComboService(ApplicationDbContext context)
+        public ComboService(ApplicationDbContext context, AuditService audit)
         {
             _context = context;
+            _audit = audit;
 
             // Evita comportamientos raros en tracking (Blazor Server + EF)
             _context.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.TrackAll;
@@ -179,7 +182,7 @@ namespace Daniel_Licors_Store.Data.Services
                 .ToListAsync();
         }
 
-        public async Task<bool> CreateComboAsync(ComboCreateModel model)
+        public async Task<bool> CreateComboAsync(ComboCreateModel model, string? userId = null)
         {
             using var transaction = await _context.Database.BeginTransactionAsync();
 
@@ -218,6 +221,8 @@ namespace Daniel_Licors_Store.Data.Services
                 await _context.SaveChangesAsync();
                 await transaction.CommitAsync();
 
+                await _audit.LogAsync(userId, "Creó combo", "Combo", combo.ComboId.ToString());
+
                 return true;
             }
             catch (Exception ex)
@@ -227,7 +232,11 @@ namespace Daniel_Licors_Store.Data.Services
             }
         }
 
-        public async Task UpdateComboAsync(int comboId, ComboCreateModel model)
+        // Sobrecarga sin userId para compatibilidad
+        public async Task<bool> CreateComboAsync(ComboCreateModel model)
+            => await CreateComboAsync(model, null);
+
+        public async Task UpdateComboAsync(int comboId, ComboCreateModel model, string? userId = null)
         {
             var combo = await _context.Combos
                 .Include(c => c.ComboProducts)
@@ -254,9 +263,15 @@ namespace Daniel_Licors_Store.Data.Services
                 combo.ImageUrl = model.ImageUrl;
 
             await _context.SaveChangesAsync();
+
+            await _audit.LogAsync(userId, "Editó combo", "Combo", comboId.ToString());
         }
 
-        public async Task DeleteComboAsync(int comboId)
+        // Sobrecarga sin userId para compatibilidad
+        public async Task UpdateComboAsync(int comboId, ComboCreateModel model)
+            => await UpdateComboAsync(comboId, model, null);
+
+        public async Task DeleteComboAsync(int comboId, string? userId = null)
         {
             var combo = await _context.Combos
                 .FirstOrDefaultAsync(c => c.ComboId == comboId);
@@ -267,6 +282,12 @@ namespace Daniel_Licors_Store.Data.Services
             combo.IsActive = false;
 
             await _context.SaveChangesAsync();
+
+            await _audit.LogAsync(userId, "Eliminó combo", "Combo", comboId.ToString());
         }
+
+        // Sobrecarga sin userId para compatibilidad
+        public async Task DeleteComboAsync(int comboId)
+            => await DeleteComboAsync(comboId, null);
     }
 }

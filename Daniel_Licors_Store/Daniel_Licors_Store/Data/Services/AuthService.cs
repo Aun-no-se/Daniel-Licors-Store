@@ -1,5 +1,6 @@
 ﻿using Daniel_Licors_Store.Data;
 using Daniel_Licors_Store.Data.Entities;
+using Daniel_Licors_Store.Data.Services;
 using Daniel_Licors_Store.Models.Users.Auth;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -17,6 +18,7 @@ public interface IAuthService
 public class AuthService : IAuthService
 {
     private readonly ApplicationDbContext _context;
+    private readonly AuditService _audit;
     private readonly PasswordHasher<User> _hasher = new();
 
     // Regex de email simple pero efectivo
@@ -24,9 +26,10 @@ public class AuthService : IAuthService
         @"^[^@\s]+@[^@\s]+\.[^@\s]+$",
         RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
-    public AuthService(ApplicationDbContext context)
+    public AuthService(ApplicationDbContext context, AuditService audit)
     {
         _context = context;
+        _audit = audit;
     }
 
     // ─────────────────────────────────────────────────────────────────
@@ -83,6 +86,8 @@ public class AuthService : IAuthService
             AssignedAt = DateTime.Now
         });
         await _context.SaveChangesAsync();
+
+        await _audit.LogAsync(user.UserId, "Registro de cuenta", "User", user.UserId);
     }
 
     // ─────────────────────────────────────────────────────────────────
@@ -127,6 +132,8 @@ public class AuthService : IAuthService
             AssignedAt = DateTime.Now
         });
         await _context.SaveChangesAsync();
+
+        await _audit.LogAsync(user.UserId, $"Cuenta creada por admin — Rol: {role.Name}", "User", user.UserId);
     }
 
     // ─────────────────────────────────────────────────────────────────
@@ -152,6 +159,9 @@ public class AuthService : IAuthService
             return (null, new());
 
         var roles = user.UserRoles.Select(ur => ur.Role.Name).ToList();
+
+        await _audit.LogAsync(user.UserId, "Inició sesión", "User", user.UserId);
+
         return (user, roles);
     }
 

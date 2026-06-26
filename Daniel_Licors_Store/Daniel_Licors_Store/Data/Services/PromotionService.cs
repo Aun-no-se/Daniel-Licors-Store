@@ -1,6 +1,7 @@
 using Daniel_Licors_Store.Data;
 using Daniel_Licors_Store.Data.Entities;
 using Daniel_Licors_Store.Data.Repositories.Interfaces;
+using Daniel_Licors_Store.Data.Services;
 using Daniel_Licors_Store.Models.Promotion;
 using Microsoft.EntityFrameworkCore;
 
@@ -9,10 +10,12 @@ namespace Daniel_Licors_Store.Data.Services;
 public class PromotionService : IPromotionService
 {
     private readonly ApplicationDbContext _context;
+    private readonly AuditService _audit;
 
-    public PromotionService(ApplicationDbContext context)
+    public PromotionService(ApplicationDbContext context, AuditService audit)
     {
         _context = context;
+        _audit = audit;
         _context.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.TrackAll;
     }
 
@@ -36,7 +39,7 @@ public class PromotionService : IPromotionService
             StartDate = p.StartDate,
             EndDate = p.EndDate,
             IsActive = p.IsActive,
-            ImageUrl = p.ImageUrl,   // ← incluimos la ruta de la imagen
+            ImageUrl = p.ImageUrl,
             ProductCount = p.PromotionProducts.Count,
             ProductsSummary = string.Join(", ",
                 p.PromotionProducts.Select(pp => pp.Product?.Name ?? "").Where(n => n != ""))
@@ -49,10 +52,10 @@ public class PromotionService : IPromotionService
     public async Task<PromotionAdminDto?> GetPromotionByIdAsync(int promotionId)
     {
         var p = await _context.Promotions
-    .Include(x => x.PromotionProducts)
-        .ThenInclude(pp => pp.Product)
-            .ThenInclude(prod => prod.ProductStores)  // ← agregar esto
-    .FirstOrDefaultAsync(x => x.PromotionId == promotionId);
+            .Include(x => x.PromotionProducts)
+                .ThenInclude(pp => pp.Product)
+                    .ThenInclude(prod => prod.ProductStores)
+            .FirstOrDefaultAsync(x => x.PromotionId == promotionId);
 
         if (p == null) return null;
 
@@ -70,7 +73,6 @@ public class PromotionService : IPromotionService
             ProductsSummary = string.Join(", ",
                 p.PromotionProducts.Select(pp => pp.Product?.Name ?? "")),
 
-            // ── Nuevo: mapear líneas de productos ──
             PromotionProducts = p.PromotionProducts.Select(pp => new PromotionProductLine
             {
                 ProductId = pp.ProductId,
@@ -87,7 +89,7 @@ public class PromotionService : IPromotionService
     // ============================================================
     // CREAR
     // ============================================================
-    public async Task<bool> CreatePromotionAsync(PromotionCreateModel model)
+    public async Task<bool> CreatePromotionAsync(PromotionCreateModel model, string? userId = null)
     {
         using var tx = await _context.Database.BeginTransactionAsync();
         try
@@ -121,6 +123,9 @@ public class PromotionService : IPromotionService
 
             await _context.SaveChangesAsync();
             await tx.CommitAsync();
+
+            await _audit.LogAsync(userId, "Creó promoción", "Promotion", promo.PromotionId.ToString());
+
             return true;
         }
         catch
@@ -130,10 +135,14 @@ public class PromotionService : IPromotionService
         }
     }
 
+    // Sobrecarga sin userId para compatibilidad
+    public async Task<bool> CreatePromotionAsync(PromotionCreateModel model)
+        => await CreatePromotionAsync(model, null);
+
     // ============================================================
     // ACTUALIZAR
     // ============================================================
-    public async Task UpdatePromotionAsync(int promotionId, PromotionCreateModel model)
+    public async Task UpdatePromotionAsync(int promotionId, PromotionCreateModel model, string? userId = null)
     {
         using var tx = await _context.Database.BeginTransactionAsync();
         try
@@ -150,7 +159,6 @@ public class PromotionService : IPromotionService
             promo.PromotionType = model.PromotionType;
             promo.IsActive = model.IsActive;
 
-            // Solo actualizamos la imagen si se subió una nueva
             if (!string.IsNullOrWhiteSpace(model.ImageUrl))
                 promo.ImageUrl = model.ImageUrl;
 
@@ -172,6 +180,8 @@ public class PromotionService : IPromotionService
 
             await _context.SaveChangesAsync();
             await tx.CommitAsync();
+
+            await _audit.LogAsync(userId, "Editó promoción", "Promotion", promotionId.ToString());
         }
         catch
         {
@@ -180,10 +190,14 @@ public class PromotionService : IPromotionService
         }
     }
 
+    // Sobrecarga sin userId para compatibilidad
+    public async Task UpdatePromotionAsync(int promotionId, PromotionCreateModel model)
+        => await UpdatePromotionAsync(promotionId, model, null);
+
     // ============================================================
     // ELIMINAR
     // ============================================================
-    public async Task DeletePromotionAsync(int promotionId)
+    public async Task DeletePromotionAsync(int promotionId, string? userId = null)
     {
         var promo = await _context.Promotions
             .Include(p => p.PromotionProducts)
@@ -193,5 +207,11 @@ public class PromotionService : IPromotionService
         _context.PromotionProducts.RemoveRange(promo.PromotionProducts);
         _context.Promotions.Remove(promo);
         await _context.SaveChangesAsync();
+
+        await _audit.LogAsync(userId, "Eliminó promoción", "Promotion", promotionId.ToString());
     }
+
+    // Sobrecarga sin userId para compatibilidad
+    public async Task DeletePromotionAsync(int promotionId)
+        => await DeletePromotionAsync(promotionId, null);
 }

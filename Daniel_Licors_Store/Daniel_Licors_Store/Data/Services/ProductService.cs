@@ -2,22 +2,25 @@
 using Daniel_Licors_Store.Data;
 using Daniel_Licors_Store.Data.Entities;
 using Daniel_Licors_Store.Data.Repositories.Interfaces;
+using Daniel_Licors_Store.Data.Services;
 using Daniel_Licors_Store.Models.Product;
 using Microsoft.EntityFrameworkCore;
 
 public class ProductService : IProductService
 {
     private readonly ApplicationDbContext _context;
+    private readonly AuditService _audit;
 
-    public ProductService(ApplicationDbContext context)
+    public ProductService(ApplicationDbContext context, AuditService audit)
     {
         _context = context;
+        _audit = audit;
 
         // Evita comportamientos raros en Blazor Server con tracking EF
         _context.ChangeTracker.QueryTrackingBehavior = QueryTrackingBehavior.TrackAll;
     }
 
-    public async Task<int> CreateProductAsync(ProductCreateModel model)
+    public async Task<int> CreateProductAsync(ProductCreateModel model, string? userId = null)
     {
         using var transaction = await _context.Database.BeginTransactionAsync();
 
@@ -59,7 +62,7 @@ public class ProductService : IProductService
             _context.ProductStores.Add(productStore);
 
             // =========================
-            // 3. STOCK MOVEMENT (AUDITORÍA)
+            // 3. STOCK MOVEMENT
             // =========================
             var movement = new StockMovement
             {
@@ -75,6 +78,8 @@ public class ProductService : IProductService
             await _context.SaveChangesAsync();
             await transaction.CommitAsync();
 
+            await _audit.LogAsync(userId, "Creó producto", "Product", product.ProductId.ToString());
+
             return product.ProductId;
         }
         catch (Exception ex)
@@ -83,6 +88,10 @@ public class ProductService : IProductService
             throw new Exception("Error creando producto: " + (ex.InnerException?.Message ?? ex.Message));
         }
     }
+
+    // Sobrecarga sin userId para compatibilidad con código existente
+    public async Task<int> CreateProductAsync(ProductCreateModel model)
+        => await CreateProductAsync(model, null);
 
     public async Task<ProductEditModel?> GetProductForEditAsync(int productId)
     {
@@ -112,7 +121,7 @@ public class ProductService : IProductService
         };
     }
 
-    public async Task UpdateProductAsync(ProductEditModel model)
+    public async Task UpdateProductAsync(ProductEditModel model, string? userId = null)
     {
         using var transaction = await _context.Database.BeginTransactionAsync();
 
@@ -180,6 +189,8 @@ public class ProductService : IProductService
 
             await _context.SaveChangesAsync();
             await transaction.CommitAsync();
+
+            await _audit.LogAsync(userId, "Editó producto", "Product", model.ProductId.ToString());
         }
         catch (Exception ex)
         {
@@ -188,7 +199,11 @@ public class ProductService : IProductService
         }
     }
 
-    public async Task DeleteProductAsync(int productId)
+    // Sobrecarga sin userId para compatibilidad
+    public async Task UpdateProductAsync(ProductEditModel model)
+        => await UpdateProductAsync(model, null);
+
+    public async Task DeleteProductAsync(int productId, string? userId = null)
     {
         using var transaction = await _context.Database.BeginTransactionAsync();
 
@@ -210,12 +225,12 @@ public class ProductService : IProductService
                 .FirstOrDefaultAsync(p => p.ProductId == productId);
 
             if (product != null)
-            {
                 _context.Products.Remove(product);
-            }
 
             await _context.SaveChangesAsync();
             await transaction.CommitAsync();
+
+            await _audit.LogAsync(userId, "Eliminó producto", "Product", productId.ToString());
         }
         catch (Exception ex)
         {
@@ -223,6 +238,10 @@ public class ProductService : IProductService
             throw new Exception("Error eliminando producto: " + (ex.InnerException?.Message ?? ex.Message));
         }
     }
+
+    // Sobrecarga sin userId para compatibilidad
+    public async Task DeleteProductAsync(int productId)
+        => await DeleteProductAsync(productId, null);
 
     public async Task<List<ProductDetailDto>> GetProductDetailsAsync()
     {

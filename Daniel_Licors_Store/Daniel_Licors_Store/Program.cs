@@ -69,6 +69,7 @@ builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 
 // ── SERVICIOS ─────────────────────────────────────────────────────────────────
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<AuditService>();
 builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<ICatalogService, CatalogService>();
 builder.Services.AddScoped<IComboService, ComboService>();
