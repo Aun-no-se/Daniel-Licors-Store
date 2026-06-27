@@ -1,11 +1,11 @@
-﻿using Daniel_Licors_Store.Components.Dialogs;
+﻿using Microsoft.AspNetCore.Components.Authorization;
+using Daniel_Licors_Store.Components.Dialogs;
 using Daniel_Licors_Store.Components.Shared;
 using Daniel_Licors_Store.Data.Repositories.Interfaces;
 using Daniel_Licors_Store.Data.Services.Interfaces;
 using Daniel_Licors_Store.Models.Combo;
 using Daniel_Licors_Store.Models.Product;
 using Microsoft.AspNetCore.Components;
-using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.JSInterop;
 using MudBlazor;
@@ -47,6 +47,19 @@ namespace Daniel_Licors_Store.Components.Pages
             try
             {
                 var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+
+                // Protección interna — [Authorize] no funciona en recarga con LocalStorage auth
+                if (!authState.User.Identity?.IsAuthenticated ?? true)
+                {
+                    Nav.NavigateTo("/login", replace: true);
+                    return;
+                }
+                if (!authState.User.IsInRole("Admin") && !authState.User.IsInRole("Empleado"))
+                {
+                    Nav.NavigateTo("/", replace: true);
+                    return;
+                }
+
                 _currentUserId = authState.User.FindFirst("UserId")?.Value
                               ?? authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
 

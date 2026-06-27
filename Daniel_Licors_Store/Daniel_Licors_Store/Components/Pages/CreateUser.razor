@@ -7,7 +7,7 @@
 @using Microsoft.AspNetCore.Components.Authorization
 @using MudBlazor
 
-@attribute [Authorize(Roles = "Admin")]
+
 
 @inject IAuthService AuthService
 @inject NavigationManager Nav
@@ -641,7 +641,12 @@
     {
         var state = await AuthStateProvider.GetAuthenticationStateAsync();
 
-        // Doble verificación server-side además del [Authorize]
+        // Protección interna — [Authorize] no funciona en recarga con LocalStorage auth
+        if (!state.User.Identity?.IsAuthenticated ?? true)
+        {
+            Nav.NavigateTo("/login", replace: true);
+            return;
+        }
         if (!state.User.IsInRole("Admin"))
         {
             Nav.NavigateTo("/", replace: true);

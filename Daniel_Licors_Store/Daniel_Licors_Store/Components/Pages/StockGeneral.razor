@@ -1,9 +1,12 @@
 @page "/admin/stock"
+@using Microsoft.AspNetCore.Components.Authorization
 @using Daniel_Licors_Store.Data.Services
 @using Daniel_Licors_Store.Models.Product
 @using MudBlazor
-@attribute [Microsoft.AspNetCore.Authorization.Authorize(Roles = "Admin,Empleado")]
+
 @inject StockGeneralService StockSvc
+@inject NavigationManager Nav
+@inject AuthenticationStateProvider AuthStateProvider
 
 <PageTitle>Stock General · Daniel Liquor Store</PageTitle>
 
@@ -137,11 +140,11 @@ else
                                       RowClassFunc="@RowClass"
                                       SortLabel="Ordenar">
                                 <HeaderContent>
-                                    <MudTh><MudTableSortLabel SortBy="new Func<StockProductRow,object>(x=>x.Name)">Producto</MudTableSortLabel></MudTh>
+                                    <MudTh><MudTableSortLabel SortBy="new Func<StockProductRow, object>(x => x.Name)">Producto</MudTableSortLabel></MudTh>
                                     <MudTh>Categoría</MudTh>
                                     <MudTh>Marca</MudTh>
-                                    <MudTh><MudTableSortLabel SortBy="new Func<StockProductRow,object>(x=>x.Price)">Precio</MudTableSortLabel></MudTh>
-                                    <MudTh><MudTableSortLabel SortBy="new Func<StockProductRow,object>(x=>x.Stock)">Stock</MudTableSortLabel></MudTh>
+                                    <MudTh><MudTableSortLabel SortBy="new Func<StockProductRow, object>(x => x.Price)">Precio</MudTableSortLabel></MudTh>
+                                    <MudTh><MudTableSortLabel SortBy="new Func<StockProductRow, object>(x => x.Stock)">Stock</MudTableSortLabel></MudTh>
                                     <MudTh>Estado</MudTh>
                                     <MudTh>Premium</MudTh>
                                 </HeaderContent>
@@ -158,7 +161,8 @@ else
                                                     <MudIcon Icon="@Icons.Material.Filled.Liquor" Style="color:#555;font-size:1.2rem" />
                                                 </div>
                                             }
-                                            <span class="sg-prod-name">@context.Name
+                                            <span class="sg-prod-name">
+                                                @context.Name
                                                 @if (context.AgingYears.HasValue)
                                                 {
                                                     <span class="sg-aging"> @context.AgingYears años</span>
@@ -192,7 +196,7 @@ else
                                     </MudTd>
                                 </RowTemplate>
                                 <PagerContent>
-                                    <MudTablePager PageSizeOptions="new int[]{10,25,50}" />
+                                    <MudTablePager PageSizeOptions="new int[] { 10, 25, 50 }" />
                                 </PagerContent>
                             </MudTable>
                         </div>
@@ -384,17 +388,33 @@ else
     List<StockComboRow> _combos = new();
     List<(string Name, int Id)> _categorias = new();
 
-    protected override async Task OnInitializedAsync() => await RecargarTodo();
+    protected override async Task OnInitializedAsync()
+    {
+        // Protección interna — [Authorize] no funciona en recarga con LocalStorage auth
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        if (!authState.User.Identity?.IsAuthenticated ?? true)
+        {
+            Nav.NavigateTo("/login", replace: true);
+            return;
+        }
+        if (!authState.User.IsInRole("Admin") && !authState.User.IsInRole("Empleado"))
+        {
+            Nav.NavigateTo("/", replace: true);
+            return;
+        }
+
+        await RecargarTodo();
+    }
 
     async Task RecargarTodo()
     {
         _loading = true;
         StateHasChanged();
 
-        _summary    = await StockSvc.GetSummaryAsync();
-        _productos  = await StockSvc.GetProductsAsync();
-        _promos     = await StockSvc.GetPromotionsAsync();
-        _combos     = await StockSvc.GetCombosAsync();
+        _summary = await StockSvc.GetSummaryAsync();
+        _productos = await StockSvc.GetProductsAsync();
+        _promos = await StockSvc.GetPromotionsAsync();
+        _combos = await StockSvc.GetCombosAsync();
         _categorias = await StockSvc.GetCategoriesAsync();
 
         _productosFiltered = _productos;

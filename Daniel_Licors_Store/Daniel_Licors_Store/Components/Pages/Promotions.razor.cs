@@ -1,9 +1,9 @@
+using Microsoft.AspNetCore.Components.Authorization;
 using Daniel_Licors_Store.Components.Shared;
 using Daniel_Licors_Store.Data.Repositories.Interfaces;
 using Daniel_Licors_Store.Models.Product;
 using Daniel_Licors_Store.Models.Promotion;
 using Microsoft.AspNetCore.Components;
-using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.JSInterop;
 using MudBlazor;
@@ -19,6 +19,7 @@ public partial class Promotions
     [Inject] public IDialogService DialogService { get; set; } = default!;
     [Inject] public IWebHostEnvironment Env { get; set; } = default!;
     [Inject] public IJSRuntime JS { get; set; } = default!;
+    [Inject] public NavigationManager Nav { get; set; } = default!;
     [Inject] public AuthenticationStateProvider AuthStateProvider { get; set; } = default!;
 
     // ─── Cultura española ────────────────────────────────────
@@ -68,6 +69,19 @@ public partial class Promotions
         try
         {
             var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+
+            // Protección interna — [Authorize] no funciona en recarga con LocalStorage auth
+            if (!authState.User.Identity?.IsAuthenticated ?? true)
+            {
+                Nav.NavigateTo("/login", replace: true);
+                return;
+            }
+            if (!authState.User.IsInRole("Admin") && !authState.User.IsInRole("Empleado"))
+            {
+                Nav.NavigateTo("/", replace: true);
+                return;
+            }
+
             _currentUserId = authState.User.FindFirst("UserId")?.Value
                           ?? authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
 
