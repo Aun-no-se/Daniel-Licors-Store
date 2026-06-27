@@ -63,11 +63,13 @@
                                     Promociones
                                 </MudMenuItem>
 
-                                <!-- ★ STOCK GENERAL (móvil) -->
+                                <!-- STOCK GENERAL (móvil) -->
                                 <MudMenuItem OnClick="@(() => Nav.NavigateTo("/admin/stock"))"
                                              Icon="@Icons.Material.Filled.Inventory2">
                                     Stock General
                                 </MudMenuItem>
+
+
                             </Authorized>
                         </AuthorizeView>
 
@@ -78,6 +80,11 @@
 
                                 <MudMenuItem OnClick="@(() => Nav.NavigateTo("/admin/dashboard"))" Icon="@Icons.Material.Filled.Dashboard">
                                     Panel de Control
+                                </MudMenuItem>
+
+                                <MudMenuItem OnClick="@(() => Nav.NavigateTo("/admin/usuarios"))"
+                                             Icon="@Icons.Material.Filled.ManageAccounts">
+                                    Gestión de Cuentas
                                 </MudMenuItem>
                             </Authorized>
                         </AuthorizeView>
@@ -156,7 +163,7 @@
                             <MudMenuItem OnClick="@(() => Nav.NavigateTo("/admin/promociones"))">
                                 Promociones
                             </MudMenuItem>
-                            <!-- ★ STOCK GENERAL (desktop - empleado) -->
+                            <!-- STOCK GENERAL (desktop - empleado) -->
                             <MudDivider />
                             <MudMenuItem OnClick="@(() => Nav.NavigateTo("/admin/stock"))"
                                          Icon="@Icons.Material.Filled.Inventory2">
@@ -203,7 +210,7 @@
                             <MudMenuItem OnClick="@(() => Nav.NavigateTo("/admin/promociones"))">
                                 Promociones
                             </MudMenuItem>
-                            <!-- ★ STOCK GENERAL (desktop - admin) -->
+                            <!-- STOCK GENERAL (desktop - admin) -->
                             <MudDivider />
                             <MudMenuItem OnClick="@(() => Nav.NavigateTo("/admin/stock"))"
                                          Icon="@Icons.Material.Filled.Inventory2">

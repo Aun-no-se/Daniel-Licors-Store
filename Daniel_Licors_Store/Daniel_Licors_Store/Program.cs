@@ -7,6 +7,7 @@ using Daniel_Licors_Store.Data.Services;
 using Daniel_Licors_Store.Data.Services.Interfaces;
 using Daniel_Licors_Store.Services;
 using Daniel_Licors_Store.Services.Auth;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.EntityFrameworkCore;
 using MudBlazor.Services;
@@ -55,7 +56,16 @@ builder.Services.AddMudServices();
 builder.Services.AddBlazoredLocalStorage();
 
 // ── AUTORIZACIÓN ──────────────────────────────────────────────────────────────
-// Solo AddAuthorization — sin cookie auth (la auth la maneja LocalStorage + HMAC)
+// AddAuthentication con esquema dummy — la auth real la maneja CustomAuthStateProvider
+// con LocalStorage + HMAC. El esquema es necesario para que UseAuthorization()
+// pueda llamar a ChallengeAsync sin explotar cuando el usuario no tiene acceso.
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultScheme = "NoOpScheme";
+    options.DefaultChallengeScheme = "NoOpScheme";
+})
+.AddScheme<AuthenticationSchemeOptions, NoOpAuthenticationHandler>("NoOpScheme", _ => { });
+
 builder.Services.AddAuthorization();
 // SessionSigner: singleton porque la clave HMAC es fija y es seguro compartirla
 builder.Services.AddSingleton<SessionSigner>();
@@ -95,6 +105,7 @@ else
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseAntiforgery();
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapRazorComponents<App>()

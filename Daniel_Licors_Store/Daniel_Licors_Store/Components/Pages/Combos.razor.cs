@@ -5,6 +5,7 @@ using Daniel_Licors_Store.Data.Services.Interfaces;
 using Daniel_Licors_Store.Models.Combo;
 using Daniel_Licors_Store.Models.Product;
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.JSInterop;
 using MudBlazor;
@@ -20,6 +21,7 @@ namespace Daniel_Licors_Store.Components.Pages
         [Inject] public IWebHostEnvironment Env { get; set; } = default!;
         [Inject] public NavigationManager Nav { get; set; } = default!;
         [Inject] public IJSRuntime JS { get; set; } = default!;
+        [Inject] public AuthenticationStateProvider AuthStateProvider { get; set; } = default!;
 
         private List<ProductDetailDto> _products = new();
         private List<ComboAdminDto> _adminCombos = new();
@@ -35,6 +37,7 @@ namespace Daniel_Licors_Store.Components.Pages
         private string? _previewBase64;   // preview inmediato
 
         private ComboCreateModel _newCombo = new();
+        private string? _currentUserId;
 
         // ════════════════════════════════════════════════════════
         // INIT
@@ -43,6 +46,10 @@ namespace Daniel_Licors_Store.Components.Pages
         {
             try
             {
+                var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+                _currentUserId = authState.User.FindFirst("UserId")?.Value
+                              ?? authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+
                 _products = await ProductService.GetProductDetailsAsync();
                 await LoadCombos();
             }
@@ -159,12 +166,12 @@ namespace Daniel_Licors_Store.Components.Pages
 
                 if (_isEditMode)
                 {
-                    await ComboService.UpdateComboAsync(_editingComboId, _newCombo);
+                    await ComboService.UpdateComboAsync(_editingComboId, _newCombo, _currentUserId);
                     Snackbar.Add("Combo actualizado correctamente", Severity.Success);
                 }
                 else
                 {
-                    await ComboService.CreateComboAsync(_newCombo);
+                    await ComboService.CreateComboAsync(_newCombo, _currentUserId);
                     Snackbar.Add("Combo creado correctamente", Severity.Success);
                 }
                 ResetForm();
@@ -219,7 +226,7 @@ namespace Daniel_Licors_Store.Components.Pages
             var result = await dialog.Result;
             if (result.Canceled) return;
 
-            try { await ComboService.DeleteComboAsync(id); Snackbar.Add("Combo eliminado correctamente", Severity.Success); await LoadCombos(); }
+            try { await ComboService.DeleteComboAsync(id, _currentUserId); Snackbar.Add("Combo eliminado correctamente", Severity.Success); await LoadCombos(); }
             catch (Exception ex) { Snackbar.Add($"Error eliminando combo: {ex.Message}", Severity.Error); }
         }
 

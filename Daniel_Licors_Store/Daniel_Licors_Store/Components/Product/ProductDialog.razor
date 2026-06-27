@@ -9,6 +9,8 @@
 @inject IWebHostEnvironment Env
 @inject ProductStateService ProductState
 @inject IProductService ProductService
+@inject AuthenticationStateProvider AuthStateProvider
+@using Microsoft.AspNetCore.Components.Authorization
 
 <style>
     /* ── Dialog Shell ─────────────────────────────────────────────── */
@@ -705,6 +707,7 @@
     string? previewImage;
 
     bool HasImage => !string.IsNullOrEmpty(previewImage ?? Model.ImageUrl);
+    string? _currentUserId;
 
     // ── Init ────────────────────────────────────────────────────────
     protected override async Task OnInitializedAsync()
@@ -712,6 +715,10 @@
         if (_loaded) return;
         _loaded = true;
         isLoading = true;
+
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        _currentUserId = authState.User.FindFirst("UserId")?.Value
+                      ?? authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
 
         categories = await CatalogService.GetCategoriesAsync();
         brands = await CatalogService.GetBrandsAsync();
@@ -756,7 +763,7 @@
 
             if (ProductId.HasValue)
             {
-                await ProductService.UpdateProductAsync(Model);
+                await ProductService.UpdateProductAsync(Model, _currentUserId);
             }
             else
             {
@@ -776,7 +783,7 @@
                     ImageFileName = Model.ImageUrl
                 };
 
-                await ProductService.CreateProductAsync(createModel);
+                await ProductService.CreateProductAsync(createModel, _currentUserId);
             }
 
             MudDialog.Close(DialogResult.Ok(true));

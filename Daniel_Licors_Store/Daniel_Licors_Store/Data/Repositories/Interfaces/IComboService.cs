@@ -4,9 +4,12 @@ namespace Daniel_Licors_Store.Data.Services.Interfaces
 {
     public interface IComboService
     {
-        Task DeleteComboAsync(int comboId);
-        Task UpdateComboAsync(int comboId, ComboCreateModel model);
         Task<bool> CreateComboAsync(ComboCreateModel model);
+        Task<bool> CreateComboAsync(ComboCreateModel model, string? userId);
+        Task UpdateComboAsync(int comboId, ComboCreateModel model);
+        Task UpdateComboAsync(int comboId, ComboCreateModel model, string? userId);
+        Task DeleteComboAsync(int comboId);
+        Task DeleteComboAsync(int comboId, string? userId);
         Task<List<ComboAdminDto>> GetAdminCombosAsync();
         Task<List<ComboDto>> GetActiveCombosAsync();
         Task<ComboDetailDto?> GetComboDetailAsync(int comboId);

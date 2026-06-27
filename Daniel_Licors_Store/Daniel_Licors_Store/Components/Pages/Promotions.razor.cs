@@ -3,6 +3,7 @@ using Daniel_Licors_Store.Data.Repositories.Interfaces;
 using Daniel_Licors_Store.Models.Product;
 using Daniel_Licors_Store.Models.Promotion;
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.JSInterop;
 using MudBlazor;
@@ -18,6 +19,7 @@ public partial class Promotions
     [Inject] public IDialogService DialogService { get; set; } = default!;
     [Inject] public IWebHostEnvironment Env { get; set; } = default!;
     [Inject] public IJSRuntime JS { get; set; } = default!;
+    [Inject] public AuthenticationStateProvider AuthStateProvider { get; set; } = default!;
 
     // ─── Cultura española ────────────────────────────────────
     private static readonly CultureInfo _es = new CultureInfo("es-DO");
@@ -33,6 +35,7 @@ public partial class Promotions
     private int _editingPromoId;
 
     private PromotionCreateModel _form = new();
+    private string? _currentUserId;
 
     // ── Fechas como string para inputs nativos (evita bug removeChild de MudDatePicker en móvil)
     private string _startDateStr = DateTime.Today.ToString("yyyy-MM-dd");
@@ -64,6 +67,10 @@ public partial class Promotions
     {
         try
         {
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            _currentUserId = authState.User.FindFirst("UserId")?.Value
+                          ?? authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+
             _products = await ProductService.GetProductDetailsAsync();
             await LoadPromos();
         }
@@ -171,12 +178,12 @@ public partial class Promotions
         {
             if (_isEditMode)
             {
-                await PromotionService.UpdatePromotionAsync(_editingPromoId, _form);
+                await PromotionService.UpdatePromotionAsync(_editingPromoId, _form, _currentUserId);
                 Snackbar.Add("Promoción actualizada correctamente", Severity.Success);
             }
             else
             {
-                await PromotionService.CreatePromotionAsync(_form);
+                await PromotionService.CreatePromotionAsync(_form, _currentUserId);
                 Snackbar.Add("Promoción creada correctamente", Severity.Success);
             }
             ResetForm();
@@ -240,7 +247,7 @@ public partial class Promotions
         var result = await dialog.Result;
         if (result.Canceled) return;
 
-        try { await PromotionService.DeletePromotionAsync(id); Snackbar.Add("Promoción eliminada", Severity.Success); await LoadPromos(); }
+        try { await PromotionService.DeletePromotionAsync(id, _currentUserId); Snackbar.Add("Promoción eliminada", Severity.Success); await LoadPromos(); }
         catch (Exception ex) { Snackbar.Add($"Error eliminando: {ex.Message}", Severity.Error); }
     }
 
