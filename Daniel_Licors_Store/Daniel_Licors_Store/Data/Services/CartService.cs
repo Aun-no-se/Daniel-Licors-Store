@@ -655,7 +655,38 @@ public class CartService : ICartService
                 }
             }
 
-            // ── 3. CERRAR EL CARRITO ─────────────────────────────────────────────
+            // ── 3. CREAR LA ORDEN EN LA TABLA Orders ─────────────────────────────
+            // Calcular el total sumando productos + combos + promociones del carrito
+            decimal orderTotal = cart.CartItems.Sum(ci => ci.SubTotal)
+                               + cart.CartCombos.Sum(cc => cc.SubTotal)
+                               + cart.CartPromotions.Sum(cp => cp.SubTotal);
+
+            var order = new Order
+            {
+                UserId = userId,
+                StoreId = cart.StoreId,
+                OrderStatus = "Completed",
+                PaymentMethod = "WhatsApp",
+                TotalAmount = orderTotal,
+                CreatedAt = DateTime.Now
+            };
+            _context.Orders.Add(order);
+            await _context.SaveChangesAsync(); // necesitamos OrderId generado
+
+            // Crear OrderItems solo para productos directos (los combos no tienen
+            // una tabla OrderItem por diseño; se registran vía StockMovement)
+            foreach (var ci in cart.CartItems)
+            {
+                _context.OrderItems.Add(new OrderItem
+                {
+                    OrderId = order.OrderId,
+                    ProductId = ci.ProductId,
+                    Quantity = ci.Quantity,
+                    UnitPrice = ci.UnitPrice
+                });
+            }
+
+            // ── 4. CERRAR EL CARRITO ─────────────────────────────────────────────
             cart.CartStatus = "Sent";
             cart.UpdatedAt = DateTime.UtcNow;
 

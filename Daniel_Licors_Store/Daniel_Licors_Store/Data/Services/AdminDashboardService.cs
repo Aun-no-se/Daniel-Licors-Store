@@ -43,11 +43,16 @@ namespace Daniel_Licors_Store.Data.Services
             if (salesLastMonth > 0)
                 growthPercent = Math.Round(((salesThisMonth - salesLastMonth) / salesLastMonth) * 100, 1);
 
+            // Stock bajo: productos activos con 1-5 unidades
             var lowStock = await _context.ProductStores
-                .CountAsync(ps => ps.Stock > 0 && ps.Stock <= 5 && ps.IsAvailable);
+                .Include(ps => ps.Product)
+                .CountAsync(ps => ps.Product.IsActive && ps.Stock > 0 && ps.Stock <= 5);
 
+            // Sin stock: productos activos con 0 unidades
+            // (no filtramos IsAvailable porque al quedar en 0 se pone false automáticamente)
             var outOfStock = await _context.ProductStores
-                .CountAsync(ps => ps.Stock == 0 && ps.IsAvailable);
+                .Include(ps => ps.Product)
+                .CountAsync(ps => ps.Product.IsActive && ps.Stock == 0);
 
             return new DashboardSummary
             {

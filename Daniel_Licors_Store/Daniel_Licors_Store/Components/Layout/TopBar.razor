@@ -58,6 +58,10 @@
                                 <MudMenuItem OnClick="AbrirAgregarBebida" Icon="@Icons.Material.Filled.AddCircle">
                                     Agregar Bebida
                                 </MudMenuItem>
+                                <MudMenuItem OnClick="@(() => Nav.NavigateTo("/admin/dashboard"))"
+                                             Icon="@Icons.Material.Filled.Dashboard">
+                                    Panel de Control
+                                </MudMenuItem>
                                 <MudMenuItem OnClick="@(() => Nav.NavigateTo("/admin/promociones"))"
                                              Icon="@Icons.Material.Filled.LocalOffer">
                                     Promociones
@@ -157,6 +161,11 @@
                             <MudButton Variant="Variant.Text" Class="btn-licol-text">Servicios</MudButton>
                         </ActivatorContent>
                         <ChildContent>
+                            <MudMenuItem OnClick="@(() => Nav.NavigateTo("/admin/dashboard"))"
+                                         Icon="@Icons.Material.Filled.Dashboard">
+                                Panel de Control
+                            </MudMenuItem>
+                            <MudDivider />
                             <MudMenuItem OnClick="@(() => Nav.NavigateTo("/admin/combos"))">
                                 Combos
                             </MudMenuItem>

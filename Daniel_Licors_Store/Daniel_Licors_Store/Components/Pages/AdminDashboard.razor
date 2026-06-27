@@ -1,8 +1,14 @@
 ﻿@page "/admin/dashboard"
 @using Daniel_Licors_Store.Data.Services
+@using Daniel_Licors_Store.Data.Entities
 @using Daniel_Licors_Store.Models.Admin
 @using MudBlazor
+@using Microsoft.AspNetCore.Components.Authorization
 @inject AdminDashboardService DashboardService
+@inject CategoryBrandService CatalogMgmt
+@inject AuthenticationStateProvider AuthState
+@inject NavigationManager Nav
+@inject ISnackbar Snackbar
 
 <style>
     .dl-dashboard {
@@ -549,6 +555,213 @@
     }
 
     /* ── EMPTY STATE ── */
+
+    /* ── CATÁLOGO (categorías & marcas) ── */
+    .dl-catalog-tabs {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 16px;
+    }
+
+    .dl-catalog-tab {
+        padding: 8px 20px;
+        border-radius: 20px;
+        border: 1px solid rgba(255,255,255,0.1);
+        background: rgba(255,255,255,0.04);
+        color: #7a7a9a;
+        font-size: 0.78rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.18s;
+    }
+
+        .dl-catalog-tab.active {
+            background: rgba(212,175,55,0.15);
+            border-color: rgba(212,175,55,0.4);
+            color: #d4af37;
+        }
+
+    .dl-catalog-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+        gap: 10px;
+        margin-bottom: 16px;
+        max-height: 260px;
+        overflow-y: auto;
+        scrollbar-width: thin;
+        scrollbar-color: rgba(212,175,55,0.2) transparent;
+    }
+
+    .dl-catalog-chip {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        background: linear-gradient(145deg, #1e1e2a, #191923);
+        border: 1px solid rgba(255,255,255,0.07);
+        border-radius: 10px;
+        padding: 10px 14px;
+        transition: border-color 0.18s;
+    }
+
+        .dl-catalog-chip:hover {
+            border-color: rgba(212,175,55,0.2);
+        }
+
+        .dl-catalog-chip.inactive {
+            opacity: 0.45;
+        }
+
+    .dl-catalog-chip-name {
+        font-size: 0.82rem;
+        font-weight: 600;
+        color: #f5f0e8;
+        flex: 1;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .dl-catalog-chip-actions {
+        display: flex;
+        gap: 4px;
+        flex-shrink: 0;
+    }
+
+    .dl-catalog-btn {
+        width: 26px;
+        height: 26px;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.7rem;
+        transition: background 0.15s;
+    }
+
+        .dl-catalog-btn.edit {
+            background: rgba(79,163,224,0.12);
+            color: #4fa3e0;
+        }
+
+            .dl-catalog-btn.edit:hover {
+                background: rgba(79,163,224,0.25);
+            }
+
+        .dl-catalog-btn.del {
+            background: rgba(231,76,60,0.12);
+            color: #e74c3c;
+        }
+
+            .dl-catalog-btn.del:hover {
+                background: rgba(231,76,60,0.25);
+            }
+
+    .dl-catalog-add-row {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        margin-top: 12px;
+        flex-wrap: wrap;
+    }
+
+    .dl-catalog-input {
+        flex: 1;
+        min-width: 160px;
+        background: rgba(255,255,255,0.05);
+        border: 1px solid rgba(255,255,255,0.12);
+        border-radius: 8px;
+        padding: 8px 14px;
+        color: #f5f0e8;
+        font-size: 0.85rem;
+        outline: none;
+        transition: border-color 0.18s;
+    }
+
+        .dl-catalog-input:focus {
+            border-color: rgba(212,175,55,0.5);
+        }
+
+        .dl-catalog-input::placeholder {
+            color: #4a4a6a;
+        }
+
+    .dl-catalog-add-btn {
+        padding: 8px 18px;
+        background: linear-gradient(135deg, #d4af37, #b8952a);
+        color: #0f0f14;
+        border: none;
+        border-radius: 8px;
+        font-size: 0.82rem;
+        font-weight: 700;
+        cursor: pointer;
+        transition: opacity 0.18s;
+        white-space: nowrap;
+    }
+
+        .dl-catalog-add-btn:hover {
+            opacity: 0.88;
+        }
+
+        .dl-catalog-add-btn:disabled {
+            opacity: 0.4;
+            cursor: default;
+        }
+
+    .dl-catalog-edit-row {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        background: rgba(212,175,55,0.06);
+        border: 1px solid rgba(212,175,55,0.2);
+        border-radius: 10px;
+        padding: 8px 12px;
+        margin-bottom: 12px;
+        flex-wrap: wrap;
+    }
+
+    .dl-catalog-save-btn {
+        padding: 6px 14px;
+        background: linear-gradient(135deg, #d4af37, #b8952a);
+        color: #0f0f14;
+        border: none;
+        border-radius: 6px;
+        font-size: 0.78rem;
+        font-weight: 700;
+        cursor: pointer;
+    }
+
+    .dl-catalog-cancel-btn {
+        padding: 6px 14px;
+        background: rgba(255,255,255,0.06);
+        border: 1px solid rgba(255,255,255,0.1);
+        color: #7a7a9a;
+        border-radius: 6px;
+        font-size: 0.78rem;
+        cursor: pointer;
+    }
+
+    .dl-catalog-toggle {
+        padding: 4px 10px;
+        border-radius: 6px;
+        border: none;
+        font-size: 0.7rem;
+        font-weight: 700;
+        cursor: pointer;
+    }
+
+        .dl-catalog-toggle.act {
+            background: rgba(46,204,113,0.12);
+            color: #2ecc71;
+        }
+
+        .dl-catalog-toggle.inact {
+            background: rgba(231,76,60,0.12);
+            color: #e74c3c;
+        }
+
 </style>
 
 <div class="dl-dashboard">
@@ -568,228 +781,373 @@
                 <h1>Panel de Control</h1>
                 <span>Daniel Licors Store · Sucursal Haina</span>
             </div>
-
         </div>
 
         <div class="dl-content">
 
-            <!-- ── KPI CARDS ── -->
-            <p class="dl-section-label">Resumen General</p>
-            <div class="dl-kpi-grid">
-
-                <div class="dl-kpi gold">
-                    <div class="dl-kpi-icon"><MudIcon Icon="@Icons.Material.Filled.AttachMoney" /></div>
-                    <div class="dl-kpi-label">Ventas este mes</div>
-                    <div class="dl-kpi-value">RD$@summary.SalesThisMonth.ToString("N0")</div>
-                    @if (summary.SalesGrowthPercent >= 0)
-                    {
-                        <span class="dl-kpi-badge up">▲ @summary.SalesGrowthPercent%</span>
-                    }
-                    else
-                    {
-                        <span class="dl-kpi-badge down">▼ @Math.Abs(summary.SalesGrowthPercent)%</span>
-                    }
+            <!-- ══ GESTIÓN DE CATÁLOGO — visible para Admin y Empleado ══ -->
+            <p class="dl-section-label">Gestión de Catálogo</p>
+            <div class="dl-card" style="margin-bottom:28px">
+                <div class="dl-card-title">
+                    Categorías y Marcas
+                    <div class="dl-card-subtitle">Gestiona las opciones del formulario de agregar productos</div>
                 </div>
 
-                <div class="dl-kpi blue">
-                    <div class="dl-kpi-icon"><MudIcon Icon="@Icons.Material.Filled.Receipt" /></div>
-                    <div class="dl-kpi-label">Pedidos del mes</div>
-                    <div class="dl-kpi-value">@summary.OrdersThisMonth</div>
-                    @if (summary.OrdersGrowthCount >= 0)
+                <!-- Tabs Categorías / Marcas -->
+                <div class="dl-catalog-tabs">
+                    <button class="dl-catalog-tab @(catalogTab == 0 ? "active" : "")"
+                            @onclick="() => SwitchCatalogTab(0)">
+                        🏷️ Categorías (@categories.Count)
+                    </button>
+                    <button class="dl-catalog-tab @(catalogTab == 1 ? "active" : "")"
+                            @onclick="() => SwitchCatalogTab(1)">
+                        🔖 Marcas (@brands.Count)
+                    </button>
+                </div>
+
+                @if (catalogTab == 0)
+                {
+                    <!-- PANEL CATEGORÍAS -->
+                    @if (editingCategoryId.HasValue)
                     {
-                        <span class="dl-kpi-badge up">+@summary.OrdersGrowthCount vs mes ant.</span>
+                        <div class="dl-catalog-edit-row">
+                            <MudIcon Icon="@Icons.Material.Filled.Edit" Style="color:#d4af37;font-size:1rem" />
+                            <input class="dl-catalog-input" @bind="editCatalogName" placeholder="Nuevo nombre..." />
+                            <button class="dl-catalog-toggle @(editCatalogActive ? "act" : "inact")"
+                                    @onclick="() => editCatalogActive = !editCatalogActive">
+                                @(editCatalogActive ? "Activa" : "Inactiva")
+                            </button>
+                            <button class="dl-catalog-save-btn" @onclick="SaveCategoryEdit">Guardar</button>
+                            <button class="dl-catalog-cancel-btn" @onclick="CancelEdit">Cancelar</button>
+                        </div>
                     }
-                    else
+
+                    @if (categories.Any())
                     {
-                        <span class="dl-kpi-badge down">@summary.OrdersGrowthCount vs mes ant.</span>
-                    }
-                </div>
-
-                <div class="dl-kpi green">
-                    <div class="dl-kpi-icon"><MudIcon Icon="@Icons.Material.Filled.Group" /></div>
-                    <div class="dl-kpi-label">Clientes activos</div>
-                    <div class="dl-kpi-value">@summary.TotalCustomers</div>
-                    <span class="dl-kpi-badge neutral">Total registrados</span>
-                </div>
-
-                <div class="dl-kpi purple">
-                    <div class="dl-kpi-icon"><MudIcon Icon="@Icons.Material.Filled.Inventory2" /></div>
-                    <div class="dl-kpi-label">Productos activos</div>
-                    <div class="dl-kpi-value">@summary.TotalProducts</div>
-                    <span class="dl-kpi-badge neutral">En catálogo</span>
-                </div>
-
-            </div>
-
-            <!-- ── ORDER STATUS ── -->
-            <p class="dl-section-label">Estado de Pedidos</p>
-            <div class="dl-status-row">
-                <div class="dl-status-card">
-                    <div class="dl-status-dot pending"></div>
-                    <div class="dl-status-info">
-                        <div class="label">Pendientes</div>
-                        <div class="value">@summary.OrdersPending</div>
-                    </div>
-                </div>
-                <div class="dl-status-card">
-                    <div class="dl-status-dot inprocess"></div>
-                    <div class="dl-status-info">
-                        <div class="label">En proceso</div>
-                        <div class="value">@summary.OrdersInProcess</div>
-                    </div>
-                </div>
-                <div class="dl-status-card">
-                    <div class="dl-status-dot completed"></div>
-                    <div class="dl-status-info">
-                        <div class="label">Completados</div>
-                        <div class="value">@summary.OrdersCompleted</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- ── CHARTS ── -->
-            <p class="dl-section-label">Ventas y Categorías</p>
-            <div class="dl-charts-row">
-                <div class="dl-card">
-                    <div class="dl-card-title">
-                        Ventas de los últimos 30 días
-                        <div class="dl-card-subtitle">Total acumulado por día (RD$)</div>
-                    </div>
-                    @if (salesChart.Labels.Length > 0)
-                    {
-                        <MudChart ChartType="ChartType.Line"
-                                  ChartSeries="@GetSalesChartSeries()"
-                                  XAxisLabels="@salesChart.Labels"
-                                  Width="100%"
-                                  Height="220px"
-                                  ChartOptions="@lineOptions" />
-                    }
-                    else
-                    {
-                        <div class="dl-empty">No hay ventas registradas aún</div>
-                    }
-                </div>
-
-                <div class="dl-card">
-                    <div class="dl-card-title">
-                        Ingresos por Categoría
-                        <div class="dl-card-subtitle">Distribución del total de ventas</div>
-                    </div>
-                    @if (categoryChart.Labels.Length > 0)
-                    {
-                        <MudChart ChartType="ChartType.Donut"
-                                  InputData="@(categoryChart.Data.Length > 0 ? categoryChart.Data[0] : Array.Empty<double>())"
-                                  InputLabels="@categoryChart.Labels"
-                                  Width="100%"
-                                  Height="220px" />
-                    }
-                    else
-                    {
-                        <div class="dl-empty">Sin datos de categorías aún</div>
-                    }
-                </div>
-            </div>
-
-            <!-- ── BOTTOM: TOP PRODUCTS + RECENT ORDERS ── -->
-            <div class="dl-bottom-row">
-
-                <!-- TOP PRODUCTS -->
-                <div class="dl-card">
-                    <div class="dl-card-title">
-                        Productos más vendidos
-                        <div class="dl-card-subtitle">Por cantidad de unidades vendidas</div>
-                    </div>
-                    @if (topProducts.Any())
-                    {
-                        <table class="dl-table">
-                            <thead>
-                                <tr>
-                                    <th>#</th>
-                                    <th>Producto</th>
-                                    <th>Categoría</th>
-                                    <th style="text-align:right">Uds.</th>
-                                    <th style="text-align:right">Ingresos</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @{
-                                    int rank = 1;
-                                }
-                                @foreach (var p in topProducts)
-                                {
-                                    <tr>
-                                        <td><div class="dl-rank @(rank <= 3 ? "top" : "")">@rank</div></td>
-                                        <td class="product-name">@p.ProductName</td>
-                                        <td><span class="cat-pill">@p.CategoryName</span></td>
-                                        <td style="text-align:right;color:#f5f0e8;font-weight:700">@p.TotalSold</td>
-                                        <td style="text-align:right;color:#2ecc71;font-weight:700">RD$@p.TotalRevenue.ToString("N0")</td>
-                                    </tr>
-                                    rank++;
-                                }
-                            </tbody>
-                        </table>
-                    }
-                    else
-                    {
-                        <div class="dl-empty">Aún no hay pedidos completados para mostrar ranking</div>
-                    }
-                </div>
-
-                <!-- RECENT ORDERS -->
-                <div class="dl-card">
-                    <div class="dl-card-title">
-                        Pedidos recientes
-                        <div class="dl-card-subtitle">Últimas 10 órdenes registradas</div>
-                    </div>
-                    @if (recentOrders.Any())
-                    {
-                        @foreach (var o in recentOrders)
-                        {
-                            <div class="dl-order-row">
-                                <div class="dl-order-id">#@o.OrderId</div>
-                                <div style="flex:1;min-width:0">
-                                    <div class="dl-order-name" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">@o.CustomerName</div>
-                                    <div class="dl-order-meta">@o.CreatedAt.ToString("dd MMM, hh:mm tt") · @(o.PaymentMethod ?? "—")</div>
+                        <div class="dl-catalog-grid">
+                            @foreach (var cat in categories)
+                            {
+                                <div class="dl-catalog-chip @(cat.IsActive ? "" : "inactive")">
+                                    <span class="dl-catalog-chip-name" title="@cat.Name">
+                                        @if (!cat.IsActive)
+                                        {
+                                            <span style="color:#e74c3c;margin-right:4px;font-size:0.6rem">●</span>
+                                        }
+                                        @cat.Name
+                                    </span>
+                                    <div class="dl-catalog-chip-actions">
+                                        <button class="dl-catalog-btn edit" title="Editar"
+                                                @onclick="() => StartEditCategory(cat)">
+                                            ✏️
+                                        </button>
+                                        <button class="dl-catalog-btn del" title="Eliminar"
+                                                @onclick="() => DeleteCategoryAsync(cat)">
+                                            🗑️
+                                        </button>
+                                    </div>
                                 </div>
-                                <span class="dl-status-pill @o.OrderStatus">@StatusLabel(o.OrderStatus)</span>
-                                <div class="dl-order-amount">RD$@o.TotalAmount.ToString("N0")</div>
-                            </div>
-                        }
+                            }
+                        </div>
                     }
                     else
                     {
-                        <div class="dl-empty">Sin pedidos registrados aún</div>
+                        <div class="dl-empty" style="margin-bottom:12px">Sin categorías aún</div>
                     }
-                </div>
+
+                    <div class="dl-catalog-add-row">
+                        <input class="dl-catalog-input"
+                               @bind="newCategoryName"
+                               placeholder="Nueva categoría (ej: Vinos, Cervezas...)" />
+                        <button class="dl-catalog-add-btn"
+                                @onclick="AddCategoryAsync"
+                                disabled="@catalogSaving">
+                            @(catalogSaving ? "Guardando..." : "+ Agregar")
+                        </button>
+                    </div>
+                }
+                else
+                {
+                    <!-- PANEL MARCAS -->
+                    @if (editingBrandId.HasValue)
+                    {
+                        <div class="dl-catalog-edit-row">
+                            <MudIcon Icon="@Icons.Material.Filled.Edit" Style="color:#d4af37;font-size:1rem" />
+                            <input class="dl-catalog-input" @bind="editCatalogName" placeholder="Nuevo nombre..." />
+                            <button class="dl-catalog-toggle @(editCatalogActive ? "act" : "inact")"
+                                    @onclick="() => editCatalogActive = !editCatalogActive">
+                                @(editCatalogActive ? "Activa" : "Inactiva")
+                            </button>
+                            <button class="dl-catalog-save-btn" @onclick="SaveBrandEdit">Guardar</button>
+                            <button class="dl-catalog-cancel-btn" @onclick="CancelEdit">Cancelar</button>
+                        </div>
+                    }
+
+                    @if (brands.Any())
+                    {
+                        <div class="dl-catalog-grid">
+                            @foreach (var brand in brands)
+                            {
+                                <div class="dl-catalog-chip @(brand.IsActive ? "" : "inactive")">
+                                    <span class="dl-catalog-chip-name" title="@brand.Name">
+                                        @if (!brand.IsActive)
+                                        {
+                                            <span style="color:#e74c3c;margin-right:4px;font-size:0.6rem">●</span>
+                                        }
+                                        @brand.Name
+                                    </span>
+                                    <div class="dl-catalog-chip-actions">
+                                        <button class="dl-catalog-btn edit" title="Editar"
+                                                @onclick="() => StartEditBrand(brand)">
+                                            ✏️
+                                        </button>
+                                        <button class="dl-catalog-btn del" title="Eliminar"
+                                                @onclick="() => DeleteBrandAsync(brand)">
+                                            🗑️
+                                        </button>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="dl-empty" style="margin-bottom:12px">Sin marcas aún</div>
+                    }
+
+                    <div class="dl-catalog-add-row">
+                        <input class="dl-catalog-input"
+                               @bind="newBrandName"
+                               placeholder="Nueva marca (ej: Brugal, Barceló...)" />
+                        <button class="dl-catalog-add-btn"
+                                @onclick="AddBrandAsync"
+                                disabled="@catalogSaving">
+                            @(catalogSaving ? "Guardando..." : "+ Agregar")
+                        </button>
+                    </div>
+                }
             </div>
 
-            <!-- ── STOCK ALERTS ── -->
-            <p class="dl-section-label">Alertas de Inventario</p>
-            <div class="dl-alerts-row" style="margin-bottom:28px">
-                <div class="dl-alert-box warning">
-                    <div class="dl-alert-icon">⚠️</div>
-                    <div>
-                        <div class="dl-alert-label">Stock Bajo (≤5 uds.)</div>
-                        <div class="dl-alert-count">@summary.LowStockProducts</div>
-                    </div>
-                </div>
-                <div class="dl-alert-box danger">
-                    <div class="dl-alert-icon">🚫</div>
-                    <div>
-                        <div class="dl-alert-label">Sin Stock</div>
-                        <div class="dl-alert-count">@summary.OutOfStockProducts</div>
-                    </div>
-                </div>
-            </div>
+            <!-- ══ SECCIONES SOLO ADMIN ══ -->
+            @if (isAdmin)
+            {
+                <!-- ── KPI CARDS ── -->
+                <p class="dl-section-label">Resumen General</p>
+                <div class="dl-kpi-grid">
 
+                    <div class="dl-kpi gold">
+                        <div class="dl-kpi-icon"><MudIcon Icon="@Icons.Material.Filled.AttachMoney" /></div>
+                        <div class="dl-kpi-label">Ventas este mes</div>
+                        <div class="dl-kpi-value">RD$@summary.SalesThisMonth.ToString("N0")</div>
+                        @if (summary.SalesGrowthPercent >= 0)
+                        {
+                            <span class="dl-kpi-badge up">▲ @summary.SalesGrowthPercent%</span>
+                        }
+                        else
+                        {
+                            <span class="dl-kpi-badge down">▼ @Math.Abs(summary.SalesGrowthPercent)%</span>
+                        }
+                    </div>
+
+                    <div class="dl-kpi blue">
+                        <div class="dl-kpi-icon"><MudIcon Icon="@Icons.Material.Filled.Receipt" /></div>
+                        <div class="dl-kpi-label">Pedidos del mes</div>
+                        <div class="dl-kpi-value">@summary.OrdersThisMonth</div>
+                        @if (summary.OrdersGrowthCount >= 0)
+                        {
+                            <span class="dl-kpi-badge up">+@summary.OrdersGrowthCount vs mes ant.</span>
+                        }
+                        else
+                        {
+                            <span class="dl-kpi-badge down">@summary.OrdersGrowthCount vs mes ant.</span>
+                        }
+                    </div>
+
+                    <div class="dl-kpi green">
+                        <div class="dl-kpi-icon"><MudIcon Icon="@Icons.Material.Filled.Group" /></div>
+                        <div class="dl-kpi-label">Clientes activos</div>
+                        <div class="dl-kpi-value">@summary.TotalCustomers</div>
+                        <span class="dl-kpi-badge neutral">Total registrados</span>
+                    </div>
+
+                    <div class="dl-kpi purple">
+                        <div class="dl-kpi-icon"><MudIcon Icon="@Icons.Material.Filled.Inventory2" /></div>
+                        <div class="dl-kpi-label">Productos activos</div>
+                        <div class="dl-kpi-value">@summary.TotalProducts</div>
+                        <span class="dl-kpi-badge neutral">En catálogo</span>
+                    </div>
+
+                </div>
+
+                <!-- ── ORDER STATUS ── -->
+                <p class="dl-section-label">Estado de Pedidos</p>
+                <div class="dl-status-row">
+                    <div class="dl-status-card">
+                        <div class="dl-status-dot pending"></div>
+                        <div class="dl-status-info">
+                            <div class="label">Pendientes</div>
+                            <div class="value">@summary.OrdersPending</div>
+                        </div>
+                    </div>
+                    <div class="dl-status-card">
+                        <div class="dl-status-dot inprocess"></div>
+                        <div class="dl-status-info">
+                            <div class="label">En proceso</div>
+                            <div class="value">@summary.OrdersInProcess</div>
+                        </div>
+                    </div>
+                    <div class="dl-status-card">
+                        <div class="dl-status-dot completed"></div>
+                        <div class="dl-status-info">
+                            <div class="label">Completados</div>
+                            <div class="value">@summary.OrdersCompleted</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ── CHARTS ── -->
+                <p class="dl-section-label">Ventas y Categorías</p>
+                <div class="dl-charts-row">
+                    <div class="dl-card">
+                        <div class="dl-card-title">
+                            Ventas de los últimos 30 días
+                            <div class="dl-card-subtitle">Total acumulado por día (RD$)</div>
+                        </div>
+                        @if (salesChart.Labels.Length > 0)
+                        {
+                            <MudChart ChartType="ChartType.Line"
+                                      ChartSeries="@GetSalesChartSeries()"
+                                      XAxisLabels="@salesChart.Labels"
+                                      Width="100%"
+                                      Height="220px"
+                                      ChartOptions="@lineOptions" />
+                        }
+                        else
+                        {
+                            <div class="dl-empty">No hay ventas registradas aún</div>
+                        }
+                    </div>
+
+                    <div class="dl-card">
+                        <div class="dl-card-title">
+                            Ingresos por Categoría
+                            <div class="dl-card-subtitle">Distribución del total de ventas</div>
+                        </div>
+                        @if (categoryChart.Labels.Length > 0)
+                        {
+                            <MudChart ChartType="ChartType.Donut"
+                                      InputData="@(categoryChart.Data.Length > 0 ? categoryChart.Data[0] : Array.Empty<double>())"
+                                      InputLabels="@categoryChart.Labels"
+                                      Width="100%"
+                                      Height="220px" />
+                        }
+                        else
+                        {
+                            <div class="dl-empty">Sin datos de categorías aún</div>
+                        }
+                    </div>
+                </div>
+
+                <!-- ── BOTTOM: TOP PRODUCTS + RECENT ORDERS ── -->
+                <div class="dl-bottom-row">
+
+                    <div class="dl-card">
+                        <div class="dl-card-title">
+                            Productos más vendidos
+                            <div class="dl-card-subtitle">Por cantidad de unidades vendidas</div>
+                        </div>
+                        @if (topProducts.Any())
+                        {
+                            <table class="dl-table">
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Producto</th>
+                                        <th>Categoría</th>
+                                        <th style="text-align:right">Uds.</th>
+                                        <th style="text-align:right">Ingresos</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @{
+                                        int rank = 1;
+                                    }
+                                    @foreach (var p in topProducts)
+                                    {
+                                        <tr>
+                                            <td><div class="dl-rank @(rank <= 3 ? "top" : "")">@rank</div></td>
+                                            <td class="product-name">@p.ProductName</td>
+                                            <td><span class="cat-pill">@p.CategoryName</span></td>
+                                            <td style="text-align:right;color:#f5f0e8;font-weight:700">@p.TotalSold</td>
+                                            <td style="text-align:right;color:#2ecc71;font-weight:700">RD$@p.TotalRevenue.ToString("N0")</td>
+                                        </tr>
+                                        rank++;
+                                    }
+                                </tbody>
+                            </table>
+                        }
+                        else
+                        {
+                            <div class="dl-empty">Aún no hay pedidos completados para mostrar ranking</div>
+                        }
+                    </div>
+
+                    <div class="dl-card">
+                        <div class="dl-card-title">
+                            Pedidos recientes
+                            <div class="dl-card-subtitle">Últimas 10 órdenes registradas</div>
+                        </div>
+                        @if (recentOrders.Any())
+                        {
+                            @foreach (var o in recentOrders)
+                            {
+                                <div class="dl-order-row">
+                                    <div class="dl-order-id">#@o.OrderId</div>
+                                    <div style="flex:1;min-width:0">
+                                        <div class="dl-order-name" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">@o.CustomerName</div>
+                                        <div class="dl-order-meta">@o.CreatedAt.ToString("dd MMM, hh:mm tt") · @(o.PaymentMethod ?? "—")</div>
+                                    </div>
+                                    <span class="dl-status-pill @o.OrderStatus">@StatusLabel(o.OrderStatus)</span>
+                                    <div class="dl-order-amount">RD$@o.TotalAmount.ToString("N0")</div>
+                                </div>
+                            }
+                        }
+                        else
+                        {
+                            <div class="dl-empty">Sin pedidos registrados aún</div>
+                        }
+                    </div>
+                </div>
+
+                <!-- ── STOCK ALERTS ── -->
+                <p class="dl-section-label">Alertas de Inventario</p>
+                <div class="dl-alerts-row" style="margin-bottom:28px">
+                    <div class="dl-alert-box warning">
+                        <div class="dl-alert-icon">⚠️</div>
+                        <div>
+                            <div class="dl-alert-label">Stock Bajo (≤5 uds.)</div>
+                            <div class="dl-alert-count">@summary.LowStockProducts</div>
+                        </div>
+                    </div>
+                    <div class="dl-alert-box danger">
+                        <div class="dl-alert-icon">🚫</div>
+                        <div>
+                            <div class="dl-alert-label">Sin Stock</div>
+                            <div class="dl-alert-count">@summary.OutOfStockProducts</div>
+                        </div>
+                    </div>
+                </div>
+            }
 
         </div>
-
         <!-- /dl-content -->
     }
 
 </div><!-- /dl-dashboard -->
 @code {
+    // ── Auth ─────────────────────────────────────────────────────────────────
+    bool isAdmin = false;
+
+    // ── Dashboard (solo Admin) ────────────────────────────────────────────────
     bool loading = true;
     DashboardSummary summary = new();
     ChartData salesChart = new();
@@ -803,22 +1161,64 @@
         LineStrokeWidth = 2.5f
     };
 
+    // ── Catálogo (Admin y Empleado) ───────────────────────────────────────────
+    int catalogTab = 0;
+    List<Category> categories = new();
+    List<Brand> brands = new();
+
+    string newCategoryName = string.Empty;
+    string newBrandName = string.Empty;
+    bool catalogSaving = false;
+
+    // Edición inline
+    int? editingCategoryId = null;
+    int? editingBrandId = null;
+    string editCatalogName = string.Empty;
+    bool editCatalogActive = true;
+
+    // ─────────────────────────────────────────────────────────────────────────
     protected override async Task OnInitializedAsync()
     {
+        var authState = await AuthState.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (!user.Identity?.IsAuthenticated ?? true)
+        {
+            Nav.NavigateTo("/login", replace: true);
+            return;
+        }
+
+        isAdmin = user.IsInRole("Admin");
+        bool isEmpleado = user.IsInRole("Empleado");
+
+        if (!isAdmin && !isEmpleado)
+        {
+            Nav.NavigateTo("/", replace: true);
+            return;
+        }
+
         loading = true;
         try
         {
-            summary = await DashboardService.GetSummaryAsync();
-            salesChart = await DashboardService.GetSalesChartAsync(30);
-            categoryChart = await DashboardService.GetCategoryChartAsync();
-            topProducts = await DashboardService.GetTopProductsAsync(8);
-            recentOrders = await DashboardService.GetRecentOrdersAsync(10);
+            categories = await CatalogMgmt.GetAllCategoriesAsync();
+            brands = await CatalogMgmt.GetAllBrandsAsync();
+
+            if (isAdmin)
+            {
+                summary = await DashboardService.GetSummaryAsync();
+                salesChart = await DashboardService.GetSalesChartAsync(30);
+                categoryChart = await DashboardService.GetCategoryChartAsync();
+                topProducts = await DashboardService.GetTopProductsAsync(8);
+                recentOrders = await DashboardService.GetRecentOrdersAsync(10);
+            }
         }
         finally
         {
             loading = false;
         }
     }
+
+    // ── Helpers de Dashboard ─────────────────────────────────────────────────
 
     List<ChartSeries> GetSalesChartSeries()
     {
@@ -837,4 +1237,163 @@
         _ => status
     };
 
+    // ── Tabs ─────────────────────────────────────────────────────────────────
+
+    void SwitchCatalogTab(int tab)
+    {
+        catalogTab = tab;
+        CancelEdit();
+    }
+
+    // ── Categorías ───────────────────────────────────────────────────────────
+
+    async Task AddCategoryAsync()
+    {
+        if (string.IsNullOrWhiteSpace(newCategoryName)) return;
+        catalogSaving = true;
+        try
+        {
+            var (ok, error) = await CatalogMgmt.CreateCategoryAsync(newCategoryName);
+            if (ok)
+            {
+                Snackbar.Add($"Categoría \"{newCategoryName}\" creada.", Severity.Success);
+                newCategoryName = string.Empty;
+                categories = await CatalogMgmt.GetAllCategoriesAsync();
+            }
+            else
+            {
+                Snackbar.Add(error, Severity.Warning);
+            }
+        }
+        finally { catalogSaving = false; }
+    }
+
+    void StartEditCategory(Category cat)
+    {
+        CancelEdit();
+        editingCategoryId = cat.CategoryId;
+        editCatalogName = cat.Name;
+        editCatalogActive = cat.IsActive;
+    }
+
+    async Task SaveCategoryEdit()
+    {
+        if (!editingCategoryId.HasValue) return;
+        catalogSaving = true;
+        try
+        {
+            var (ok, error) = await CatalogMgmt.UpdateCategoryAsync(
+                editingCategoryId.Value, editCatalogName, editCatalogActive);
+            if (ok)
+            {
+                Snackbar.Add("Categoría actualizada.", Severity.Success);
+                CancelEdit();
+                categories = await CatalogMgmt.GetAllCategoriesAsync();
+            }
+            else
+            {
+                Snackbar.Add(error, Severity.Warning);
+            }
+        }
+        finally { catalogSaving = false; }
+    }
+
+    async Task DeleteCategoryAsync(Category cat)
+    {
+        catalogSaving = true;
+        try
+        {
+            var (ok, error) = await CatalogMgmt.DeleteCategoryAsync(cat.CategoryId);
+            if (ok)
+            {
+                Snackbar.Add($"Categoría \"{cat.Name}\" eliminada.", Severity.Success);
+                categories = await CatalogMgmt.GetAllCategoriesAsync();
+            }
+            else
+            {
+                Snackbar.Add(error, Severity.Warning);
+            }
+        }
+        finally { catalogSaving = false; }
+    }
+
+    // ── Marcas ───────────────────────────────────────────────────────────────
+
+    async Task AddBrandAsync()
+    {
+        if (string.IsNullOrWhiteSpace(newBrandName)) return;
+        catalogSaving = true;
+        try
+        {
+            var (ok, error) = await CatalogMgmt.CreateBrandAsync(newBrandName);
+            if (ok)
+            {
+                Snackbar.Add($"Marca \"{newBrandName}\" creada.", Severity.Success);
+                newBrandName = string.Empty;
+                brands = await CatalogMgmt.GetAllBrandsAsync();
+            }
+            else
+            {
+                Snackbar.Add(error, Severity.Warning);
+            }
+        }
+        finally { catalogSaving = false; }
+    }
+
+    void StartEditBrand(Brand brand)
+    {
+        CancelEdit();
+        editingBrandId = brand.BrandId;
+        editCatalogName = brand.Name;
+        editCatalogActive = brand.IsActive;
+    }
+
+    async Task SaveBrandEdit()
+    {
+        if (!editingBrandId.HasValue) return;
+        catalogSaving = true;
+        try
+        {
+            var (ok, error) = await CatalogMgmt.UpdateBrandAsync(
+                editingBrandId.Value, editCatalogName, editCatalogActive);
+            if (ok)
+            {
+                Snackbar.Add("Marca actualizada.", Severity.Success);
+                CancelEdit();
+                brands = await CatalogMgmt.GetAllBrandsAsync();
+            }
+            else
+            {
+                Snackbar.Add(error, Severity.Warning);
+            }
+        }
+        finally { catalogSaving = false; }
+    }
+
+    async Task DeleteBrandAsync(Brand brand)
+    {
+        catalogSaving = true;
+        try
+        {
+            var (ok, error) = await CatalogMgmt.DeleteBrandAsync(brand.BrandId);
+            if (ok)
+            {
+                Snackbar.Add($"Marca \"{brand.Name}\" eliminada.", Severity.Success);
+                brands = await CatalogMgmt.GetAllBrandsAsync();
+            }
+            else
+            {
+                Snackbar.Add(error, Severity.Warning);
+            }
+        }
+        finally { catalogSaving = false; }
+    }
+
+    void CancelEdit()
+    {
+        editingCategoryId = null;
+        editingBrandId = null;
+        editCatalogName = string.Empty;
+        editCatalogActive = true;
+    }
 }

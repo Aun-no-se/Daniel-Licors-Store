@@ -90,6 +90,7 @@ builder.Services.AddScoped<ProductStateService>();
 builder.Services.AddScoped<AdminDashboardService>();
 builder.Services.AddScoped<StockGeneralService>();
 builder.Services.AddScoped<UserManagementService>();
+builder.Services.AddScoped<CategoryBrandService>();
 
 // ── APP ───────────────────────────────────────────────────────────────────────
 var app = builder.Build();
