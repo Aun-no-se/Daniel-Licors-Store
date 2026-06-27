@@ -35,8 +35,8 @@ namespace Daniel_Licors_Store.Data.Services
                 .Select(g => new UserRoleSummary
                 {
                     RoleName = g.Key,
-                    Total    = g.Count(),
-                    Active   = g.Count(r => r.IsActive),
+                    Total = g.Count(),
+                    Active = g.Count(r => r.IsActive),
                     Inactive = g.Count(r => !r.IsActive)
                 })
                 .OrderBy(r => r.RoleName)
@@ -92,20 +92,20 @@ namespace Daniel_Licors_Store.Data.Services
 
                 result.Add(new UserDetailDto
                 {
-                    UserId         = ur.User.UserId,
-                    FullName       = ur.User.FullName,
-                    LastName       = ur.User.LastName,
-                    Email          = ur.User.Email,
-                    Age            = ur.User.Age,
-                    IsActive       = ur.User.IsActive,
-                    CreatedAt      = ur.User.CreatedAt,
-                    RoleName       = ur.Role.Name,
-                    AssignedAt     = ur.AssignedAt,
-                    TotalOrders    = ur.User.Orders.Count,
-                    TotalActions   = totalActions,
-                    LastAction     = lastLog?.Action,
-                    LastEntity     = lastLog?.Entity,
-                    LastEntityId   = lastLog?.EntityId,
+                    UserId = ur.User.UserId,
+                    FullName = ur.User.FullName,
+                    LastName = ur.User.LastName,
+                    Email = ur.User.Email,
+                    Age = ur.User.Age,
+                    IsActive = ur.User.IsActive,
+                    CreatedAt = ur.User.CreatedAt,
+                    RoleName = ur.Role.Name,
+                    AssignedAt = ur.AssignedAt,
+                    TotalOrders = ur.User.Orders.Count,
+                    TotalActions = totalActions,
+                    LastAction = lastLog?.Action,
+                    LastEntity = lastLog?.Entity,
+                    LastEntityId = lastLog?.EntityId,
                     LastActivityAt = lastLog?.CreatedAt
                 });
             }
@@ -113,9 +113,9 @@ namespace Daniel_Licors_Store.Data.Services
             // Ordenamiento
             result = filter.SortBy switch
             {
-                "Name"    => result.OrderBy(r => r.FullName).ToList(),
+                "Name" => result.OrderBy(r => r.FullName).ToList(),
                 "Created" => result.OrderByDescending(r => r.CreatedAt).ToList(),
-                _         => result.OrderByDescending(r => r.LastActivityAt ?? DateTime.MinValue).ToList()
+                _ => result.OrderByDescending(r => r.LastActivityAt ?? DateTime.MinValue).ToList()
             };
 
             return result;
@@ -143,13 +143,13 @@ namespace Daniel_Licors_Store.Data.Services
             return logs.Select(l => new AuditLogDto
             {
                 AuditLogId = l.AuditLogId,
-                UserId     = l.UserId ?? string.Empty,
-                UserName   = l.User?.FullName ?? "Desconocido",
-                RoleName   = roleName,
-                Action     = l.Action,
-                Entity     = l.Entity,
-                EntityId   = l.EntityId,
-                CreatedAt  = l.CreatedAt
+                UserId = l.UserId ?? string.Empty,
+                UserName = l.User?.FullName ?? "Desconocido",
+                RoleName = roleName,
+                Action = l.Action,
+                Entity = l.Entity,
+                EntityId = l.EntityId,
+                CreatedAt = l.CreatedAt
             }).ToList();
         }
 
@@ -178,13 +178,13 @@ namespace Daniel_Licors_Store.Data.Services
             return logs.Select(l => new AuditLogDto
             {
                 AuditLogId = l.AuditLogId,
-                UserId     = l.UserId ?? string.Empty,
-                UserName   = l.User?.FullName ?? "Desconocido",
-                RoleName   = l.UserId != null && roleMap.TryGetValue(l.UserId, out var r) ? r : "–",
-                Action     = l.Action,
-                Entity     = l.Entity,
-                EntityId   = l.EntityId,
-                CreatedAt  = l.CreatedAt
+                UserId = l.UserId ?? string.Empty,
+                UserName = l.User?.FullName ?? "Desconocido",
+                RoleName = l.UserId != null && roleMap.TryGetValue(l.UserId, out var r) ? r : "–",
+                Action = l.Action,
+                Entity = l.Entity,
+                EntityId = l.EntityId,
+                CreatedAt = l.CreatedAt
             }).ToList();
         }
 
@@ -197,19 +197,28 @@ namespace Daniel_Licors_Store.Data.Services
             if (user == null) return false;
 
             user.IsActive = !user.IsActive;
-
-            var action = user.IsActive ? "Cuenta Activada" : "Cuenta Desactivada";
-
-            ctx.AuditLogs.Add(new AuditLog
-            {
-                UserId    = performedByUserId,
-                Action    = action,
-                Entity    = "User",
-                EntityId  = userId,
-                CreatedAt = DateTime.Now
-            });
-
             await ctx.SaveChangesAsync();
+
+            // Solo registrar audit log si el performedByUserId existe en Users
+            // (evita FK violation si el userId llegó vacío o inválido)
+            if (!string.IsNullOrWhiteSpace(performedByUserId))
+            {
+                var adminExists = await ctx.Users.AnyAsync(u => u.UserId == performedByUserId);
+                if (adminExists)
+                {
+                    var action = user.IsActive ? "Cuenta Activada" : "Cuenta Desactivada";
+                    ctx.AuditLogs.Add(new AuditLog
+                    {
+                        UserId = performedByUserId,
+                        Action = action,
+                        Entity = "User",
+                        EntityId = userId,
+                        CreatedAt = DateTime.Now
+                    });
+                    await ctx.SaveChangesAsync();
+                }
+            }
+
             return true;
         }
 
@@ -220,10 +229,10 @@ namespace Daniel_Licors_Store.Data.Services
 
             ctx.AuditLogs.Add(new AuditLog
             {
-                UserId    = userId,
-                Action    = action,
-                Entity    = entity,
-                EntityId  = entityId,
+                UserId = userId,
+                Action = action,
+                Entity = entity,
+                EntityId = entityId,
                 CreatedAt = DateTime.Now
             });
 

@@ -48,7 +48,9 @@ namespace Daniel_Licors_Store.Components.Pages
         {
             // Obtener el usuario logueado
             var authState = await AuthState.GetAuthenticationStateAsync();
-            currentUserId = authState.User.FindFirst("sub")?.Value
+            // ClaimTypes.NameIdentifier es como CustomAuthStateProvider guarda el UserId
+            currentUserId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
+                         ?? authState.User.FindFirst("sub")?.Value
                          ?? authState.User.FindFirst("UserId")?.Value
                          ?? string.Empty;
 
