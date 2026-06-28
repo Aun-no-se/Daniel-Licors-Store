@@ -796,12 +796,14 @@
                 <!-- Tabs Categorías / Marcas -->
                 <div class="dl-catalog-tabs">
                     <button class="dl-catalog-tab @(catalogTab == 0 ? "active" : "")"
-                            @onclick="() => SwitchCatalogTab(0)">
-                        🏷️ Categorías (@categories.Count)
+                            @onclick="() => SwitchCatalogTab(0)"
+                            style="display: flex; align-items: center; gap: 6px;">
+                        <MudIcon Icon="@Icons.Material.Filled.Category" Size="Size.Small" /> Categorías (@categories.Count)
                     </button>
                     <button class="dl-catalog-tab @(catalogTab == 1 ? "active" : "")"
-                            @onclick="() => SwitchCatalogTab(1)">
-                        🔖 Marcas (@brands.Count)
+                            @onclick="() => SwitchCatalogTab(1)"
+                            style="display: flex; align-items: center; gap: 6px;">
+                        <MudIcon Icon="@Icons.Material.Filled.LocalOffer" Size="Size.Small" /> Marcas (@brands.Count)
                     </button>
                 </div>
 
@@ -838,11 +840,11 @@
                                     <div class="dl-catalog-chip-actions">
                                         <button class="dl-catalog-btn edit" title="Editar"
                                                 @onclick="() => StartEditCategory(cat)">
-                                            ✏️
+                                            <MudIcon Icon="@Icons.Material.Filled.Edit" Size="Size.Small" />
                                         </button>
                                         <button class="dl-catalog-btn del" title="Eliminar"
                                                 @onclick="() => DeleteCategoryAsync(cat)">
-                                            🗑️
+                                            <MudIcon Icon="@Icons.Material.Filled.Delete" Size="Size.Small" />
                                         </button>
                                     </div>
                                 </div>
@@ -898,11 +900,11 @@
                                     <div class="dl-catalog-chip-actions">
                                         <button class="dl-catalog-btn edit" title="Editar"
                                                 @onclick="() => StartEditBrand(brand)">
-                                            ✏️
+                                            <MudIcon Icon="@Icons.Material.Filled.Edit" Size="Size.Small" />
                                         </button>
                                         <button class="dl-catalog-btn del" title="Eliminar"
                                                 @onclick="() => DeleteBrandAsync(brand)">
-                                            🗑️
+                                            <MudIcon Icon="@Icons.Material.Filled.Delete" Size="Size.Small" />
                                         </button>
                                     </div>
                                 </div>

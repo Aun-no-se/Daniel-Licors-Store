@@ -12,10 +12,10 @@ html, body {
     overflow-x: hidden;
 }
 
-/* ===== FONDO GRADIENTE PREMIUM ===== */
+/* ===== FONDO GRADIENTE PREMIUM Y SOBRIO ===== */
 body {
-    /* Un degradado elegante que simula iluminación desde el fondo */
-    background: radial-gradient(circle at 50% 100%, #3A0707 0%, #0D0D0D 60%, #050505 100%) !important;
+    /* Gradiente lineal elegante de rojo profundo a negro */
+    background: linear-gradient(180deg, rgba(20, 0, 0, 0.8) 0%, #050505 100%) !important;
     background-attachment: fixed !important;
 }
 
@@ -75,26 +75,23 @@ body {
         filter: brightness(1.1);
     }
 
-/* Botones de Texto / Menús */
 .mud-button-root {
-    text-transform: none !important; /* Quita las mayúsculas forzadas de MudBlazor */
+    text-transform: none !important;
     font-weight: 500;
 }
 
-/* Efecto Hover sutil para botones planos */
 .topbar-right .mud-button-text:hover {
     background: rgba(255, 23, 68, 0.1) !important;
     color: #FF5252 !important;
 }
 
-/* ===== RESPONSIVE MÓVIL (DE LOCOS) ===== */
+/* ===== RESPONSIVE MÓVIL ===== */
 @media (max-width: 600px) {
     .topbar-center {
         font-size: 1rem;
         letter-spacing: 1px;
     }
 
-    /* El menú desplegable en móvil adaptado al modo oscuro con bordes rojos */
     .mud-popover-provider .mud-popover-open {
         background: #141414 !important;
         border: 1px solid rgba(255, 23, 68, 0.2) !important;
@@ -113,10 +110,10 @@ body {
 
 /* ===== CONTENIDO PRINCIPAL LAYOUT ===== */
 .main-content {
-    padding-top: 80px !important; /* Previene que la barra fija tape el contenido */
+    padding-top: 80px !important;
 }
 
-/* Scrollbar personalizada para que combine con el flow */
+/* Scrollbar personalizada */
 ::-webkit-scrollbar {
     width: 8px;
 }
@@ -134,7 +131,7 @@ body {
         background: #FF1744;
     }
 
-/* ===== ETIQUETAS DE SECCIÓN EN MENÚ MÓVIL ===== */
+/* ===== ETIQUETAS DE SECCIÓN ===== */
 .menu-mobile-header {
     font-size: 0.75rem;
     font-weight: 700;
@@ -150,7 +147,7 @@ body {
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 1px;
-    color: #FF8A80; /* Un rojo claro/salmón para los empleados */
+    color: #FF8A80;
     padding: 6px 16px;
     margin: 0;
 }
@@ -160,12 +157,11 @@ body {
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 1px;
-    color: #FF1744; /* El rojo brillante de Daniel Liquor Store */
+    color: #FF1744;
     padding: 6px 16px;
     margin: 0;
 }
 
-/* Espaciado del icono interno en MudMenuItem móvil */
 .mud-menu-item .mud-icon-root {
     margin-right: 12px !important;
     font-size: 1.25rem;
