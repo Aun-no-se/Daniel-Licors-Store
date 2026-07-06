@@ -15,6 +15,7 @@ namespace Daniel_Licors_Store.Components.Pages
         List<ComboDto> Combos = new();
         List<PromotionDto> Promotions = new();
         bool _loading = true;
+        private HashSet<int> _expandedPromoIds = new();
 
         protected override async Task OnInitializedAsync()
         {
@@ -45,6 +46,17 @@ namespace Daniel_Licors_Store.Components.Pages
             if (promo.HasDiscount) return Color.Error;
             if (promo.HasSpecialPrice) return Color.Warning;
             return Color.Info;
+        }
+
+        // ── Expandir/colapsar "Ver detalle" de una promoción ──
+        private bool IsPromoExpanded(int promotionId) => _expandedPromoIds.Contains(promotionId);
+
+        private void TogglePromoDetail(int promotionId)
+        {
+            if (!_expandedPromoIds.Remove(promotionId))
+            {
+                _expandedPromoIds.Add(promotionId);
+            }
         }
 
         // ── Agregar producto al carrito ──
