@@ -263,45 +263,58 @@ else
                     <div class="sg-promo-grid">
                         @foreach (var promo in _promos)
                         {
+                            bool vencida = promo.EndDate < DateTime.Now;
                             <div class="sg-promo-card">
-                                <div class="sg-promo-header">
-                                    <MudIcon Icon="@Icons.Material.Filled.LocalOffer" Style="color:#9C27B0;font-size:1.4rem" />
-                                    <div class="sg-promo-title-wrap">
+                                <div class="sg-promo-img-wrap">
+                                    @if (!string.IsNullOrEmpty(promo.ImageUrl))
+                                    {
+                                        <img src="@promo.ImageUrl" class="sg-promo-img" alt="@promo.Title" />
+                                    }
+                                    else
+                                    {
+                                        <div class="sg-promo-img-placeholder">
+                                            <MudIcon Icon="@Icons.Material.Filled.LocalOffer" Style="font-size:2.4rem;color:#E8C468;opacity:.55" />
+                                        </div>
+                                    }
+                                    <span class="sg-promo-badge">Promoción</span>
+                                    @if (vencida)
+                                    {
+                                        <span class="sg-promo-badge-expired">Vencida</span>
+                                    }
+                                </div>
+                                <div class="sg-promo-body">
+                                    <div class="sg-promo-title-row">
                                         <span class="sg-promo-title">@promo.Title</span>
                                         @if (!string.IsNullOrEmpty(promo.PromotionType))
                                         {
-                                            <MudChip T="string" Size="Size.Small" Color="Color.Secondary" Class="ml-1">@promo.PromotionType</MudChip>
+                                            <span class="sg-promo-type-chip">@promo.PromotionType</span>
                                         }
                                     </div>
-                                </div>
-                                @if (!string.IsNullOrEmpty(promo.Description))
-                                {
-                                    <p class="sg-promo-desc">@promo.Description</p>
-                                }
-                                <div class="sg-promo-dates">
-                                    <MudIcon Icon="@Icons.Material.Filled.DateRange" Style="font-size:0.9rem;color:#888" />
-                                    <span>@promo.StartDate.ToString("dd MMM") – @promo.EndDate.ToString("dd MMM yyyy")</span>
-                                    @if (promo.EndDate < DateTime.Now)
+                                    @if (!string.IsNullOrEmpty(promo.Description))
                                     {
-                                        <MudChip T="string" Size="Size.Small" Color="Color.Warning">Vencida</MudChip>
+                                        <p class="sg-promo-desc">@promo.Description</p>
+                                    }
+                                    <div class="sg-promo-dates">
+                                        <MudIcon Icon="@Icons.Material.Filled.DateRange" Style="font-size:0.85rem;color:#c9a227" />
+                                        <span>@promo.StartDate.ToString("dd MMM") – @promo.EndDate.ToString("dd MMM yyyy")</span>
+                                    </div>
+                                    @if (promo.Products.Any())
+                                    {
+                                        <div class="sg-promo-products">
+                                            @foreach (var pp in promo.Products)
+                                            {
+                                                <div class="sg-promo-prod-item">
+                                                    <span class="sg-promo-dot"></span>
+                                                    <span>@pp.Name</span>
+                                                    @if (pp.SpecialPrice.HasValue)
+                                                    {
+                                                        <span class="sg-promo-special-price">RD$@pp.SpecialPrice.Value.ToString("N2")</span>
+                                                    }
+                                                </div>
+                                            }
+                                        </div>
                                     }
                                 </div>
-                                @if (promo.Products.Any())
-                                {
-                                    <div class="sg-promo-products">
-                                        @foreach (var pp in promo.Products)
-                                        {
-                                            <div class="sg-promo-prod-item">
-                                                <MudIcon Icon="@Icons.Material.Filled.Liquor" Style="font-size:0.9rem;color:#9C27B0" />
-                                                <span>@pp.Name</span>
-                                                @if (pp.SpecialPrice.HasValue)
-                                                {
-                                                    <span class="sg-promo-special-price">RD$@pp.SpecialPrice.Value.ToString("N2")</span>
-                                                }
-                                            </div>
-                                        }
-                                    </div>
-                                }
                             </div>
                         }
                     </div>
@@ -323,18 +336,19 @@ else
                         @foreach (var combo in _combos)
                         {
                             <div class="sg-combo-card">
-                                @if (!string.IsNullOrEmpty(combo.ImageUrl))
-                                {
-                                    <div class="sg-combo-img-wrap">
+                                <div class="sg-combo-img-wrap">
+                                    @if (!string.IsNullOrEmpty(combo.ImageUrl))
+                                    {
                                         <img src="@combo.ImageUrl" class="sg-combo-img" alt="@combo.Name" />
-                                    </div>
-                                }
-                                else
-                                {
-                                    <div class="sg-combo-img-placeholder">
-                                        <MudIcon Icon="@Icons.Material.Filled.CardGiftcard" Style="font-size:2.5rem;color:#2196F3" />
-                                    </div>
-                                }
+                                    }
+                                    else
+                                    {
+                                        <div class="sg-combo-img-placeholder">
+                                            <MudIcon Icon="@Icons.Material.Filled.CardGiftcard" Style="font-size:2.4rem;color:#FF1744;opacity:.6" />
+                                        </div>
+                                    }
+                                    <span class="sg-combo-badge">Combo</span>
+                                </div>
                                 <div class="sg-combo-body">
                                     <span class="sg-combo-name">@combo.Name</span>
                                     @if (!string.IsNullOrEmpty(combo.Description))
@@ -342,7 +356,7 @@ else
                                         <p class="sg-combo-desc">@combo.Description</p>
                                     }
                                     <div class="sg-combo-price-row">
-                                        <MudIcon Icon="@Icons.Material.Filled.AttachMoney" Style="color:#4CAF50;font-size:1rem" />
+                                        <MudIcon Icon="@Icons.Material.Filled.AttachMoney" Style="color:#FF5C7F;font-size:1rem" />
                                         <span class="sg-combo-price">RD$@combo.ComboPrice.ToString("N2")</span>
                                     </div>
                                     @if (combo.EndDate.HasValue)
@@ -358,7 +372,7 @@ else
                                             @foreach (var name in combo.ProductNames)
                                             {
                                                 <div class="sg-combo-item">
-                                                    <MudIcon Icon="@Icons.Material.Filled.FiberManualRecord" Style="font-size:0.5rem;color:#2196F3;margin-right:5px" />
+                                                    <span class="sg-combo-dot"></span>
                                                     @name
                                                 </div>
                                             }

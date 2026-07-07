@@ -5,19 +5,338 @@
 @using Daniel_Licors_Store.Models.Product
 @using MudBlazor
 
+<div class="combo-page-bg">
+    <div class="cb-glow cb-glow-gold"></div>
+    <div class="cb-glow cb-glow-crimson"></div>
+
+    <MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="cb-page">
+
+        <!-- ── HEADER ─────────────────────────────────────────────────── -->
+        <div class="cb-header">
+            <div class="cb-header-left">
+                <div class="cb-header-icon">
+                    <MudIcon Icon="@Icons.Material.Filled.CardGiftcard" Class="cb-header-icon-svg" />
+                </div>
+                <div>
+                    <p class="cb-page-title">Combos</p>
+                    <p class="cb-page-sub">Paquetes especiales con múltiples productos a precio combinado</p>
+                </div>
+            </div>
+            <MudButton Class="cb-btn-new"
+                       StartIcon="@Icons.Material.Filled.Add"
+                       OnClick="ShowCreateSection">
+                Nuevo Combo
+            </MudButton>
+        </div>
+
+        <!-- ── LOADING ────────────────────────────────────────────────── -->
+        @if (_loading)
+        {
+            <div class="cb-loading">
+                <MudProgressCircular Indeterminate Size="Size.Large" Color="Color.Warning" />
+                <span>Cargando combos...</span>
+            </div>
+        }
+        else if (!_adminCombos.Any())
+        {
+            <div class="cb-empty">
+                <div class="cb-empty-icon-ring">
+                    <MudIcon Icon="@Icons.Material.Filled.CardGiftcard" Class="cb-empty-icon" />
+                </div>
+                <p class="cb-empty-title">Sin combos aún</p>
+                <p class="cb-empty-sub">Crea tu primer combo para empezar a ofrecer paquetes especiales.</p>
+                <MudButton Class="cb-btn-new mt-3" OnClick="ShowCreateSection">Crear combo</MudButton>
+            </div>
+        }
+        else
+        {
+            <!-- ── TABLA ──────────────────────────────────────────────── -->
+            <div class="cb-table-wrap">
+                <div class="cb-table-scroll">
+                    <table class="cb-table">
+                        <thead>
+                            <tr>
+                                <th>Imagen</th>
+                                <th>Nombre</th>
+                                <th>Precio</th>
+                                <th>Productos</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var combo in _adminCombos)
+                            {
+                                <tr>
+                                    <td>
+                                        @if (!string.IsNullOrEmpty(combo.ImageUrl) && combo.ImageUrl != "/images/combo-default.png")
+                                        {
+                                            <img src="@combo.ImageUrl" class="cb-thumb" alt="@combo.Name" />
+                                        }
+                                        else
+                                        {
+                                            <div class="cb-thumb-placeholder">
+                                                <MudIcon Icon="@Icons.Material.Filled.CardGiftcard" Size="Size.Small" />
+                                            </div>
+                                        }
+                                    </td>
+                                    <td class="cb-name-cell">@combo.Name</td>
+                                    <td>
+                                        <span class="cb-price-badge">$@combo.ComboPrice.ToString("N2")</span>
+                                    </td>
+                                    <td class="cb-products-cell">
+                                        @combo.ProductsSummary
+                                    </td>
+                                    <td>
+                                        <div class="cb-actions">
+                                            <MudIconButton Icon="@Icons.Material.Filled.Visibility"
+                                                           Color="Color.Info" Size="Size.Small"
+                                                           Class="cb-action-btn"
+                                                           Title="Ver detalle"
+                                                           OnClick="@(() => Nav.NavigateTo($"/combo/{combo.ComboId}", true))" />
+                                            <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                                           Color="Color.Warning" Size="Size.Small"
+                                                           Class="cb-action-btn"
+                                                           Title="Editar"
+                                                           OnClick="@(() => EditCombo(combo.ComboId))" />
+                                            <MudIconButton Icon="@Icons.Material.Filled.DeleteOutline"
+                                                           Color="Color.Error" Size="Size.Small"
+                                                           Class="cb-action-btn"
+                                                           Title="Eliminar"
+                                                           OnClick="@(() => DeleteCombo(combo.ComboId))" />
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        }
+
+        <!-- ══ ANCLA DE SCROLL ═══════════════════════════════════════ -->
+        <div id="combo-form-anchor" style="height:0"></div>
+
+        <!-- ══ FORMULARIO GLASSMORPHISM ══════════════════════════════ -->
+        @if (_showCreateCombo)
+        {
+            <div class="cb-form-wrap">
+
+                <!-- Header -->
+                <div class="cb-form-header">
+                    <div class="cb-form-header-row">
+                        <div class="d-flex align-center gap-2">
+                            <div class="cb-form-accent"></div>
+                            <div>
+                                <p class="cb-form-title">@(_isEditMode ? "Editar Combo" : "Nuevo Combo")</p>
+                                <p class="cb-form-subtitle">
+                                    @(_isEditMode ? $"Modificando ID #{_editingComboId}" : "Completa los datos del nuevo combo")
+                                </p>
+                            </div>
+                        </div>
+                        <span class="cb-form-badge @(_isEditMode ? "cb-badge-edit" : "cb-badge-new")">
+                            @(_isEditMode ? "EDITAR" : "NUEVO")
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Body -->
+                <div class="cb-form-body">
+
+                    <!-- Imagen -->
+                    <p class="cb-section-label">
+                        <MudIcon Icon="@Icons.Material.Filled.Image" Size="Size.Small" Class="cb-section-icon" /> Imagen del combo
+                    </p>
+
+                    <InputFile id="combo-img-input"
+                               OnChange="HandleFileSelected"
+                               accept="image/png,image/jpeg,image/webp"
+                               style="display:none" />
+
+                    <label for="combo-img-input" class="cb-img-label">
+                        <div class="cb-img-zone @(HasComboImage ? "has-image" : "")">
+                            @if (HasComboImage)
+                            {
+                                <img src="@(_previewBase64 ?? _newCombo.ImageUrl)" alt="Preview" />
+                                <div class="cb-img-overlay">
+                                    <span class="cb-overlay-btn">
+                                        <MudIcon Icon="@Icons.Material.Filled.Autorenew" Size="Size.Small" Class="mr-1" /> Cambiar
+                                    </span>
+                                    <span class="cb-overlay-btn" @onclick:stopPropagation @onclick="RemoveImage">
+                                        <MudIcon Icon="@Icons.Material.Filled.DeleteOutline" Size="Size.Small" Class="mr-1" /> Quitar
+                                    </span>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="cb-img-placeholder">
+                                    <MudIcon Icon="@Icons.Material.Filled.AddPhotoAlternate" Class="cb-img-icon" />
+                                    <div class="cb-img-text">Toca aquí para subir imagen</div>
+                                    <div class="cb-img-sub">PNG, JPG, WEBP · máx 5 MB</div>
+                                </div>
+                            }
+                        </div>
+                    </label>
+
+                    <!-- Info básica -->
+                    <p class="cb-section-label">
+                        <MudIcon Icon="@Icons.Material.Filled.Description" Size="Size.Small" Class="cb-section-icon" /> Información básica
+                    </p>
+                    <div class="cb-field-grid cols-2">
+                        <MudTextField @bind-Value="_newCombo.Name"
+                                      Label="Nombre del Combo"
+                                      Variant="Variant.Outlined"
+                                      Placeholder="Ej: Combo Fin de Semana" />
+                        <MudNumericField @bind-Value="_newCombo.ComboPrice"
+                                         T="decimal"
+                                         Label="Precio del combo ($)"
+                                         Variant="Variant.Outlined"
+                                         Adornment="Adornment.Start"
+                                         AdornmentText="$" />
+                    </div>
+                    <div class="cb-field-grid cols-1">
+                        <MudTextField @bind-Value="_newCombo.Description"
+                                      Label="Descripción (opcional)"
+                                      Lines="2"
+                                      Variant="Variant.Outlined"
+                                      Placeholder="Breve descripción visible al cliente" />
+                    </div>
+
+                    <!-- Productos -->
+                    <p class="cb-section-label">
+                        <MudIcon Icon="@Icons.Material.Filled.ShoppingCart" Size="Size.Small" Class="cb-section-icon" /> Productos en este combo
+                    </p>
+
+                    <div class="cb-picker-wrap mb-3">
+                        <MudTable Items="_products" Dense Hover Bordered Class="products-picker-table">
+                            <HeaderContent>
+                                <MudTh>Producto</MudTh>
+                                <MudTh>Precio</MudTh>
+                                <MudTh Align="Align.Center">Agregar</MudTh>
+                            </HeaderContent>
+                            <RowTemplate>
+                                <MudTd>
+                                    <MudText Typo="Typo.body2" Class="font-weight-bold cb-picker-name">@context.Name</MudText>
+                                </MudTd>
+                                <MudTd>
+                                    <MudText Class="font-weight-bold cb-picker-price">
+                                        $@context.Price.ToString("N2")
+                                    </MudText>
+                                </MudTd>
+                                <MudTd Align="Align.Center">
+                                    <MudIconButton Icon="@Icons.Material.Filled.AddCircleOutline"
+                                                   Color="Color.Warning"
+                                                   OnClick="@(() => OpenQuantityModal(context))" />
+                                </MudTd>
+                            </RowTemplate>
+                        </MudTable>
+                    </div>
+
+                    @if (_comboBuilder.Any())
+                    {
+                        <div class="cb-included-label">Incluidos en el combo:</div>
+                        <div class="cb-chips-wrap">
+                            @foreach (var item in _comboBuilder)
+                            {
+                                <MudChip T="ComboProductTemp"
+                                         Value="@item"
+                                         Closeable="true"
+                                         Class="cb-included-chip"
+                                         OnClose="@(() => _comboBuilder.Remove(item))">
+                                    @($"{item.Quantity} x {item.ProductName}")
+                                </MudChip>
+                            }
+                        </div>
+                    }
+
+                </div><!-- /cb-form-body -->
+                <!-- Footer -->
+                <div class="cb-form-footer">
+                    <MudButton Class="cb-cancel-btn" OnClick="ResetForm">Cancelar</MudButton>
+                    <MudButton Class="cb-save-btn"
+                               Disabled="@(!_comboBuilder.Any())"
+                               StartIcon="@Icons.Material.Filled.Check"
+                               OnClick="SaveCombo">
+                        @(_isEditMode ? "Actualizar Combo" : "Guardar Combo")
+                    </MudButton>
+                </div>
+
+            </div>
+        }
+
+    </MudContainer>
+</div>
+
 <style>
     /* ── Variables ─────────────────────────────────────────────── */
     :root {
-        --cb-orange: #FF9800;
-        --cb-orange-dim: rgba(255,152,0,0.14);
-        --cb-orange-border: rgba(255,152,0,0.28);
-        --cb-bg: rgba(10,10,10,0.97);
+        --cb-gold-1: #b38728;
+        --cb-gold-2: #fbf5b7;
+        --cb-gold-3: #daa520;
+        --cb-gold-4: #aa771c;
+        --cb-gold-solid: #E8C468;
+        --cb-gold-dim: rgba(218,165,32,0.14);
+        --cb-gold-border: rgba(218,165,32,0.3);
+        --cb-red: #FF1744;
+        --cb-red-dark: #B71C1C;
         --cb-surface: rgba(255,255,255,0.035);
         --cb-border: rgba(255,255,255,0.08);
+        --cb-text-muted: #a1a1aa;
+        --cb-text-dim: #71717a;
+    }
+
+    .muted-text {
+        color: var(--cb-text-muted) !important;
+    }
+
+    /* ── Fondo de página ──────────────────────────────────────────── */
+    .combo-page-bg {
+        position: relative;
+        min-height: 100vh;
+        background: radial-gradient(ellipse at top, #140d05 0%, #0a0806 55%, #050403 100%);
+        overflow: hidden;
+    }
+
+    .cb-glow {
+        position: absolute;
+        border-radius: 50%;
+        filter: blur(80px);
+        pointer-events: none;
+        opacity: 0.22;
+        z-index: 0;
+        animation: cbFloat 14s ease-in-out infinite;
+    }
+
+    .cb-glow-gold {
+        width: 420px;
+        height: 420px;
+        top: -120px;
+        left: -100px;
+        background: radial-gradient(circle, var(--cb-gold-3) 0%, transparent 70%);
+    }
+
+    .cb-glow-crimson {
+        width: 380px;
+        height: 380px;
+        bottom: 5%;
+        right: -110px;
+        background: radial-gradient(circle, var(--cb-red) 0%, transparent 70%);
+        animation-delay: -7s;
+    }
+
+    @@keyframes cbFloat {
+        0%, 100% {
+            transform: translate(0,0) scale(1);
+        }
+
+        50% {
+            transform: translate(20px, -20px) scale(1.08);
+        }
     }
 
     /* ── Page ───────────────────────────────────────────────────── */
     .cb-page {
+        position: relative;
+        z-index: 1;
         padding: 1.25rem 1rem 4rem;
         max-width: 1200px;
         margin: 0 auto;
@@ -31,27 +350,40 @@
         flex-wrap: wrap;
         gap: .85rem;
         margin-bottom: 1.75rem;
+        animation: cbFadeDown .5s ease both;
     }
 
     .cb-header-left {
         display: flex;
         align-items: center;
-        gap: .75rem;
+        gap: .85rem;
     }
 
-    .cb-header-accent {
-        width: 4px;
-        height: 34px;
-        border-radius: 4px;
-        background: linear-gradient(180deg, var(--cb-orange), #e65100);
-        box-shadow: 0 0 12px rgba(255,152,0,.45);
+    .cb-header-icon {
+        width: 42px;
+        height: 42px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--cb-gold-dim);
+        border: 1px solid var(--cb-gold-border);
+        flex-shrink: 0;
+    }
+
+    .cb-header-icon-svg {
+        color: var(--cb-gold-solid) !important;
+        filter: drop-shadow(0 0 6px rgba(218,165,32,.5));
     }
 
     .cb-page-title {
         margin: 0;
         font-size: 1.5rem;
-        font-weight: 700;
-        color: #fff;
+        font-weight: 800;
+        background: linear-gradient(135deg, #ffffff 30%, var(--cb-gold-solid) 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
     }
 
     .cb-page-sub {
@@ -61,47 +393,68 @@
     }
 
     .cb-btn-new {
-        background: linear-gradient(135deg, var(--cb-orange), #e65100) !important;
-        color: #fff !important;
+        background: linear-gradient(135deg, var(--cb-gold-2), var(--cb-gold-3) 55%, var(--cb-gold-1)) !important;
+        color: #1a1005 !important;
         border-radius: 10px !important;
         text-transform: none !important;
-        font-weight: 700 !important;
+        font-weight: 800 !important;
         padding: 0 22px !important;
         height: 40px !important;
-        box-shadow: 0 4px 16px rgba(255,152,0,.3) !important;
+        box-shadow: 0 4px 16px rgba(218,165,32,.35) !important;
+        transition: transform .2s ease, box-shadow .2s ease !important;
     }
 
         .cb-btn-new:hover {
-            filter: brightness(1.1) !important;
-            transform: translateY(-1px) !important;
+            transform: translateY(-2px) !important;
+            box-shadow: 0 8px 24px rgba(218,165,32,.5) !important;
         }
+
+    .cb-loading {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 4rem 0;
+        gap: 1rem;
+        color: rgba(255,255,255,.4);
+    }
 
     /* ── Tabla ──────────────────────────────────────────────────── */
     .cb-table-wrap {
-        background: rgba(255,255,255,.025);
+        background: var(--cb-surface);
         border: 1px solid var(--cb-border);
-        border-radius: 14px;
+        border-top: 2px solid var(--cb-gold-solid);
+        border-radius: 16px;
         overflow: hidden;
+        backdrop-filter: blur(12px);
+        animation: cbFadeUp .5s ease both;
+        animation-delay: .05s;
+    }
+
+    .cb-table-scroll {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
     }
 
     .cb-table {
         width: 100%;
+        min-width: 640px;
         border-collapse: collapse;
     }
 
         .cb-table thead tr {
-            background: rgba(255,152,0,.07);
-            border-bottom: 1px solid var(--cb-orange-border);
+            background: rgba(218,165,32,.08);
+            border-bottom: 1px solid var(--cb-gold-border);
         }
 
         .cb-table th {
-            padding: .65rem 1rem;
-            font-size: .7rem;
+            padding: .7rem 1rem;
+            font-size: .68rem;
             font-weight: 700;
             letter-spacing: 1.1px;
             text-transform: uppercase;
-            color: rgba(255,152,0,.85);
+            color: rgba(232,196,104,.9);
             text-align: left;
+            white-space: nowrap;
         }
 
         .cb-table td {
@@ -112,42 +465,56 @@
             vertical-align: middle;
         }
 
-        .cb-table tbody tr:last-child td {
-            border-bottom: none;
+        .cb-table tbody tr {
+            transition: background .15s ease;
         }
 
-        .cb-table tbody tr:hover td {
-            background: rgba(255,255,255,.03);
-        }
+            .cb-table tbody tr:last-child td {
+                border-bottom: none;
+            }
+
+            .cb-table tbody tr:hover td {
+                background: rgba(218,165,32,.035);
+            }
+
+    .cb-name-cell {
+        font-weight: 600;
+        color: #fff;
+    }
+
+    .cb-products-cell {
+        font-size: .78rem;
+        color: rgba(255,255,255,.55);
+    }
 
     .cb-thumb {
-        width: 44px;
-        height: 44px;
+        width: 46px;
+        height: 46px;
         object-fit: cover;
-        border-radius: 8px;
+        border-radius: 9px;
         border: 1px solid var(--cb-border);
     }
 
     .cb-thumb-placeholder {
-        width: 44px;
-        height: 44px;
-        border-radius: 8px;
-        background: var(--cb-orange-dim);
-        border: 1px dashed var(--cb-orange-border);
+        width: 46px;
+        height: 46px;
+        border-radius: 9px;
+        background: var(--cb-gold-dim);
+        border: 1px dashed var(--cb-gold-border);
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 1.3rem;
+        color: var(--cb-gold-solid);
     }
 
     .cb-price-badge {
         display: inline-block;
-        padding: 3px 10px;
+        padding: 3px 11px;
         border-radius: 20px;
         font-size: .72rem;
-        font-weight: 700;
-        background: rgba(255,152,0,.12);
-        color: #ffb74d;
+        font-weight: 800;
+        background: rgba(218,165,32,.16);
+        color: var(--cb-gold-solid);
     }
 
     .cb-actions {
@@ -155,32 +522,83 @@
         gap: .25rem;
     }
 
+    .cb-action-btn {
+        transition: transform .15s ease;
+    }
+
+        .cb-action-btn:hover {
+            transform: scale(1.15);
+        }
+
     /* ── Empty ──────────────────────────────────────────────────── */
     .cb-empty {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
         text-align: center;
         padding: 4rem 1rem;
-        color: rgba(255,255,255,.3);
+        border-radius: 18px;
+        background: var(--cb-surface);
+        border: 1px solid var(--cb-border);
+        backdrop-filter: blur(12px);
+        animation: cbFadeUp .5s ease both;
+    }
+
+    .cb-empty-icon-ring {
+        width: 76px;
+        height: 76px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: radial-gradient(circle, rgba(218,165,32,0.16), transparent 70%);
+        border: 1.5px solid var(--cb-gold-border);
+        margin-bottom: 16px;
+        animation: cbPulseRing 2.4s ease-in-out infinite;
+    }
+
+    @@keyframes cbPulseRing {
+        0%, 100% {
+            box-shadow: 0 0 0 0 rgba(218,165,32,0.25);
+        }
+
+        50% {
+            box-shadow: 0 0 0 12px rgba(218,165,32,0);
+        }
     }
 
     .cb-empty-icon {
-        font-size: 3rem !important;
-        margin-bottom: .75rem;
+        font-size: 2rem !important;
+        color: var(--cb-gold-solid);
     }
 
-    /* ═══════════════════════════════════════════════════════════════
-       FORMULARIO — dark glassmorphism (mismo estilo ProductDialog)
-       ══════════════════════════════════════════════════════════════ */
+    .cb-empty-title {
+        font-size: .95rem;
+        font-weight: 700;
+        color: #fff;
+        margin: 0 0 .3rem;
+    }
+
+    .cb-empty-sub {
+        font-size: .8rem;
+        color: var(--cb-text-muted);
+        margin: 0;
+    }
+
+    /* ═══════════════ FORMULARIO ═══════════════ */
     .cb-form-wrap {
         margin-top: 2rem;
-        background: rgba(10,10,10,.96);
-        border: 1px solid var(--cb-orange-border);
+        position: relative;
+        z-index: 1;
+        background: linear-gradient(165deg, #140d05 0%, #0a0806 70%);
+        border: 1px solid var(--cb-gold-border);
         border-radius: 20px;
         overflow: hidden;
         box-shadow: 0 32px 80px rgba(0,0,0,.8), 0 0 0 1px rgba(255,255,255,.04);
-        animation: cb-slide-up .35s cubic-bezier(.22,1,.36,1);
+        animation: cbSlideUp .35s cubic-bezier(.22,1,.36,1);
     }
 
-    @@keyframes cb-slide-up {
+    @@keyframes cbSlideUp {
         from {
             opacity: 0;
             transform: translateY(14px);
@@ -192,11 +610,34 @@
         }
     }
 
-    /* Header del form */
+    @@keyframes cbFadeUp {
+        from {
+            opacity: 0;
+            transform: translateY(14px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @@keyframes cbFadeDown {
+        from {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
     .cb-form-header {
         padding: 20px 24px 16px;
-        background: linear-gradient(135deg, #1a0a00 0%, #0d0d0d 60%);
-        border-bottom: 1px solid var(--cb-orange-border);
+        background: linear-gradient(135deg, #1a1400 0%, #0d0d0d 60%);
+        border-bottom: 1px solid var(--cb-gold-border);
         position: relative;
         overflow: hidden;
     }
@@ -205,7 +646,7 @@
             content: '';
             position: absolute;
             inset: 0;
-            background: radial-gradient(circle at 0% 50%, rgba(255,152,0,.1) 0%, transparent 70%);
+            background: radial-gradient(circle at 0% 50%, rgba(218,165,32,.12) 0%, transparent 70%);
             pointer-events: none;
         }
 
@@ -220,8 +661,8 @@
         height: 26px;
         border-radius: 4px;
         flex-shrink: 0;
-        background: linear-gradient(180deg, var(--cb-orange), #e65100);
-        box-shadow: 0 0 12px rgba(255,152,0,.5);
+        background: linear-gradient(180deg, var(--cb-gold-3), var(--cb-gold-4));
+        box-shadow: 0 0 12px rgba(218,165,32,.5);
     }
 
     .cb-form-title {
@@ -232,10 +673,9 @@
     }
 
     .cb-form-subtitle {
-        margin: 0;
+        margin: 2px 0 0;
         font-size: .72rem;
         color: rgba(255,255,255,.4);
-        margin-top: 2px;
     }
 
     .cb-form-badge {
@@ -255,35 +695,38 @@
     }
 
     .cb-badge-edit {
-        color: #ffb74d;
-        border-color: rgba(255,152,0,.4);
-        background: rgba(255,152,0,.08);
+        color: var(--cb-gold-solid);
+        border-color: var(--cb-gold-border);
+        background: var(--cb-gold-dim);
     }
 
-    /* Body */
     .cb-form-body {
         padding: 22px 22px 10px;
     }
 
-    /* Section labels */
     .cb-section-label {
         font-size: .67rem;
         font-weight: 700;
         letter-spacing: 1.4px;
         text-transform: uppercase;
-        color: rgba(255,152,0,.85);
+        color: rgba(232,196,104,.9);
         margin: 18px 0 12px;
         display: flex;
         align-items: center;
         gap: 8px;
     }
 
-        .cb-section-label::after {
-            content: '';
-            flex: 1;
-            height: 1px;
-            background: linear-gradient(90deg, rgba(255,152,0,.2), transparent);
-        }
+    .cb-section-icon {
+        color: var(--cb-gold-solid) !important;
+        font-size: 1rem !important;
+    }
+
+    .cb-section-label::after {
+        content: '';
+        flex: 1;
+        height: 1px;
+        background: linear-gradient(90deg, rgba(218,165,32,.25), transparent);
+    }
 
     /* Field grid */
     .cb-field-grid {
@@ -317,13 +760,18 @@
         }
 
         .cb-form-wrap .mud-input-root.mud-input-root-focused {
-            background: rgba(255,152,0,.06) !important;
-            box-shadow: 0 0 0 2px rgba(255,152,0,.25) !important;
+            background: rgba(218,165,32,.07) !important;
+            box-shadow: 0 0 0 2px rgba(218,165,32,.3) !important;
         }
 
     /* Zona imagen */
+    .cb-img-label {
+        display: block;
+        cursor: pointer;
+    }
+
     .cb-img-zone {
-        border: 2px dashed var(--cb-orange-border);
+        border: 2px dashed var(--cb-gold-border);
         border-radius: 14px;
         overflow: hidden;
         min-height: 190px;
@@ -339,7 +787,7 @@
 
         .cb-img-zone:hover, .cb-img-zone.has-image {
             border-style: solid;
-            border-color: rgba(255,152,0,.55);
+            border-color: rgba(218,165,32,.55);
         }
 
         .cb-img-zone img {
@@ -367,6 +815,8 @@
     }
 
     .cb-overlay-btn {
+        display: inline-flex;
+        align-items: center;
         background: rgba(255,255,255,.1);
         border: 1px solid rgba(255,255,255,.2);
         border-radius: 8px;
@@ -380,8 +830,8 @@
     }
 
         .cb-overlay-btn:hover {
-            background: rgba(255,152,0,.35);
-            border-color: rgba(255,152,0,.6);
+            background: rgba(218,165,32,.35);
+            border-color: rgba(218,165,32,.6);
         }
 
     .cb-img-placeholder {
@@ -390,8 +840,9 @@
     }
 
     .cb-img-icon {
-        font-size: 2.4rem;
+        font-size: 2.4rem !important;
         opacity: .3;
+        color: #fff;
         margin-bottom: 6px;
     }
 
@@ -407,17 +858,55 @@
     }
 
     /* Tabla picker */
+    .cb-picker-wrap {
+        border: 1px solid var(--cb-border);
+        border-radius: 12px;
+        overflow: hidden;
+    }
+
     .cb-form-wrap .products-picker-table {
         background: rgba(255,255,255,.02) !important;
-        border-radius: 10px;
+    }
+
+    .cb-picker-name {
+        color: #fff;
+    }
+
+    .cb-picker-price {
+        color: var(--cb-gold-solid) !important;
     }
 
     /* Chips */
+    .cb-included-label {
+        font-size: .72rem;
+        color: rgba(255,255,255,.4);
+        margin-bottom: 8px;
+    }
+
     .cb-chips-wrap {
         display: flex;
         flex-wrap: wrap;
         gap: 8px;
         margin-bottom: 16px;
+    }
+
+    .cb-included-chip {
+        animation: cbChipIn .3s cubic-bezier(.34,1.56,.64,1) both;
+        background: rgba(218,165,32,.15) !important;
+        color: var(--cb-gold-solid) !important;
+        border: 1px solid rgba(218,165,32,.35) !important;
+    }
+
+    @@keyframes cbChipIn {
+        from {
+            opacity: 0;
+            transform: scale(.7);
+        }
+
+        to {
+            opacity: 1;
+            transform: scale(1);
+        }
     }
 
     /* Footer */
@@ -445,263 +934,64 @@
         }
 
     .cb-save-btn {
-        background: linear-gradient(135deg, var(--cb-orange), #e65100) !important;
-        color: #fff !important;
-        font-weight: 700 !important;
+        background: linear-gradient(135deg, var(--cb-gold-2), var(--cb-gold-3) 55%, var(--cb-gold-1)) !important;
+        color: #1a1005 !important;
+        font-weight: 800 !important;
         border-radius: 10px !important;
         padding: 0 26px !important;
         height: 40px !important;
         text-transform: none !important;
-        box-shadow: 0 4px 16px rgba(255,152,0,.3) !important;
+        box-shadow: 0 4px 16px rgba(218,165,32,.35) !important;
+        transition: transform .2s ease, box-shadow .2s ease !important;
     }
 
         .cb-save-btn:hover:not(:disabled) {
-            filter: brightness(1.1) !important;
-            transform: translateY(-1px) !important;
+            transform: translateY(-2px) !important;
+            box-shadow: 0 8px 24px rgba(218,165,32,.5) !important;
         }
 
         .cb-save-btn:disabled {
             opacity: .5 !important;
         }
 
-    .muted-text {
-        color: rgba(255,255,255,.4) !important;
+    /* ══════════ RESPONSIVE ══════════ */
+    @@media (max-width: 700px) {
+        .cb-page {
+            padding: 1rem .75rem 3rem;
+        }
+
+        .cb-header {
+            gap: .6rem;
+        }
+
+        .cb-page-title {
+            font-size: 1.25rem;
+        }
+
+        .cb-form-body {
+            padding: 18px 16px 6px;
+        }
+
+        .cb-form-footer {
+            padding: 12px 16px;
+            flex-wrap: wrap;
+        }
+
+        .cb-cancel-btn, .cb-save-btn {
+            flex: 1;
+        }
+
+        .cb-btn-new {
+            width: 100%;
+            justify-content: center;
+        }
+
+        .cb-glow {
+            filter: blur(55px);
+            opacity: .18;
+        }
     }
 </style>
-
-<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="cb-page">
-
-    <!-- ── HEADER ─────────────────────────────────────────────────── -->
-    <div class="cb-header">
-        <div class="cb-header-left">
-            <div class="cb-header-accent"></div>
-            <div>
-                <p class="cb-page-title">Combos</p>
-                <p class="cb-page-sub">Paquetes especiales con múltiples productos a precio combinado</p>
-            </div>
-        </div>
-        <MudButton Class="cb-btn-new"
-                   StartIcon="@Icons.Material.Filled.Add"
-                   OnClick="ShowCreateSection">
-            Nuevo Combo
-        </MudButton>
-    </div>
-
-    <!-- ── LOADING ────────────────────────────────────────────────── -->
-    @if (_loading)
-    {
-        <div style="display:flex;flex-direction:column;align-items:center;padding:4rem 0;gap:1rem;color:rgba(255,255,255,.4)">
-            <MudProgressCircular Indeterminate Size="Size.Large" Color="Color.Warning" />
-            <span>Cargando combos...</span>
-        </div>
-    }
-    else if (!_adminCombos.Any())
-    {
-        <div class="cb-empty">
-            <MudIcon Icon="@Icons.Material.Filled.Inventory2" Class="cb-empty-icon" />
-            <p style="font-size:.95rem;font-weight:600;margin:.5rem 0 .25rem">Sin combos aún</p>
-            <p style="font-size:.8rem">Crea tu primer combo para empezar a ofrecer paquetes especiales.</p>
-            <MudButton Class="cb-btn-new" Style="margin-top:1rem" OnClick="ShowCreateSection">Crear combo</MudButton>
-        </div>
-    }
-    else
-    {
-        <!-- ── TABLA ──────────────────────────────────────────────── -->
-        <div class="cb-table-wrap">
-            <table class="cb-table">
-                <thead>
-                    <tr>
-                        <th>Imagen</th>
-                        <th>Nombre</th>
-                        <th>Precio</th>
-                        <th>Productos</th>
-                        <th>Acciones</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var combo in _adminCombos)
-                    {
-                        <tr>
-                            <td>
-                                @if (!string.IsNullOrEmpty(combo.ImageUrl) && combo.ImageUrl != "/images/combo-default.png")
-                                {
-                                    <img src="@combo.ImageUrl" class="cb-thumb" alt="@combo.Name" />
-                                }
-                                else
-                                {
-                                    <div class="cb-thumb-placeholder">📦</div>
-                                }
-                            </td>
-                            <td style="font-weight:600;color:#fff">@combo.Name</td>
-                            <td>
-                                <span class="cb-price-badge">$@combo.ComboPrice.ToString("N2")</span>
-                            </td>
-                            <td style="font-size:.78rem;color:rgba(255,255,255,.55)">
-                                @combo.ProductsSummary
-                            </td>
-                            <td>
-                                <div class="cb-actions">
-                                    <MudIconButton Icon="@Icons.Material.Filled.Visibility"
-                                                   Color="Color.Info" Size="Size.Small"
-                                                   Title="Ver detalle"
-                                                   OnClick="@(() => Nav.NavigateTo($"/combo/{combo.ComboId}", true))" />
-                                    <MudIconButton Icon="@Icons.Material.Filled.Edit"
-                                                   Color="Color.Warning" Size="Size.Small"
-                                                   Title="Editar"
-                                                   OnClick="@(() => EditCombo(combo.ComboId))" />
-                                    <MudIconButton Icon="@Icons.Material.Filled.Delete"
-                                                   Color="Color.Error" Size="Size.Small"
-                                                   Title="Eliminar"
-                                                   OnClick="@(() => DeleteCombo(combo.ComboId))" />
-                                </div>
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
-        </div>
-    }
-
-    <!-- ══ ANCLA DE SCROLL ═══════════════════════════════════════ -->
-    <div id="combo-form-anchor" style="height:0"></div>
-
-    <!-- ══ FORMULARIO GLASSMORPHISM ══════════════════════════════ -->
-    @if (_showCreateCombo)
-    {
-        <div class="cb-form-wrap">
-
-            <!-- Header -->
-            <div class="cb-form-header">
-                <div class="cb-form-header-row">
-                    <div style="display:flex;align-items:center;gap:12px">
-                        <div class="cb-form-accent"></div>
-                        <div>
-                            <p class="cb-form-title">@(_isEditMode ? "Editar Combo" : "Nuevo Combo")</p>
-                            <p class="cb-form-subtitle">
-                                @(_isEditMode ? $"Modificando ID #{_editingComboId}" : "Completa los datos del nuevo combo")
-                            </p>
-                        </div>
-                    </div>
-                    <span class="cb-form-badge @(_isEditMode ? "cb-badge-edit" : "cb-badge-new")">
-                        @(_isEditMode ? "EDITAR" : "NUEVO")
-                    </span>
-                </div>
-            </div>
-
-            <!-- Body -->
-            <div class="cb-form-body">
-
-                <!-- Imagen -->
-                <p class="cb-section-label">📷 Imagen del combo</p>
-
-                <InputFile id="combo-img-input"
-                           OnChange="HandleFileSelected"
-                           accept="image/png,image/jpeg,image/webp"
-                           style="display:none" />
-
-                <label for="combo-img-input" style="display:block;cursor:pointer">
-                    <div class="cb-img-zone @(HasComboImage ? "has-image" : "")">
-                        @if (HasComboImage)
-                        {
-                            <img src="@(_previewBase64 ?? _newCombo.ImageUrl)" alt="Preview" />
-                            <div class="cb-img-overlay">
-                                <span class="cb-overlay-btn">🔄 Cambiar</span>
-                                <span class="cb-overlay-btn" @onclick:stopPropagation @onclick="RemoveImage">🗑 Quitar</span>
-                            </div>
-                        }
-                        else
-                        {
-                            <div class="cb-img-placeholder">
-                                <div class="cb-img-icon">📦</div>
-                                <div class="cb-img-text">Toca aquí para subir imagen</div>
-                                <div class="cb-img-sub">PNG, JPG, WEBP · máx 5 MB</div>
-                            </div>
-                        }
-                    </div>
-                </label>
-
-                <!-- Info básica -->
-                <p class="cb-section-label">📋 Información básica</p>
-                <div class="cb-field-grid cols-2">
-                    <MudTextField @bind-Value="_newCombo.Name"
-                                  Label="Nombre del Combo"
-                                  Variant="Variant.Outlined"
-                                  Placeholder="Ej: Combo Fin de Semana" />
-                    <MudNumericField @bind-Value="_newCombo.ComboPrice"
-                                     T="decimal"
-                                     Label="Precio del combo ($)"
-                                     Variant="Variant.Outlined"
-                                     Adornment="Adornment.Start"
-                                     AdornmentText="$" />
-                </div>
-                <div class="cb-field-grid cols-1">
-                    <MudTextField @bind-Value="_newCombo.Description"
-                                  Label="Descripción (opcional)"
-                                  Lines="2"
-                                  Variant="Variant.Outlined"
-                                  Placeholder="Breve descripción visible al cliente" />
-                </div>
-
-                <!-- Productos -->
-                <p class="cb-section-label">🛒 Productos en este combo</p>
-
-                <MudTable Items="_products" Dense Hover Bordered Class="mb-3 products-picker-table">
-                    <HeaderContent>
-                        <MudTh>Producto</MudTh>
-                        <MudTh>Precio</MudTh>
-                        <MudTh Align="Align.Center">Agregar</MudTh>
-                    </HeaderContent>
-                    <RowTemplate>
-                        <MudTd>
-                            <MudText Typo="Typo.body2" Class="font-weight-bold">@context.Name</MudText>
-                        </MudTd>
-                        <MudTd>
-                            <MudText Color="Color.Success" Class="font-weight-bold">
-                                $@context.Price.ToString("N2")
-                            </MudText>
-                        </MudTd>
-                        <MudTd Align="Align.Center">
-                            <MudIconButton Icon="@Icons.Material.Filled.AddCircleOutline"
-                                           Color="Color.Warning"
-                                           OnClick="@(() => OpenQuantityModal(context))" />
-                        </MudTd>
-                    </RowTemplate>
-                </MudTable>
-
-                @if (_comboBuilder.Any())
-                {
-                    <div style="font-size:.72rem;color:rgba(255,255,255,.4);margin-bottom:8px">
-                        Incluidos en el combo:
-                    </div>
-                    <div class="cb-chips-wrap">
-                        @foreach (var item in _comboBuilder)
-                        {
-                            <MudChip T="ComboProductTemp"
-                                     Value="@item"
-                                     Closeable="true"
-                                     Color="Color.Warning"
-                                     OnClose="@(() => _comboBuilder.Remove(item))">
-                                @($"{item.Quantity} x {item.ProductName}")
-                            </MudChip>
-                        }
-                    </div>
-                }
-
-            </div><!-- /cb-form-body -->
-            <!-- Footer -->
-            <div class="cb-form-footer">
-                <MudButton Class="cb-cancel-btn" OnClick="ResetForm">Cancelar</MudButton>
-                <MudButton Class="cb-save-btn"
-                           Disabled="@(!_comboBuilder.Any())"
-                           OnClick="SaveCombo">
-                    @(_isEditMode ? "✦ Actualizar Combo" : "✦ Guardar Combo")
-                </MudButton>
-            </div>
-
-        </div>
-    }
-
-</MudContainer>
 
 @code {
     private bool HasComboImage =>

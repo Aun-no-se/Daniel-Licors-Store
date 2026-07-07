@@ -24,12 +24,12 @@ namespace Daniel_Licors_Store.Data.Services
 
             return new StockSummary
             {
-                TotalProductos      = productos.Count,
-                TotalUnidades       = productos.Sum(p => p.Stock),
-                ProductosSinStock   = productos.Count(p => p.Stock == 0),
-                TotalCombos         = await _ctx.Combos.CountAsync(c => c.IsActive),
-                TotalPromociones    = await _ctx.Promotions.CountAsync(p => p.IsActive),
-                CategoriasActivas   = await _ctx.Categories.CountAsync(c => c.IsActive)
+                TotalProductos = productos.Count,
+                TotalUnidades = productos.Sum(p => p.Stock),
+                ProductosSinStock = productos.Count(p => p.Stock == 0),
+                TotalCombos = await _ctx.Combos.CountAsync(c => c.IsActive),
+                TotalPromociones = await _ctx.Promotions.CountAsync(p => p.IsActive),
+                CategoriasActivas = await _ctx.Categories.CountAsync(c => c.IsActive)
             };
         }
 
@@ -57,17 +57,17 @@ namespace Daniel_Licors_Store.Data.Services
                 .ThenBy(ps => ps.Product.Name)
                 .Select(ps => new StockProductRow
                 {
-                    ProductId   = ps.ProductId,
-                    Name        = ps.Product.Name,
-                    ImageUrl    = ps.Product.ImageUrl,
-                    Category    = ps.Product.Category.Name,
-                    CategoryId  = ps.Product.CategoryId,
-                    Brand       = ps.Product.Brand != null ? ps.Product.Brand.Name : null,
-                    Price       = ps.Price,
-                    Stock       = ps.Stock,
+                    ProductId = ps.ProductId,
+                    Name = ps.Product.Name,
+                    ImageUrl = ps.Product.ImageUrl,
+                    Category = ps.Product.Category.Name,
+                    CategoryId = ps.Product.CategoryId,
+                    Brand = ps.Product.Brand != null ? ps.Product.Brand.Name : null,
+                    Price = ps.Price,
+                    Stock = ps.Stock,
                     IsAvailable = ps.IsAvailable,
-                    IsPremium   = ps.Product.IsPremium,
-                    AgingYears  = ps.Product.AgingYears
+                    IsPremium = ps.Product.IsPremium,
+                    AgingYears = ps.Product.AgingYears
                 })
                 .ToListAsync();
         }
@@ -83,18 +83,19 @@ namespace Daniel_Licors_Store.Data.Services
 
             return promos.Select(p => new StockPromoRow
             {
-                PromotionId    = p.PromotionId,
-                Title          = p.Title,
-                Description    = p.Description,
-                PromotionType  = p.PromotionType ?? "",
-                StartDate      = p.StartDate,
-                EndDate        = p.EndDate,
-                IsActive       = p.IsActive,
-                Products       = p.PromotionProducts.Select(pp => new StockPromoProductRow
+                PromotionId = p.PromotionId,
+                Title = p.Title,
+                Description = p.Description,
+                ImageUrl = p.ImageUrl,
+                PromotionType = p.PromotionType ?? "",
+                StartDate = p.StartDate,
+                EndDate = p.EndDate,
+                IsActive = p.IsActive,
+                Products = p.PromotionProducts.Select(pp => new StockPromoProductRow
                 {
-                    Name         = pp.Product?.Name ?? "",
+                    Name = pp.Product?.Name ?? "",
                     SpecialPrice = pp.SpecialPrice,
-                    ImageUrl     = pp.Product?.ImageUrl
+                    ImageUrl = pp.Product?.ImageUrl
                 }).ToList()
             }).ToList();
         }
@@ -110,13 +111,13 @@ namespace Daniel_Licors_Store.Data.Services
 
             return combos.Select(c => new StockComboRow
             {
-                ComboId      = c.ComboId,
-                Name         = c.Name,
-                Description  = c.Description,
-                ComboPrice   = c.ComboPrice,
-                ImageUrl     = c.ImageUrl,
-                EndDate      = c.EndDate,
-                IsActive     = c.IsActive,
+                ComboId = c.ComboId,
+                Name = c.Name,
+                Description = c.Description,
+                ComboPrice = c.ComboPrice,
+                ImageUrl = c.ImageUrl,
+                EndDate = c.EndDate,
+                IsActive = c.IsActive,
                 ProductNames = c.ComboProducts.Select(cp => cp.Product?.Name ?? "").ToList()
             }).ToList();
         }
