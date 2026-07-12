@@ -1,0 +1,438 @@
+/* ======================================================================
+   DANIEL LIQUOR STORE — TOPBAR "1A"
+   Glassmorphism oscuro · crimson + oro · tipografía editorial
+   Este archivo reemplaza por completo los estilos previos de topbar/menú
+   que vivían en app.css y css/layout.css (removidos para evitar choques
+   de especificidad). Cargar DESPUES de MudBlazor.min.css en App.razor.
+   ====================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;900&family=Poppins:wght@300;400;500;600;700&display=swap');
+
+:root {
+    --liq-black: #050505;
+    --liq-glass: rgba(12, 8, 9, 0.62);
+    --liq-glass-strong: rgba(10, 6, 7, 0.86);
+    --liq-crimson: #FF1744;
+    --liq-crimson-deep: #7A0C1E;
+    --liq-crimson-mid: #B71C1C;
+    --liq-gold: #E8C468;
+    --liq-gold-soft: #F5DFA0;
+    --liq-gold-dim: rgba(232, 196, 104, 0.35);
+    --liq-ink: #F3EFE7;
+    --liq-muted: #B9AFAE;
+}
+
+/* =====================================================================
+   BARRA PRINCIPAL
+   ===================================================================== */
+.topbar {
+    height: 72px !important;
+    padding: 0 !important;
+    background: var(--liq-glass) !important;
+    backdrop-filter: blur(18px) saturate(140%);
+    -webkit-backdrop-filter: blur(18px) saturate(140%);
+    border-bottom: 1px solid var(--liq-gold-dim) !important;
+    position: relative;
+    overflow: visible;
+    z-index: 1300;
+}
+
+/* textura "cristal tallado": líneas diagonales finísimas + viñeta dorada */
+.topbar::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background-image:
+        repeating-linear-gradient(115deg, rgba(255,255,255,0.028) 0px, rgba(255,255,255,0.028) 1px, transparent 1px, transparent 10px),
+        radial-gradient(120% 140% at 12% 0%, rgba(255,23,68,0.10), transparent 55%),
+        radial-gradient(80% 160% at 90% 100%, rgba(232,196,104,0.08), transparent 60%);
+}
+
+/* filo inferior animado oro→crimson→oro */
+.topbar::after {
+    content: "";
+    position: absolute;
+    left: 0; right: 0; bottom: -1px;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--liq-gold) 20%, var(--liq-crimson) 50%, var(--liq-gold) 80%, transparent);
+    background-size: 220% 100%;
+    animation: liq-shimmer 7s linear infinite;
+    opacity: 0.85;
+    pointer-events: none;
+}
+
+@keyframes liq-shimmer {
+    0%   { background-position: 0% 0%; }
+    100% { background-position: 220% 0%; }
+}
+
+.topbar-inner {
+    position: relative;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 0 18px;
+    max-width: 1600px;
+    margin: 0 auto;
+}
+
+/* =====================================================================
+   MARCA
+   ===================================================================== */
+.brand-link {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    text-decoration: none;
+    color: inherit;
+}
+
+.brand-badge {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, rgba(255,255,255,0.10), rgba(0,0,0,0.35));
+    border: 1px solid var(--liq-gold-dim);
+    box-shadow: 0 0 0 1px rgba(0,0,0,0.4) inset;
+    animation: liq-badge-glow 3.2s ease-in-out infinite;
+    flex-shrink: 0;
+}
+
+.brand-badge .mud-icon-root {
+    color: var(--liq-crimson) !important;
+    filter: drop-shadow(0 0 4px rgba(255,23,68,0.65));
+}
+
+@keyframes liq-badge-glow {
+    0%, 100% { box-shadow: 0 0 0 1px rgba(0,0,0,0.4) inset, 0 0 10px rgba(255,23,68,0.15); }
+    50%      { box-shadow: 0 0 0 1px rgba(0,0,0,0.4) inset, 0 0 18px rgba(255,23,68,0.45); }
+}
+
+.brand-text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1;
+    user-select: none;
+}
+
+.brand-text-main {
+    font-family: 'Playfair Display', serif;
+    font-weight: 800;
+    font-size: 1.15rem;
+    letter-spacing: 2px;
+    background: linear-gradient(95deg, var(--liq-gold-soft) 0%, var(--liq-ink) 45%, var(--liq-gold) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.brand-text-sub {
+    font-family: 'Poppins', sans-serif;
+    font-weight: 500;
+    font-size: 0.58rem;
+    letter-spacing: 3.5px;
+    color: var(--liq-muted);
+    margin-top: 3px;
+    text-transform: uppercase;
+}
+
+/* =====================================================================
+   ACCIONES (desktop y contenedor genérico)
+   ===================================================================== */
+.actions-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.topbar .mud-button-root {
+    text-transform: none !important;
+    font-family: 'Poppins', sans-serif !important;
+    font-weight: 500 !important;
+    border-radius: 999px !important;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
+}
+
+/* --- Ghost (Login, Servicios, Cerrar sesión, Carrito) --- */
+.btn-liq-ghost {
+    color: var(--liq-ink) !important;
+    background: transparent !important;
+    padding: 6px 16px !important;
+}
+
+    .btn-liq-ghost:hover {
+        background: rgba(232, 196, 104, 0.08) !important;
+        color: var(--liq-gold-soft) !important;
+        transform: translateY(-1px);
+    }
+
+.btn-liq-logout:hover {
+    background: rgba(255, 23, 68, 0.10) !important;
+    color: #FF8A80 !important;
+}
+
+/* --- Solid crimson (Registrarse, Agregar Bebida) --- */
+.btn-liq-solid {
+    color: #FFFFFF !important;
+    background: linear-gradient(135deg, var(--liq-crimson) 0%, var(--liq-crimson-mid) 100%) !important;
+    padding: 7px 20px !important;
+    box-shadow: 0 4px 16px rgba(183, 28, 28, 0.35) !important;
+}
+
+    .btn-liq-solid::before {
+        content: "";
+        position: absolute;
+        top: 0; left: -60%;
+        width: 40%; height: 100%;
+        background: linear-gradient(115deg, transparent, rgba(255,255,255,0.35), transparent);
+        transform: skewX(-20deg);
+        transition: left 0.6s ease;
+    }
+
+    .btn-liq-solid:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 22px rgba(255, 23, 68, 0.5) !important;
+        filter: brightness(1.08);
+    }
+
+        .btn-liq-solid:hover::before {
+            left: 130%;
+        }
+
+/* --- Outline oro (Servicios trigger) --- */
+.btn-liq-services {
+    color: var(--liq-gold-soft) !important;
+    background: rgba(232, 196, 104, 0.06) !important;
+    border: 1px solid var(--liq-gold-dim) !important;
+    padding: 6px 14px 6px 16px !important;
+}
+
+    .btn-liq-services:hover {
+        background: rgba(232, 196, 104, 0.14) !important;
+        border-color: var(--liq-gold) !important;
+        box-shadow: 0 0 16px rgba(232, 196, 104, 0.25);
+    }
+
+    .btn-liq-services .mud-icon-root {
+        transition: transform 0.25s ease;
+    }
+
+    .btn-liq-services[aria-expanded="true"] .mud-icon-root,
+    .btn-liq-services.mud-menu-activator--open .mud-icon-root {
+        transform: rotate(180deg);
+    }
+
+/* Carrito con acento oro al hover */
+.btn-liq-cart:hover {
+    background: rgba(232, 196, 104, 0.10) !important;
+    color: var(--liq-gold-soft) !important;
+}
+
+/* Botón hamburguesa móvil */
+.liq-mobile-trigger {
+    width: 42px !important;
+    height: 42px !important;
+    border-radius: 50% !important;
+    background: rgba(232, 196, 104, 0.06) !important;
+    border: 1px solid var(--liq-gold-dim) !important;
+    color: var(--liq-gold-soft) !important;
+    transition: all 0.25s ease !important;
+}
+
+    .liq-mobile-trigger:hover {
+        background: rgba(255, 23, 68, 0.12) !important;
+        border-color: var(--liq-crimson) !important;
+    }
+
+/* =====================================================================
+   MENÚ DESPLEGABLE (Servicios + móvil)
+   ===================================================================== */
+.mud-menu-paper,
+.mud-popover .mud-list {
+    background: linear-gradient(165deg, rgba(20, 8, 9, 0.97) 0%, rgba(10, 6, 6, 0.98) 55%, rgba(5, 5, 5, 0.99) 100%) !important;
+    border: 1px solid var(--liq-gold-dim) !important;
+    border-radius: 16px !important;
+    box-shadow: 0 20px 48px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(0,0,0,0.3), 0 0 30px rgba(255,23,68,0.08) !important;
+    overflow: hidden;
+    padding: 8px !important;
+    min-width: 240px;
+    animation: liq-menu-reveal 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes liq-menu-reveal {
+    from { opacity: 0; transform: translateY(-8px) scale(0.97); filter: blur(2px); }
+    to   { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+}
+
+.svc-group-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 2.2px;
+    color: var(--liq-gold);
+    padding: 10px 14px 6px;
+    margin: 0;
+    opacity: 0.9;
+}
+
+.svc-divider {
+    height: 1px;
+    margin: 6px 10px;
+    background: linear-gradient(90deg, transparent, var(--liq-gold-dim), transparent);
+    border: none;
+}
+
+.mud-menu-item,
+.mud-popover .mud-list-item {
+    color: var(--liq-ink) !important;
+    font-family: 'Poppins', sans-serif !important;
+    font-weight: 500;
+    font-size: 0.9rem;
+    border-radius: 10px !important;
+    margin: 2px 4px;
+    min-height: 44px;
+    transition: all 0.2s ease !important;
+    opacity: 0;
+    animation: liq-item-fade 0.35s ease forwards;
+}
+
+.mud-menu-item .mud-icon-root {
+    margin-right: 12px !important;
+    font-size: 1.2rem;
+    color: var(--liq-gold) !important;
+    opacity: 0.85;
+    transition: all 0.2s ease;
+}
+
+.mud-menu-item:hover {
+    background: rgba(232, 196, 104, 0.10) !important;
+    color: var(--liq-gold-soft) !important;
+    padding-left: 22px !important;
+    transform: translateX(2px);
+}
+
+    .mud-menu-item:hover .mud-icon-root {
+        color: var(--liq-crimson) !important;
+        opacity: 1;
+        filter: drop-shadow(0 0 4px rgba(255,23,68,0.5));
+    }
+
+.mud-menu-item:active {
+    transform: scale(0.98);
+}
+
+.mud-menu-item:nth-of-type(1) { animation-delay: 0.02s; }
+.mud-menu-item:nth-of-type(2) { animation-delay: 0.06s; }
+.mud-menu-item:nth-of-type(3) { animation-delay: 0.10s; }
+.mud-menu-item:nth-of-type(4) { animation-delay: 0.14s; }
+.mud-menu-item:nth-of-type(5) { animation-delay: 0.18s; }
+.mud-menu-item:nth-of-type(6) { animation-delay: 0.22s; }
+
+@keyframes liq-item-fade {
+    from { opacity: 0; transform: translateX(-6px); }
+    to   { opacity: 1; transform: translateX(0); }
+}
+
+.svc-logout .mud-icon-root {
+    color: #FF5252 !important;
+}
+
+.svc-logout:hover {
+    background: rgba(255, 23, 68, 0.12) !important;
+    color: #FF8A80 !important;
+}
+
+    .svc-logout:hover .mud-icon-root {
+        color: #FF5252 !important;
+    }
+
+.mud-divider {
+    background-color: var(--liq-gold-dim) !important;
+    opacity: 0.5;
+}
+
+/* =====================================================================
+   CONTENIDO PRINCIPAL — separación bajo la barra
+   ===================================================================== */
+.main-content {
+    padding-top: 72px !important;
+}
+
+/* =====================================================================
+   MÓVIL — la mitad más importante del diseño
+   ===================================================================== */
+@media (max-width: 900px) {
+    .topbar {
+        height: 60px !important;
+    }
+
+    .main-content {
+        padding-top: 60px !important;
+    }
+
+    .brand-badge {
+        width: 34px;
+        height: 34px;
+    }
+
+    .brand-text-main {
+        font-size: 0.98rem;
+        letter-spacing: 1.4px;
+    }
+
+    .brand-text-sub {
+        font-size: 0.5rem;
+        letter-spacing: 2.6px;
+    }
+
+    .topbar-inner {
+        padding: 0 12px;
+    }
+
+    /* Panel del menú móvil: más ancho, cómodo al tacto, respeta el notch */
+    .mud-menu-paper {
+        min-width: 260px !important;
+        max-width: min(88vw, 320px);
+        border-radius: 18px !important;
+        padding-bottom: calc(8px + env(safe-area-inset-bottom)) !important;
+    }
+
+    .mud-menu-item,
+    .mud-popover .mud-list-item {
+        min-height: 48px;
+        font-size: 0.95rem;
+        padding-top: 10px;
+        padding-bottom: 10px;
+    }
+
+    .svc-group-title {
+        font-size: 0.72rem;
+        padding-top: 14px;
+    }
+}
+
+@media (max-width: 380px) {
+    .brand-text-sub {
+        display: none;
+    }
+}
+
+/* Accesibilidad: respeta preferencia de movimiento reducido */
+@media (prefers-reduced-motion: reduce) {
+    .topbar::after,
+    .brand-badge,
+    .mud-menu-item,
+    .mud-menu-paper {
+        animation: none !important;
+    }
+    .mud-menu-item { opacity: 1; }
+}
