@@ -71,14 +71,27 @@ namespace Daniel_Licors_Store.Components.Shared
         {
             var parameters = new DialogParameters
             {
-                { "ContentText", "¿Estás seguro de que deseas eliminar este producto? Esta acción no se puede deshacer." }
+                { "ContentText", "¿Deseas ocultar este producto? Ya no aparecerá en el catálogo, carrito, combos ni promociones, pero no se borra: puedes volver a mostrarlo desde el Panel de Control → Elementos Ocultos." },
+                { "ButtonText", "Ocultar" }
             };
-            var dialog = DialogService.Show<ConfirmDialog>("Confirmar eliminación", parameters);
+            var dialog = DialogService.Show<ConfirmDialog>("Confirmar ocultamiento", parameters);
             var result = await dialog.Result;
             if (!result.Canceled)
             {
-                await ProductService.DeleteProductAsync(productId);
-                ProductState.NotifyChange();
+                try
+                {
+                    var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+                    var userId = authState.User.FindFirst("UserId")?.Value
+                              ?? authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+
+                    await ProductService.DeleteProductAsync(productId, userId);
+                    ProductState.NotifyChange();
+                    Snackbar.Add("Producto ocultado. Puedes reactivarlo desde el Panel de Control.", Severity.Success);
+                }
+                catch (Exception ex)
+                {
+                    Snackbar.Add($"Error: {ex.Message}", Severity.Error);
+                }
             }
         }
 

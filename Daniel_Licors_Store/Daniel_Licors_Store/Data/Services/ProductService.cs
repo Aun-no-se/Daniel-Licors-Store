@@ -203,39 +203,36 @@ public class ProductService : IProductService
     public async Task UpdateProductAsync(ProductEditModel model)
         => await UpdateProductAsync(model, null);
 
+    // NOTA: Esto ya NO borra el producto de la base de datos.
+    // Solo lo oculta (IsActive = false) para que no aparezca en catálogo,
+    // carrito, combos ni promociones. Se puede reactivar desde el panel
+    // de "Elementos Ocultos" en el Dashboard (Admin/Empleado).
     public async Task DeleteProductAsync(int productId, string? userId = null)
     {
-        using var transaction = await _context.Database.BeginTransactionAsync();
-
         try
         {
-            var productStores = await _context.ProductStores
-                .Where(ps => ps.ProductId == productId)
-                .ToListAsync();
-
-            _context.ProductStores.RemoveRange(productStores);
-
-            var stockMovements = await _context.StockMovements
-                .Where(sm => sm.ProductId == productId)
-                .ToListAsync();
-
-            _context.StockMovements.RemoveRange(stockMovements);
-
             var product = await _context.Products
+                .Include(p => p.ProductStores)
                 .FirstOrDefaultAsync(p => p.ProductId == productId);
 
-            if (product != null)
-                _context.Products.Remove(product);
+            if (product == null)
+                throw new Exception("Producto no encontrado");
+
+            product.IsActive = false;
+
+            // También lo marcamos como no disponible en tienda para que
+            // no se pueda seguir vendiendo mientras está oculto.
+            var store = product.ProductStores?.FirstOrDefault(ps => ps.StoreId == AppStore.StoreId);
+            if (store != null)
+                store.IsAvailable = false;
 
             await _context.SaveChangesAsync();
-            await transaction.CommitAsync();
 
-            await _audit.LogAsync(userId, "Eliminó producto", "Product", productId.ToString());
+            await _audit.LogAsync(userId, "Ocultó producto", "Product", productId.ToString());
         }
         catch (Exception ex)
         {
-            await transaction.RollbackAsync();
-            throw new Exception("Error eliminando producto: " + (ex.InnerException?.Message ?? ex.Message));
+            throw new Exception("Error ocultando producto: " + (ex.InnerException?.Message ?? ex.Message));
         }
     }
 

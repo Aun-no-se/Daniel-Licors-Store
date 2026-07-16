@@ -6,6 +6,7 @@
 @using Microsoft.AspNetCore.Components.Authorization
 @inject AdminDashboardService DashboardService
 @inject CategoryBrandService CatalogMgmt
+@inject HiddenItemsService HiddenItems
 @inject AuthenticationStateProvider AuthState
 @inject NavigationManager Nav
 @inject ISnackbar Snackbar
@@ -762,6 +763,217 @@
             color: #e74c3c;
         }
 
+    /* ── PANEL DE ELEMENTOS OCULTOS ── */
+    .dl-hidden-card {
+        background: linear-gradient(145deg, #1e1e2a, #191923);
+        border: 1px solid rgba(255,255,255,0.07);
+        border-radius: 16px;
+        padding: 4px;
+        margin-bottom: 28px;
+        overflow: hidden;
+        position: relative;
+    }
+
+        .dl-hidden-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, #e74c3c, #c0392b);
+        }
+
+    .dl-hidden-inner {
+        padding: 18px 20px 20px;
+    }
+
+    .dl-hidden-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-bottom: 4px;
+    }
+
+    .dl-hidden-title-group {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .dl-hidden-icon-badge {
+        width: 34px;
+        height: 34px;
+        border-radius: 9px;
+        background: rgba(231,76,60,0.13);
+        color: #e74c3c;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+
+    .dl-hidden-total-pill {
+        font-size: 0.7rem;
+        font-weight: 700;
+        padding: 4px 12px;
+        border-radius: 20px;
+        background: rgba(231,76,60,0.12);
+        color: #ff8577;
+        letter-spacing: 0.02em;
+        white-space: nowrap;
+    }
+
+    .dl-hidden-tabs {
+        display: flex;
+        gap: 8px;
+        margin: 16px 0 16px;
+        flex-wrap: wrap;
+    }
+
+    .dl-hidden-tab {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 16px;
+        border-radius: 20px;
+        border: 1px solid rgba(255,255,255,0.1);
+        background: rgba(255,255,255,0.04);
+        color: #7a7a9a;
+        font-size: 0.78rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.18s;
+    }
+
+        .dl-hidden-tab.active {
+            background: rgba(231,76,60,0.15);
+            border-color: rgba(231,76,60,0.4);
+            color: #ff8577;
+        }
+
+        .dl-hidden-tab .count-chip {
+            background: rgba(255,255,255,0.08);
+            border-radius: 10px;
+            padding: 1px 7px;
+            font-size: 0.68rem;
+        }
+
+        .dl-hidden-tab.active .count-chip {
+            background: rgba(231,76,60,0.25);
+        }
+
+    .dl-hidden-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        gap: 12px;
+    }
+
+    @@media (max-width: 480px) {
+        .dl-hidden-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .dl-hidden-inner {
+            padding: 16px 14px 18px;
+        }
+    }
+
+    .dl-hidden-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        background: rgba(255,255,255,0.03);
+        border: 1px solid rgba(255,255,255,0.07);
+        border-radius: 12px;
+        padding: 10px;
+        transition: border-color 0.18s, background 0.18s;
+    }
+
+        .dl-hidden-item:hover {
+            border-color: rgba(231,76,60,0.25);
+            background: rgba(255,255,255,0.045);
+        }
+
+    .dl-hidden-thumb {
+        width: 46px;
+        height: 46px;
+        border-radius: 9px;
+        object-fit: cover;
+        flex-shrink: 0;
+        background: rgba(255,255,255,0.05);
+    }
+
+    .dl-hidden-thumb-fallback {
+        width: 46px;
+        height: 46px;
+        border-radius: 9px;
+        flex-shrink: 0;
+        background: rgba(255,255,255,0.05);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #4a4a6a;
+    }
+
+    .dl-hidden-info {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .dl-hidden-name {
+        font-size: 0.84rem;
+        font-weight: 700;
+        color: #f5f0e8;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .dl-hidden-meta {
+        font-size: 0.68rem;
+        color: #6a6a8a;
+        margin-top: 2px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .dl-hidden-restore-btn {
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 7px 12px;
+        border-radius: 8px;
+        border: 1px solid rgba(46,204,113,0.3);
+        background: rgba(46,204,113,0.1);
+        color: #2ecc71;
+        font-size: 0.72rem;
+        font-weight: 700;
+        cursor: pointer;
+        transition: background 0.18s;
+        white-space: nowrap;
+    }
+
+        .dl-hidden-restore-btn:hover {
+            background: rgba(46,204,113,0.22);
+        }
+
+        .dl-hidden-restore-btn:disabled {
+            opacity: 0.4;
+            cursor: default;
+        }
+
+    .dl-hidden-empty {
+        text-align: center;
+        padding: 30px 10px;
+        color: #4a4a6a;
+        font-size: 0.85rem;
+    }
+
 </style>
 
 <div class="dl-dashboard">
@@ -927,6 +1139,163 @@
                         </button>
                     </div>
                 }
+            </div>
+
+            <!-- ══ ELEMENTOS OCULTOS — visible para Admin y Empleado ══ -->
+            <p class="dl-section-label">Elementos Ocultos</p>
+            <div class="dl-hidden-card">
+                <div class="dl-hidden-inner">
+
+                    <div class="dl-hidden-header">
+                        <div class="dl-hidden-title-group">
+                            <div class="dl-hidden-icon-badge">
+                                <MudIcon Icon="@Icons.Material.Filled.VisibilityOff" Size="Size.Small" />
+                            </div>
+                            <div>
+                                <div class="dl-card-title" style="margin:0">Productos, combos y promociones ocultos</div>
+                                <div class="dl-card-subtitle">No fueron eliminados: solo están desactivados. Reactívalos para que vuelvan a verse.</div>
+                            </div>
+                        </div>
+                        <span class="dl-hidden-total-pill">
+                            @TotalHiddenCount() oculto(s) en total
+                        </span>
+                    </div>
+
+                    <!-- Tabs Productos / Combos / Promociones -->
+                    <div class="dl-hidden-tabs">
+                        <button class="dl-hidden-tab @(hiddenTab == 0 ? "active" : "")"
+                                @onclick="() => hiddenTab = 0">
+                            <MudIcon Icon="@Icons.Material.Filled.Inventory2" Size="Size.Small" />
+                            Productos <span class="count-chip">@hiddenProducts.Count</span>
+                        </button>
+                        <button class="dl-hidden-tab @(hiddenTab == 1 ? "active" : "")"
+                                @onclick="() => hiddenTab = 1">
+                            <MudIcon Icon="@Icons.Material.Filled.CardGiftcard" Size="Size.Small" />
+                            Combos <span class="count-chip">@hiddenCombos.Count</span>
+                        </button>
+                        <button class="dl-hidden-tab @(hiddenTab == 2 ? "active" : "")"
+                                @onclick="() => hiddenTab = 2">
+                            <MudIcon Icon="@Icons.Material.Filled.LocalOffer" Size="Size.Small" />
+                            Promociones <span class="count-chip">@hiddenPromotions.Count</span>
+                        </button>
+                    </div>
+
+                    @if (hiddenLoading)
+                    {
+                        <div class="dl-hidden-empty">
+                            <MudProgressCircular Color="Color.Error" Indeterminate="true" Size="Size.Small" />
+                        </div>
+                    }
+                    else if (hiddenTab == 0)
+                    {
+                        @if (hiddenProducts.Any())
+                        {
+                            <div class="dl-hidden-grid">
+                                @foreach (var p in hiddenProducts)
+                                {
+                                    <div class="dl-hidden-item">
+                                        @if (!string.IsNullOrEmpty(p.ImageUrl))
+                                        {
+                                            <img class="dl-hidden-thumb" src="@p.ImageUrl" alt="@p.Name" />
+                                        }
+                                        else
+                                        {
+                                            <div class="dl-hidden-thumb-fallback">
+                                                <MudIcon Icon="@Icons.Material.Filled.LocalBar" Size="Size.Small" />
+                                            </div>
+                                        }
+                                        <div class="dl-hidden-info">
+                                            <div class="dl-hidden-name" title="@p.Name">@p.Name</div>
+                                            <div class="dl-hidden-meta">@p.CategoryName · $@p.Price.ToString("N2")</div>
+                                        </div>
+                                        <button class="dl-hidden-restore-btn"
+                                                disabled="@hiddenActionBusy"
+                                                @onclick="() => RestoreProductAsync(p.ProductId)">
+                                            <MudIcon Icon="@Icons.Material.Filled.Visibility" Size="Size.Small" /> Mostrar
+                                        </button>
+                                    </div>
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="dl-hidden-empty">No hay productos ocultos 🎉</div>
+                        }
+                    }
+                    else if (hiddenTab == 1)
+                    {
+                        @if (hiddenCombos.Any())
+                        {
+                            <div class="dl-hidden-grid">
+                                @foreach (var c in hiddenCombos)
+                                {
+                                    <div class="dl-hidden-item">
+                                        @if (!string.IsNullOrEmpty(c.ImageUrl))
+                                        {
+                                            <img class="dl-hidden-thumb" src="@c.ImageUrl" alt="@c.Name" />
+                                        }
+                                        else
+                                        {
+                                            <div class="dl-hidden-thumb-fallback">
+                                                <MudIcon Icon="@Icons.Material.Filled.CardGiftcard" Size="Size.Small" />
+                                            </div>
+                                        }
+                                        <div class="dl-hidden-info">
+                                            <div class="dl-hidden-name" title="@c.Name">@c.Name</div>
+                                            <div class="dl-hidden-meta">@c.ProductCount producto(s) · $@c.ComboPrice.ToString("N2")</div>
+                                        </div>
+                                        <button class="dl-hidden-restore-btn"
+                                                disabled="@hiddenActionBusy"
+                                                @onclick="() => RestoreComboAsync(c.ComboId)">
+                                            <MudIcon Icon="@Icons.Material.Filled.Visibility" Size="Size.Small" /> Mostrar
+                                        </button>
+                                    </div>
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="dl-hidden-empty">No hay combos ocultos 🎉</div>
+                        }
+                    }
+                    else
+                    {
+                        @if (hiddenPromotions.Any())
+                        {
+                            <div class="dl-hidden-grid">
+                                @foreach (var promo in hiddenPromotions)
+                                {
+                                    <div class="dl-hidden-item">
+                                        @if (!string.IsNullOrEmpty(promo.ImageUrl))
+                                        {
+                                            <img class="dl-hidden-thumb" src="@promo.ImageUrl" alt="@promo.Title" />
+                                        }
+                                        else
+                                        {
+                                            <div class="dl-hidden-thumb-fallback">
+                                                <MudIcon Icon="@Icons.Material.Filled.LocalOffer" Size="Size.Small" />
+                                            </div>
+                                        }
+                                        <div class="dl-hidden-info">
+                                            <div class="dl-hidden-name" title="@promo.Title">@promo.Title</div>
+                                            <div class="dl-hidden-meta">@GetHiddenPromoTypeLabel(promo.PromotionType) · vencía @promo.EndDate.ToString("dd MMM yyyy")</div>
+                                        </div>
+                                        <button class="dl-hidden-restore-btn"
+                                                disabled="@hiddenActionBusy"
+                                                @onclick="() => RestorePromotionAsync(promo.PromotionId)">
+                                            <MudIcon Icon="@Icons.Material.Filled.Visibility" Size="Size.Small" /> Mostrar
+                                        </button>
+                                    </div>
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="dl-hidden-empty">No hay promociones ocultas 🎉</div>
+                        }
+                    }
+
+                </div>
             </div>
 
             <!-- ══ SECCIONES SOLO ADMIN ══ -->
@@ -1178,6 +1547,15 @@
     string editCatalogName = string.Empty;
     bool editCatalogActive = true;
 
+    // ── Elementos Ocultos (Admin y Empleado) ──────────────────────────────────
+    int hiddenTab = 0; // 0 = Productos, 1 = Combos, 2 = Promociones
+    bool hiddenLoading = true;
+    bool hiddenActionBusy = false;
+    List<HiddenProductDto> hiddenProducts = new();
+    List<HiddenComboDto> hiddenCombos = new();
+    List<HiddenPromotionDto> hiddenPromotions = new();
+    string? _currentUserId;
+
     // ─────────────────────────────────────────────────────────────────────────
     protected override async Task OnInitializedAsync()
     {
@@ -1199,11 +1577,16 @@
             return;
         }
 
+        _currentUserId = user.FindFirst("UserId")?.Value
+                      ?? user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+
         loading = true;
         try
         {
             categories = await CatalogMgmt.GetAllCategoriesAsync();
             brands = await CatalogMgmt.GetAllBrandsAsync();
+
+            await LoadHiddenItemsAsync();
 
             if (isAdmin)
             {
@@ -1397,5 +1780,108 @@
         editingBrandId = null;
         editCatalogName = string.Empty;
         editCatalogActive = true;
+    }
+
+    // ── Elementos Ocultos ────────────────────────────────────────────────────
+
+    async Task LoadHiddenItemsAsync()
+    {
+        hiddenLoading = true;
+        try
+        {
+            hiddenProducts = await HiddenItems.GetHiddenProductsAsync();
+            hiddenCombos = await HiddenItems.GetHiddenCombosAsync();
+            hiddenPromotions = await HiddenItems.GetHiddenPromotionsAsync();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error cargando elementos ocultos: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            hiddenLoading = false;
+        }
+    }
+
+    int TotalHiddenCount() => hiddenProducts.Count + hiddenCombos.Count + hiddenPromotions.Count;
+
+    string GetHiddenPromoTypeLabel(string? type) => type switch
+    {
+        "Discount" => "% Descuento",
+        "SpecialPrice" => "Precio Especial",
+        "PayXGetY" => "Lleva X Paga Y",
+        _ => type ?? "Promo"
+    };
+
+    async Task RestoreProductAsync(int productId)
+    {
+        if (hiddenActionBusy) return;
+        hiddenActionBusy = true;
+        try
+        {
+            var (ok, error) = await HiddenItems.RestoreProductAsync(productId, _currentUserId);
+            if (ok)
+            {
+                Snackbar.Add("Producto visible de nuevo ✓", Severity.Success);
+                hiddenProducts = await HiddenItems.GetHiddenProductsAsync();
+            }
+            else
+            {
+                Snackbar.Add(error, Severity.Warning);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error: {ex.Message}", Severity.Error);
+        }
+        finally { hiddenActionBusy = false; }
+    }
+
+    async Task RestoreComboAsync(int comboId)
+    {
+        if (hiddenActionBusy) return;
+        hiddenActionBusy = true;
+        try
+        {
+            var (ok, error) = await HiddenItems.RestoreComboAsync(comboId, _currentUserId);
+            if (ok)
+            {
+                Snackbar.Add("Combo visible de nuevo ✓", Severity.Success);
+                hiddenCombos = await HiddenItems.GetHiddenCombosAsync();
+            }
+            else
+            {
+                Snackbar.Add(error, Severity.Warning);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error: {ex.Message}", Severity.Error);
+        }
+        finally { hiddenActionBusy = false; }
+    }
+
+    async Task RestorePromotionAsync(int promotionId)
+    {
+        if (hiddenActionBusy) return;
+        hiddenActionBusy = true;
+        try
+        {
+            var (ok, error) = await HiddenItems.RestorePromotionAsync(promotionId, _currentUserId);
+            if (ok)
+            {
+                Snackbar.Add("Promoción visible de nuevo ✓", Severity.Success);
+                hiddenPromotions = await HiddenItems.GetHiddenPromotionsAsync();
+            }
+            else
+            {
+                Snackbar.Add(error, Severity.Warning);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error: {ex.Message}", Severity.Error);
+        }
+        finally { hiddenActionBusy = false; }
     }
 }
