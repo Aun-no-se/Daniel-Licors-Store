@@ -1,0 +1,456 @@
+﻿/* ── Dialog Shell (targets MudBlazor internals → necesita ::deep) ── */
+.pd-root ::deep .mud-dialog {
+    background: rgba(10, 10, 10, 0.96) !important;
+    backdrop-filter: blur(24px);
+    border: 1px solid rgba(255, 23, 68, 0.18);
+    border-radius: 20px !important;
+    overflow: hidden;
+    box-shadow: 0 32px 80px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.04);
+    max-height: 95dvh;
+}
+
+.pd-root ::deep .mud-dialog-content {
+    padding: 0 !important;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255,23,68,0.3) transparent;
+}
+
+.pd-root ::deep .mud-dialog-actions {
+    background: rgba(5,5,5,0.9);
+    border-top: 1px solid rgba(255,255,255,0.06);
+    padding: 14px 20px !important;
+    gap: 10px;
+}
+
+/* ── Header Banner (elementos propios del .razor → scope automático) ── */
+.pd-header {
+    position: relative;
+    padding: 22px 24px 18px;
+    background: linear-gradient(135deg, #1a0000 0%, #0d0d0d 60%);
+    border-bottom: 1px solid rgba(255,23,68,0.2);
+    overflow: hidden;
+}
+
+    .pd-header::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(circle at 0% 50%, rgba(255,23,68,0.12) 0%, transparent 70%);
+        pointer-events: none;
+    }
+
+.pd-header-accent {
+    width: 4px;
+    height: 28px;
+    background: linear-gradient(180deg, #FF1744, #B71C1C);
+    border-radius: 4px;
+    flex-shrink: 0;
+    box-shadow: 0 0 12px rgba(255,23,68,0.5);
+}
+
+.pd-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: 0.3px;
+    line-height: 1.2;
+}
+
+.pd-subtitle {
+    font-size: 0.75rem;
+    color: rgba(255,255,255,0.4);
+    margin-top: 2px;
+    letter-spacing: 0.5px;
+}
+
+.pd-badge {
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    padding: 3px 10px;
+    border-radius: 20px;
+    border: 1px solid;
+}
+
+.pd-badge-new {
+    color: #4CAF50;
+    border-color: rgba(76,175,80,0.4);
+    background: rgba(76,175,80,0.08);
+}
+
+.pd-badge-edit {
+    color: #FF8A80;
+    border-color: rgba(255,138,128,0.4);
+    background: rgba(255,138,128,0.08);
+}
+
+/* ── Body Layout ── */
+.pd-body {
+    padding: 0;
+    animation: pd-slide-up 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes pd-slide-up {
+    from {
+        opacity: 0;
+        transform: translateY(12px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ── Image Zone ── */
+.pd-image-zone {
+    position: relative;
+    margin: 20px 20px 0;
+    border-radius: 14px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: box-shadow 0.25s ease, border-color 0.25s ease;
+    border: 2px dashed rgba(255,23,68,0.25);
+    background: rgba(255,255,255,0.02);
+    min-height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+}
+
+    .pd-image-zone:hover,
+    .pd-image-zone.drag-over {
+        border-color: rgba(255,23,68,0.6);
+        background: rgba(255,23,68,0.04);
+        box-shadow: 0 0 0 4px rgba(255,23,68,0.08);
+    }
+
+    .pd-image-zone.has-image {
+        border-style: solid;
+        border-color: rgba(255,23,68,0.3);
+        min-height: 240px;
+    }
+
+    .pd-image-zone.has-error {
+        border-style: solid !important;
+        border-color: rgba(255,23,68,0.85) !important;
+        box-shadow: 0 0 0 3px rgba(255,23,68,0.18) !important;
+    }
+
+    .pd-image-zone img {
+        width: 100%;
+        max-height: 280px;
+        object-fit: contain;
+        display: block;
+        border-radius: 12px;
+        transition: transform 0.3s ease;
+    }
+
+    .pd-image-zone:hover img {
+        transform: scale(1.02);
+    }
+
+.pd-image-placeholder {
+    padding: 28px 16px;
+    text-align: center;
+}
+
+.pd-image-icon {
+    font-size: 2.5rem;
+    margin-bottom: 8px;
+    opacity: 0.35;
+}
+
+.pd-image-text-main {
+    font-size: 0.85rem;
+    color: rgba(255,255,255,0.55);
+    font-weight: 500;
+}
+
+.pd-image-text-sub {
+    font-size: 0.72rem;
+    color: rgba(255,255,255,0.28);
+    margin-top: 4px;
+}
+
+.pd-image-error-text {
+    font-size: 0.72rem;
+    color: #FF5252;
+    font-weight: 600;
+    text-align: center;
+    margin: 8px 20px 0;
+}
+
+.pd-image-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.55);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    opacity: 0;
+    transition: opacity 0.25s ease;
+    border-radius: 12px;
+}
+
+.pd-image-zone:hover .pd-image-overlay {
+    opacity: 1;
+}
+
+.pd-overlay-btn {
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 8px;
+    color: white;
+    font-size: 0.78rem;
+    padding: 8px 14px;
+    cursor: pointer;
+    backdrop-filter: blur(8px);
+    transition: background 0.2s;
+    font-weight: 600;
+}
+
+    .pd-overlay-btn:hover {
+        background: rgba(255,23,68,0.3);
+        border-color: rgba(255,23,68,0.5);
+    }
+
+.pd-hidden-input {
+    display: none;
+}
+
+/* ── Section Labels ── */
+.pd-section {
+    padding: 20px 20px 0;
+}
+
+.pd-section-label {
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 1.4px;
+    text-transform: uppercase;
+    color: rgba(255,23,68,0.8);
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+    .pd-section-label::after {
+        content: '';
+        flex: 1;
+        height: 1px;
+        background: linear-gradient(90deg, rgba(255,23,68,0.2), transparent);
+    }
+
+/* ── Field Groups ── */
+.pd-field-row {
+    display: grid;
+    gap: 14px;
+    margin-bottom: 14px;
+}
+
+    .pd-field-row.cols-2 {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .pd-field-row.cols-1 {
+        grid-template-columns: 1fr;
+    }
+
+@media (max-width: 480px) {
+    .pd-field-row.cols-2 {
+        grid-template-columns: 1fr;
+    }
+
+    .pd-image-zone {
+        margin: 16px 14px 0;
+    }
+
+    .pd-section {
+        padding: 16px 14px 0;
+    }
+
+    .pd-header {
+        padding: 18px 16px 14px;
+    }
+}
+
+/* ── MudBlazor field overrides (internals → ::deep) ── */
+.pd-root ::deep .mud-input-root {
+    background: rgba(255,255,255,0.035) !important;
+    border-radius: 10px !important;
+    transition: background 0.2s, box-shadow 0.2s;
+}
+
+    .pd-root ::deep .mud-input-root:hover {
+        background: rgba(255,255,255,0.055) !important;
+    }
+
+    .pd-root ::deep .mud-input-root.mud-input-root-focused {
+        background: rgba(255,23,68,0.06) !important;
+        box-shadow: 0 0 0 2px rgba(255,23,68,0.25) !important;
+    }
+
+.pd-root ::deep .mud-input-outlined .mud-notch {
+    border-color: rgba(255,255,255,0.1) !important;
+}
+
+/* ── Toggle Cards ── */
+.pd-toggle-group {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 14px;
+}
+
+.pd-toggle-card {
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.07);
+    background: rgba(255,255,255,0.03);
+    padding: 12px 14px;
+    cursor: pointer;
+    transition: all 0.22s ease;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    user-select: none;
+}
+
+    .pd-toggle-card:hover {
+        background: rgba(255,255,255,0.06);
+        border-color: rgba(255,255,255,0.14);
+    }
+
+    .pd-toggle-card.active-premium {
+        background: rgba(255,193,7,0.08);
+        border-color: rgba(255,193,7,0.35);
+        box-shadow: 0 0 14px rgba(255,193,7,0.1);
+    }
+
+    .pd-toggle-card.active-status {
+        background: rgba(76,175,80,0.08);
+        border-color: rgba(76,175,80,0.35);
+        box-shadow: 0 0 14px rgba(76,175,80,0.1);
+    }
+
+.pd-toggle-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    transition: all 0.22s ease;
+}
+
+    .pd-toggle-dot.premium {
+        background: #FFC107;
+        box-shadow: 0 0 8px rgba(255,193,7,0.5);
+    }
+
+    .pd-toggle-dot.status {
+        background: #4CAF50;
+        box-shadow: 0 0 8px rgba(76,175,80,0.5);
+    }
+
+    .pd-toggle-dot.off {
+        background: rgba(255,255,255,0.18);
+    }
+
+.pd-toggle-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: rgba(255,255,255,0.75);
+}
+
+.pd-toggle-hint {
+    font-size: 0.68rem;
+    color: rgba(255,255,255,0.35);
+    margin-top: 1px;
+}
+
+/* ── Loading Skeleton ── */
+.pd-skeleton {
+    animation: pd-shimmer 1.5s infinite linear;
+    background: linear-gradient(90deg, rgba(255,255,255,0.03) 25%, rgba(255,255,255,0.07) 50%, rgba(255,255,255,0.03) 75%);
+    background-size: 200% 100%;
+    border-radius: 8px;
+}
+
+@keyframes pd-shimmer {
+    from {
+        background-position: 200% 0;
+    }
+
+    to {
+        background-position: -200% 0;
+    }
+}
+
+.pd-skel-line {
+    height: 44px;
+    margin-bottom: 14px;
+}
+
+.pd-skel-img {
+    height: 200px;
+    margin: 20px;
+    border-radius: 14px;
+}
+
+/* ── Save / Cancel Buttons (Class="" pasado a MudButton → internals) ── */
+.pd-root ::deep .pd-save-btn {
+    background: linear-gradient(135deg, #FF1744 0%, #B71C1C 100%) !important;
+    color: white !important;
+    font-weight: 700 !important;
+    border-radius: 10px !important;
+    padding: 0 28px !important;
+    height: 42px !important;
+    font-size: 0.85rem !important;
+    letter-spacing: 0.5px !important;
+    box-shadow: 0 4px 16px rgba(255,23,68,0.3) !important;
+    transition: all 0.25s ease !important;
+    min-width: 120px !important;
+}
+
+    .pd-root ::deep .pd-save-btn:hover:not(:disabled) {
+        transform: translateY(-1px) !important;
+        box-shadow: 0 6px 22px rgba(255,23,68,0.45) !important;
+        filter: brightness(1.08) !important;
+    }
+
+    .pd-root ::deep .pd-save-btn:disabled {
+        opacity: 0.55 !important;
+        transform: none !important;
+    }
+
+.pd-root ::deep .pd-cancel-btn {
+    color: rgba(255,255,255,0.45) !important;
+    font-weight: 500 !important;
+    border-radius: 10px !important;
+    height: 42px !important;
+    padding: 0 18px !important;
+    transition: color 0.2s !important;
+}
+
+    .pd-root ::deep .pd-cancel-btn:hover {
+        color: rgba(255,255,255,0.8) !important;
+        background: rgba(255,255,255,0.05) !important;
+    }
+
+/* ── Saving Spinner ── */
+.pd-saving-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.75rem;
+    color: rgba(255,255,255,0.5);
+}
+
+/* ── Spacer ── */
+.pd-spacer {
+    height: 20px;
+}

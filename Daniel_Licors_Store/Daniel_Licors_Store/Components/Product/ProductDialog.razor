@@ -4,460 +4,16 @@
 @using Daniel_Licors_Store.Models.Product
 @using Daniel_Licors_Store.Services
 @using MudBlazor
+@using Microsoft.AspNetCore.Components.Authorization
 
 @inject ICatalogService CatalogService
 @inject IWebHostEnvironment Env
 @inject ProductStateService ProductState
 @inject IProductService ProductService
 @inject AuthenticationStateProvider AuthStateProvider
-@using Microsoft.AspNetCore.Components.Authorization
+@inject ISnackbar Snackbar
 
-<style>
-    /* ── Dialog Shell ─────────────────────────────────────────────── */
-    .pd-shell .mud-dialog {
-        background: rgba(10, 10, 10, 0.96) !important;
-        backdrop-filter: blur(24px);
-        border: 1px solid rgba(255, 23, 68, 0.18);
-        border-radius: 20px !important;
-        overflow: hidden;
-        box-shadow: 0 32px 80px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,0.04);
-        max-height: 95dvh;
-    }
-
-    .pd-shell .mud-dialog-content {
-        padding: 0 !important;
-        overflow-y: auto;
-        scrollbar-width: thin;
-        scrollbar-color: rgba(255,23,68,0.3) transparent;
-    }
-
-    .pd-shell .mud-dialog-actions {
-        background: rgba(5,5,5,0.9);
-        border-top: 1px solid rgba(255,255,255,0.06);
-        padding: 14px 20px !important;
-        gap: 10px;
-    }
-
-    /* ── Header Banner ────────────────────────────────────────────── */
-    .pd-header {
-        position: relative;
-        padding: 22px 24px 18px;
-        background: linear-gradient(135deg, #1a0000 0%, #0d0d0d 60%);
-        border-bottom: 1px solid rgba(255,23,68,0.2);
-        overflow: hidden;
-    }
-
-        .pd-header::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: radial-gradient(circle at 0% 50%, rgba(255,23,68,0.12) 0%, transparent 70%);
-            pointer-events: none;
-        }
-
-    .pd-header-accent {
-        width: 4px;
-        height: 28px;
-        background: linear-gradient(180deg, #FF1744, #B71C1C);
-        border-radius: 4px;
-        flex-shrink: 0;
-        box-shadow: 0 0 12px rgba(255,23,68,0.5);
-    }
-
-    .pd-title {
-        font-size: 1.25rem;
-        font-weight: 700;
-        color: #fff;
-        letter-spacing: 0.3px;
-        line-height: 1.2;
-    }
-
-    .pd-subtitle {
-        font-size: 0.75rem;
-        color: rgba(255,255,255,0.4);
-        margin-top: 2px;
-        letter-spacing: 0.5px;
-    }
-
-    .pd-badge {
-        font-size: 0.65rem;
-        font-weight: 700;
-        letter-spacing: 1.2px;
-        text-transform: uppercase;
-        padding: 3px 10px;
-        border-radius: 20px;
-        border: 1px solid;
-    }
-
-    .pd-badge-new {
-        color: #4CAF50;
-        border-color: rgba(76,175,80,0.4);
-        background: rgba(76,175,80,0.08);
-    }
-
-    .pd-badge-edit {
-        color: #FF8A80;
-        border-color: rgba(255,138,128,0.4);
-        background: rgba(255,138,128,0.08);
-    }
-
-    /* ── Body Layout ──────────────────────────────────────────────── */
-    .pd-body {
-        padding: 0;
-        animation: pd-slide-up 0.35s cubic-bezier(0.22, 1, 0.36, 1);
-    }
-
-    @@keyframes pd-slide-up {
-        from {
-            opacity: 0;
-            transform: translateY(12px);
-        }
-
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-
-    /* ── Image Zone ───────────────────────────────────────────────── */
-    .pd-image-zone {
-        position: relative;
-        margin: 20px 20px 0;
-        border-radius: 14px;
-        overflow: hidden;
-        cursor: pointer;
-        transition: box-shadow 0.25s ease;
-        border: 2px dashed rgba(255,23,68,0.25);
-        background: rgba(255,255,255,0.02);
-        min-height: 200px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        flex-direction: column;
-    }
-
-        .pd-image-zone:hover,
-        .pd-image-zone.drag-over {
-            border-color: rgba(255,23,68,0.6);
-            background: rgba(255,23,68,0.04);
-            box-shadow: 0 0 0 4px rgba(255,23,68,0.08);
-        }
-
-        .pd-image-zone.has-image {
-            border-style: solid;
-            border-color: rgba(255,23,68,0.3);
-            min-height: 240px;
-        }
-
-        .pd-image-zone img {
-            width: 100%;
-            max-height: 280px;
-            object-fit: contain;
-            display: block;
-            border-radius: 12px;
-            transition: transform 0.3s ease;
-        }
-
-        .pd-image-zone:hover img {
-            transform: scale(1.02);
-        }
-
-    .pd-image-placeholder {
-        padding: 28px 16px;
-        text-align: center;
-    }
-
-    .pd-image-icon {
-        font-size: 2.5rem;
-        margin-bottom: 8px;
-        opacity: 0.35;
-    }
-
-    .pd-image-text-main {
-        font-size: 0.85rem;
-        color: rgba(255,255,255,0.55);
-        font-weight: 500;
-    }
-
-    .pd-image-text-sub {
-        font-size: 0.72rem;
-        color: rgba(255,255,255,0.28);
-        margin-top: 4px;
-    }
-
-    .pd-image-overlay {
-        position: absolute;
-        inset: 0;
-        background: rgba(0,0,0,0.55);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 10px;
-        opacity: 0;
-        transition: opacity 0.25s ease;
-        border-radius: 12px;
-    }
-
-    .pd-image-zone:hover .pd-image-overlay {
-        opacity: 1;
-    }
-
-    .pd-overlay-btn {
-        background: rgba(255,255,255,0.1);
-        border: 1px solid rgba(255,255,255,0.2);
-        border-radius: 8px;
-        color: white;
-        font-size: 0.78rem;
-        padding: 8px 14px;
-        cursor: pointer;
-        backdrop-filter: blur(8px);
-        transition: background 0.2s;
-        font-weight: 600;
-    }
-
-        .pd-overlay-btn:hover {
-            background: rgba(255,23,68,0.3);
-            border-color: rgba(255,23,68,0.5);
-        }
-
-    .pd-hidden-input {
-        display: none;
-    }
-
-    /* ── Section Labels ───────────────────────────────────────────── */
-    .pd-section {
-        padding: 20px 20px 0;
-    }
-
-    .pd-section-label {
-        font-size: 0.68rem;
-        font-weight: 700;
-        letter-spacing: 1.4px;
-        text-transform: uppercase;
-        color: rgba(255,23,68,0.8);
-        margin-bottom: 14px;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-    }
-
-        .pd-section-label::after {
-            content: '';
-            flex: 1;
-            height: 1px;
-            background: linear-gradient(90deg, rgba(255,23,68,0.2), transparent);
-        }
-
-    /* ── Field Groups ─────────────────────────────────────────────── */
-    .pd-field-row {
-        display: grid;
-        gap: 14px;
-        margin-bottom: 14px;
-    }
-
-        .pd-field-row.cols-2 {
-            grid-template-columns: 1fr 1fr;
-        }
-
-        .pd-field-row.cols-1 {
-            grid-template-columns: 1fr;
-        }
-
-    @@media (max-width: 480px) {
-        .pd-field-row.cols-2 {
-            grid-template-columns: 1fr;
-        }
-
-        .pd-image-zone {
-            margin: 16px 14px 0;
-        }
-
-        .pd-section {
-            padding: 16px 14px 0;
-        }
-
-        .pd-header {
-            padding: 18px 16px 14px;
-        }
-    }
-
-    /* ── MudBlazor field overrides ────────────────────────────────── */
-    .pd-shell .mud-input-root {
-        background: rgba(255,255,255,0.035) !important;
-        border-radius: 10px !important;
-        transition: background 0.2s, box-shadow 0.2s;
-    }
-
-        .pd-shell .mud-input-root:hover {
-            background: rgba(255,255,255,0.055) !important;
-        }
-
-        .pd-shell .mud-input-root.mud-input-root-focused {
-            background: rgba(255,23,68,0.06) !important;
-            box-shadow: 0 0 0 2px rgba(255,23,68,0.25) !important;
-        }
-
-    .pd-shell .mud-input-outlined .mud-notch {
-        border-color: rgba(255,255,255,0.1) !important;
-    }
-
-    /* ── Toggle Cards ─────────────────────────────────────────────── */
-    .pd-toggle-group {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 10px;
-        margin-bottom: 14px;
-    }
-
-    .pd-toggle-card {
-        border-radius: 12px;
-        border: 1px solid rgba(255,255,255,0.07);
-        background: rgba(255,255,255,0.03);
-        padding: 12px 14px;
-        cursor: pointer;
-        transition: all 0.22s ease;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        user-select: none;
-    }
-
-        .pd-toggle-card:hover {
-            background: rgba(255,255,255,0.06);
-            border-color: rgba(255,255,255,0.14);
-        }
-
-        .pd-toggle-card.active-premium {
-            background: rgba(255,193,7,0.08);
-            border-color: rgba(255,193,7,0.35);
-            box-shadow: 0 0 14px rgba(255,193,7,0.1);
-        }
-
-        .pd-toggle-card.active-status {
-            background: rgba(76,175,80,0.08);
-            border-color: rgba(76,175,80,0.35);
-            box-shadow: 0 0 14px rgba(76,175,80,0.1);
-        }
-
-    .pd-toggle-dot {
-        width: 10px;
-        height: 10px;
-        border-radius: 50%;
-        flex-shrink: 0;
-        transition: all 0.22s ease;
-    }
-
-        .pd-toggle-dot.premium {
-            background: #FFC107;
-            box-shadow: 0 0 8px rgba(255,193,7,0.5);
-        }
-
-        .pd-toggle-dot.status {
-            background: #4CAF50;
-            box-shadow: 0 0 8px rgba(76,175,80,0.5);
-        }
-
-        .pd-toggle-dot.off {
-            background: rgba(255,255,255,0.18);
-        }
-
-    .pd-toggle-label {
-        font-size: 0.8rem;
-        font-weight: 600;
-        color: rgba(255,255,255,0.75);
-    }
-
-    .pd-toggle-hint {
-        font-size: 0.68rem;
-        color: rgba(255,255,255,0.35);
-        margin-top: 1px;
-    }
-
-    /* ── Loading Skeleton ─────────────────────────────────────────── */
-    .pd-skeleton {
-        animation: pd-shimmer 1.5s infinite linear;
-        background: linear-gradient(90deg, rgba(255,255,255,0.03) 25%, rgba(255,255,255,0.07) 50%, rgba(255,255,255,0.03) 75%);
-        background-size: 200% 100%;
-        border-radius: 8px;
-    }
-
-    @@keyframes pd-shimmer {
-        from {
-            background-position: 200% 0;
-        }
-
-        to {
-            background-position: -200% 0;
-        }
-    }
-
-    .pd-skel-line {
-        height: 44px;
-        margin-bottom: 14px;
-    }
-
-    .pd-skel-img {
-        height: 200px;
-        margin: 20px;
-        border-radius: 14px;
-    }
-
-    /* ── Save Button ──────────────────────────────────────────────── */
-    .pd-save-btn {
-        background: linear-gradient(135deg, #FF1744 0%, #B71C1C 100%) !important;
-        color: white !important;
-        font-weight: 700 !important;
-        border-radius: 10px !important;
-        padding: 0 28px !important;
-        height: 42px !important;
-        font-size: 0.85rem !important;
-        letter-spacing: 0.5px !important;
-        box-shadow: 0 4px 16px rgba(255,23,68,0.3) !important;
-        transition: all 0.25s ease !important;
-        min-width: 120px !important;
-    }
-
-        .pd-save-btn:hover:not(:disabled) {
-            transform: translateY(-1px) !important;
-            box-shadow: 0 6px 22px rgba(255,23,68,0.45) !important;
-            filter: brightness(1.08) !important;
-        }
-
-        .pd-save-btn:disabled {
-            opacity: 0.55 !important;
-            transform: none !important;
-        }
-
-    .pd-cancel-btn {
-        color: rgba(255,255,255,0.45) !important;
-        font-weight: 500 !important;
-        border-radius: 10px !important;
-        height: 42px !important;
-        padding: 0 18px !important;
-        transition: color 0.2s !important;
-    }
-
-        .pd-cancel-btn:hover {
-            color: rgba(255,255,255,0.8) !important;
-            background: rgba(255,255,255,0.05) !important;
-        }
-
-    /* ── Saving Spinner ───────────────────────────────────────────── */
-    .pd-saving-badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        font-size: 0.75rem;
-        color: rgba(255,255,255,0.5);
-    }
-
-    /* ── Spacer ───────────────────────────────────────────────────── */
-    .pd-spacer {
-        height: 20px;
-    }
-</style>
-
-<MudDialog Class="pd-shell" MaxWidth="MaxWidth.Small" FullWidth="true">
+<MudDialog Class="pd-root pd-shell" MaxWidth="MaxWidth.Small" FullWidth="true">
 
     <DialogContent>
 
@@ -484,177 +40,199 @@
         }
         else
         {
-            <div class="pd-body">
+            <MudForm @ref="form" @bind-IsValid="formIsValid">
+                <div class="pd-body">
 
-                <!-- ── Header ── -->
-                <div class="pd-header">
-                    <div style="display:flex; align-items:center; gap:12px; justify-content:space-between">
-                        <div style="display:flex; align-items:center; gap:12px">
-                            <div class="pd-header-accent"></div>
-                            <div>
-                                <div class="pd-title">
-                                    @(ProductId == null ? "Nueva Bebida" : "Editar Bebida")
-                                </div>
-                                <div class="pd-subtitle">
-                                    @(ProductId == null ? "Agrega un nuevo producto al catálogo" : $"Modificando ID #{ProductId}")
-                                </div>
-                            </div>
-                        </div>
-                        <span class="pd-badge @(ProductId == null ? "pd-badge-new" : "pd-badge-edit")">
-                            @(ProductId == null ? "NUEVO" : "EDITAR")
-                        </span>
-                    </div>
-                </div>
-
-                <!-- ── Image Upload Zone ── -->
-                <div class="pd-section" style="padding-bottom:0">
-                    <div class="pd-section-label">📷 Imagen del producto</div>
-                </div>
-
-                <!-- InputFile PRIMERO, fuera del label — el label lo activa nativamente (funciona en móvil) -->
-                <InputFile id="pd-file-input"
-                           class="pd-hidden-input"
-                           OnChange="OnImageSelected"
-                           accept="image/*" />
-
-                <label for="pd-file-input" style="display:block; margin:0 20px; cursor:pointer">
-                    <div class="pd-image-zone @(HasImage ? "has-image" : "") @(isDragOver ? "drag-over" : "")"
-                         @ondragover:preventDefault
-                         @ondragover="() => isDragOver = true"
-                         @ondragleave="() => isDragOver = false"
-                         @ondrop:preventDefault
-                         @ondrop="HandleDrop">
-
-                        @if (HasImage)
-                        {
-                            <img src="@(previewImage ?? Model.ImageUrl)" alt="Preview" />
-                            <div class="pd-image-overlay">
-                                <span class="pd-overlay-btn">🔄 Cambiar</span>
-                                <span class="pd-overlay-btn" @onclick:stopPropagation @onclick="ClearImage">🗑 Quitar</span>
-                            </div>
-                        }
-                        else
-                        {
-                            <div class="pd-image-placeholder">
-                                <div class="pd-image-icon">🍾</div>
-                                <div class="pd-image-text-main">Toca aquí para subir imagen</div>
-                                <div class="pd-image-text-sub">PNG, JPG, WEBP · máx 10 MB</div>
-                            </div>
-                        }
-                    </div>
-                </label>
-
-                <!-- ── Info Básica ── -->
-                <div class="pd-section">
-                    <div class="pd-section-label">📋 Información básica</div>
-
-                    <div class="pd-field-row cols-1">
-                        <MudTextField @bind-Value="Model.Name"
-                                      Label="Nombre del producto"
-                                      Variant="Variant.Outlined"
-                                      Placeholder="Ej. Brugal Añejo 750ml"
-                                      FullWidth />
-                    </div>
-
-                    <div class="pd-field-row cols-2">
-                        <MudSelect T="int"
-                                   Label="Categoría"
-                                   @bind-Value="Model.CategoryId"
-                                   Variant="Variant.Outlined"
-                                   AnchorOrigin="Origin.BottomCenter"
-                                   TransformOrigin="Origin.TopCenter"
-                                   FullWidth>
-                            @foreach (var c in categories)
-                            {
-                                <MudSelectItem @key="c.CategoryId" Value="@c.CategoryId">@c.Name</MudSelectItem>
-                            }
-                        </MudSelect>
-
-                        <MudSelect T="int?"
-                                   Label="Marca"
-                                   @bind-Value="Model.BrandId"
-                                   Variant="Variant.Outlined"
-                                   AnchorOrigin="Origin.BottomCenter"
-                                   TransformOrigin="Origin.TopCenter"
-                                   FullWidth>
-                            <MudSelectItem @key="@("none")" T="int?" Value="@(null)">Sin marca</MudSelectItem>
-                            @foreach (var b in brands)
-                            {
-                                <MudSelectItem @key="b.BrandId" T="int?" Value="@b.BrandId">@b.Name</MudSelectItem>
-                            }
-                        </MudSelect>
-                    </div>
-                </div>
-
-                <!-- ── Precio & Stock ── -->
-                <div class="pd-section">
-                    <div class="pd-section-label">💰 Precio y stock</div>
-
-                    <div class="pd-field-row cols-2">
-                        <MudTextField T="decimal"
-                                      @bind-Value="Model.Price"
-                                      Label="Precio"
-                                      Variant="Variant.Outlined"
-                                      Adornment="Adornment.Start"
-                                      AdornmentText="$"
-                                      FullWidth />
-
-                        <MudTextField T="int"
-                                      @bind-Value="Model.Stock"
-                                      Label="Stock disponible"
-                                      Variant="Variant.Outlined"
-                                      Adornment="Adornment.End"
-                                      AdornmentText="un."
-                                      FullWidth />
-                    </div>
-
-                    <div class="pd-field-row cols-1">
-                        <MudTextField T="int?"
-                                      @bind-Value="Model.AgingYears"
-                                      Label="Años de añejamiento (opcional)"
-                                      Variant="Variant.Outlined"
-                                      Placeholder="Ej. 12"
-                                      Adornment="Adornment.End"
-                                      AdornmentText="años"
-                                      FullWidth />
-                    </div>
-                </div>
-
-                <!-- ── Opciones ── -->
-                <div class="pd-section">
-                    <div class="pd-section-label">⚙️ Opciones</div>
-
-                    <div class="pd-toggle-group">
-
-                        <!-- Premium toggle -->
-                        <div class="pd-toggle-card @(Model.IsPremium ? "active-premium" : "")"
-                             @onclick="() => Model.IsPremium = !Model.IsPremium">
-                            <div class="pd-toggle-dot @(Model.IsPremium ? "premium" : "off")"></div>
-                            <div>
-                                <div class="pd-toggle-label">Premium</div>
-                                <div class="pd-toggle-hint">@(Model.IsPremium ? "Activo" : "No activo")</div>
-                            </div>
-                        </div>
-
-                        <!-- Activo toggle (solo en edición) -->
-                        @if (ProductId.HasValue)
-                        {
-                            <div class="pd-toggle-card @(Model.IsActive ? "active-status" : "")"
-                                 @onclick="() => Model.IsActive = !Model.IsActive">
-                                <div class="pd-toggle-dot @(Model.IsActive ? "status" : "off")"></div>
+                    <!-- ── Header ── -->
+                    <div class="pd-header">
+                        <div style="display:flex; align-items:center; gap:12px; justify-content:space-between">
+                            <div style="display:flex; align-items:center; gap:12px">
+                                <div class="pd-header-accent"></div>
                                 <div>
-                                    <div class="pd-toggle-label">Estado</div>
-                                    <div class="pd-toggle-hint">@(Model.IsActive ? "Visible" : "Oculto")</div>
+                                    <div class="pd-title">
+                                        @(ProductId == null ? "Nueva Bebida" : "Editar Bebida")
+                                    </div>
+                                    <div class="pd-subtitle">
+                                        @(ProductId == null ? "Agrega un nuevo producto al catálogo" : $"Modificando ID #{ProductId}")
+                                    </div>
                                 </div>
                             </div>
-                        }
-
+                            <span class="pd-badge @(ProductId == null ? "pd-badge-new" : "pd-badge-edit")">
+                                @(ProductId == null ? "NUEVO" : "EDITAR")
+                            </span>
+                        </div>
                     </div>
+
+                    <!-- ── Image Upload Zone (obligatoria) ── -->
+                    <div class="pd-section" style="padding-bottom:0">
+                        <div class="pd-section-label">📷 Imagen del producto *</div>
+                    </div>
+
+                    <!-- InputFile PRIMERO, fuera del label — el label lo activa nativamente (funciona en móvil) -->
+                    <InputFile id="pd-file-input"
+                               class="pd-hidden-input"
+                               OnChange="OnImageSelected"
+                               accept="image/*" />
+
+                    <label for="pd-file-input" style="display:block; margin:0 20px; cursor:pointer">
+                        <div class="pd-image-zone @(HasImage ? "has-image" : "") @(isDragOver ? "drag-over" : "") @(imageError ? "has-error" : "")"
+                             @ondragover:preventDefault
+                             @ondragover="() => isDragOver = true"
+                             @ondragleave="() => isDragOver = false"
+                             @ondrop:preventDefault
+                             @ondrop="HandleDrop">
+
+                            @if (HasImage)
+                            {
+                                <img src="@(previewImage ?? Model.ImageUrl)" alt="Preview" />
+                                <div class="pd-image-overlay">
+                                    <span class="pd-overlay-btn">🔄 Cambiar</span>
+                                    <span class="pd-overlay-btn" @onclick:stopPropagation @onclick="ClearImage">🗑 Quitar</span>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="pd-image-placeholder">
+                                    <div class="pd-image-icon">🍾</div>
+                                    <div class="pd-image-text-main">Toca aquí para subir imagen</div>
+                                    <div class="pd-image-text-sub">PNG, JPG, WEBP · máx 10 MB</div>
+                                </div>
+                            }
+                        </div>
+                    </label>
+
+                    @if (imageError)
+                    {
+                        <div class="pd-image-error-text">La imagen del producto es obligatoria.</div>
+                    }
+
+                    <!-- ── Info Básica ── -->
+                    <div class="pd-section">
+                        <div class="pd-section-label">📋 Información básica</div>
+
+                        <div class="pd-field-row cols-1">
+                            <MudTextField @bind-Value="Model.Name"
+                                          Label="Nombre del producto"
+                                          Variant="Variant.Outlined"
+                                          Placeholder="Ej. Brugal Añejo 750ml"
+                                          Required="true"
+                                          RequiredError="El nombre es obligatorio"
+                                          Validation="@(new Func<string, string?>(ValidateName))"
+                                          FullWidth />
+                        </div>
+
+                        <div class="pd-field-row cols-2">
+                            <MudSelect T="int"
+                                       Label="Categoría"
+                                       @bind-Value="Model.CategoryId"
+                                       Variant="Variant.Outlined"
+                                       AnchorOrigin="Origin.BottomCenter"
+                                       TransformOrigin="Origin.TopCenter"
+                                       Required="true"
+                                       RequiredError="Selecciona una categoría"
+                                       Validation="@(new Func<int, string?>(ValidateCategory))"
+                                       FullWidth>
+                                @foreach (var c in categories)
+                                {
+                                    <MudSelectItem @key="c.CategoryId" Value="@c.CategoryId">@c.Name</MudSelectItem>
+                                }
+                            </MudSelect>
+
+                            <MudSelect T="int?"
+                                       Label="Marca"
+                                       @bind-Value="Model.BrandId"
+                                       Variant="Variant.Outlined"
+                                       AnchorOrigin="Origin.BottomCenter"
+                                       TransformOrigin="Origin.TopCenter"
+                                       FullWidth>
+                                <MudSelectItem @key="@("none")" T="int?" Value="@(null)">Sin marca</MudSelectItem>
+                                @foreach (var b in brands)
+                                {
+                                    <MudSelectItem @key="b.BrandId" T="int?" Value="@b.BrandId">@b.Name</MudSelectItem>
+                                }
+                            </MudSelect>
+                        </div>
+                    </div>
+
+                    <!-- ── Precio & Stock ── -->
+                    <div class="pd-section">
+                        <div class="pd-section-label">💰 Precio y stock</div>
+
+                        <div class="pd-field-row cols-2">
+                            <MudTextField T="decimal"
+                                          @bind-Value="Model.Price"
+                                          Label="Precio"
+                                          Variant="Variant.Outlined"
+                                          Adornment="Adornment.Start"
+                                          AdornmentText="$"
+                                          Required="true"
+                                          RequiredError="El precio es obligatorio"
+                                          Validation="@(new Func<decimal, string?>(ValidatePrice))"
+                                          FullWidth />
+
+                            <MudTextField T="int"
+                                          @bind-Value="Model.Stock"
+                                          Label="Stock disponible"
+                                          Variant="Variant.Outlined"
+                                          Adornment="Adornment.End"
+                                          AdornmentText="un."
+                                          Required="true"
+                                          RequiredError="El stock es obligatorio"
+                                          Validation="@(new Func<int, string?>(ValidateStock))"
+                                          FullWidth />
+                        </div>
+
+                        <div class="pd-field-row cols-1">
+                            <MudTextField T="int?"
+                                          @bind-Value="Model.AgingYears"
+                                          Label="Años de añejamiento"
+                                          Variant="Variant.Outlined"
+                                          Placeholder="Ej. 12"
+                                          Adornment="Adornment.End"
+                                          AdornmentText="años"
+                                          Required="true"
+                                          RequiredError="Los años de añejamiento son obligatorios"
+                                          Validation="@(new Func<int?, string?>(ValidateAging))"
+                                          FullWidth />
+                        </div>
+                    </div>
+
+                    <!-- ── Opciones ── -->
+                    <div class="pd-section">
+                        <div class="pd-section-label">⚙️ Opciones</div>
+
+                        <div class="pd-toggle-group">
+
+                            <!-- Premium toggle -->
+                            <div class="pd-toggle-card @(Model.IsPremium ? "active-premium" : "")"
+                                 @onclick="() => Model.IsPremium = !Model.IsPremium">
+                                <div class="pd-toggle-dot @(Model.IsPremium ? "premium" : "off")"></div>
+                                <div>
+                                    <div class="pd-toggle-label">Premium</div>
+                                    <div class="pd-toggle-hint">@(Model.IsPremium ? "Activo" : "No activo")</div>
+                                </div>
+                            </div>
+
+                            <!-- Activo toggle (solo en edición) -->
+                            @if (ProductId.HasValue)
+                            {
+                                <div class="pd-toggle-card @(Model.IsActive ? "active-status" : "")"
+                                     @onclick="() => Model.IsActive = !Model.IsActive">
+                                    <div class="pd-toggle-dot @(Model.IsActive ? "status" : "off")"></div>
+                                    <div>
+                                        <div class="pd-toggle-label">Estado</div>
+                                        <div class="pd-toggle-hint">@(Model.IsActive ? "Visible" : "Oculto")</div>
+                                    </div>
+                                </div>
+                            }
+
+                        </div>
+                    </div>
+
+                    <div class="pd-spacer"></div>
+
                 </div>
-
-                <div class="pd-spacer"></div>
-
-            </div>
+            </MudForm>
         }
 
     </DialogContent>
@@ -680,165 +258,10 @@
         <MudButton Class="pd-save-btn"
                    ButtonType="ButtonType.Button"
                    Disabled="@(isSaving || isLoading)"
-                   OnClick="saveProduct">
+                   OnClick="SaveProduct">
             @(ProductId == null ? "✦ Crear producto" : "✦ Guardar cambios")
         </MudButton>
 
     </DialogActions>
 
 </MudDialog>
-
-@code {
-
-    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = default!;
-    [Parameter] public int? ProductId { get; set; }
-
-    ProductEditModel Model = new();
-
-    List<Category> categories = new();
-    List<Brand> brands = new();
-
-    bool isLoading = true;
-    bool _loaded = false;
-    bool isSaving = false;
-    bool isDragOver = false;
-
-    IBrowserFile? selectedImage;
-    string? previewImage;
-
-    bool HasImage => !string.IsNullOrEmpty(previewImage ?? Model.ImageUrl);
-    string? _currentUserId;
-
-    // ── Init ────────────────────────────────────────────────────────
-    protected override async Task OnInitializedAsync()
-    {
-        if (_loaded) return;
-        _loaded = true;
-        isLoading = true;
-
-        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
-        _currentUserId = authState.User.FindFirst("UserId")?.Value
-                      ?? authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-
-        categories = await CatalogService.GetCategoriesAsync();
-        brands = await CatalogService.GetBrandsAsync();
-
-        if (ProductId.HasValue)
-        {
-            var product = await ProductService.GetProductForEditAsync(ProductId.Value);
-
-            Model = new ProductEditModel
-            {
-                ProductId = product.ProductId,
-                Name = product.Name,
-                Description = product.Description,
-                CategoryId = product.CategoryId,
-                BrandId = product.BrandId,
-                AgingYears = product.AgingYears,
-                Price = product.Price,
-                Stock = product.Stock,
-                IsPremium = product.IsPremium,
-                IsActive = product.IsActive,
-                ImageUrl = product.ImageUrl
-            };
-
-            previewImage = null;
-        }
-
-        isLoading = false;
-    }
-
-    // ── Actions ─────────────────────────────────────────────────────
-    void Cancelar() => MudDialog.Cancel();
-
-    async Task saveProduct()
-    {
-        if (isSaving) return;
-        isSaving = true;
-
-        try
-        {
-            if (selectedImage != null)
-                Model.ImageUrl = await SaveImageAsync(selectedImage);
-
-            if (ProductId.HasValue)
-            {
-                await ProductService.UpdateProductAsync(Model, _currentUserId);
-            }
-            else
-            {
-                Model.IsActive = true;
-
-                var createModel = new ProductCreateModel
-                {
-                    Name = Model.Name,
-                    Description = Model.Description,
-                    CategoryId = Model.CategoryId,
-                    BrandId = Model.BrandId,
-                    AgingYears = Model.AgingYears,
-                    Price = Model.Price,
-                    Stock = Model.Stock,
-                    IsPremium = Model.IsPremium,
-                    IsActive = Model.IsActive,
-                    ImageFileName = Model.ImageUrl
-                };
-
-                await ProductService.CreateProductAsync(createModel, _currentUserId);
-            }
-
-            MudDialog.Close(DialogResult.Ok(true));
-            ProductState.NotifyChange();
-        }
-        finally
-        {
-            isSaving = false;
-        }
-    }
-
-    // ── Image handling ───────────────────────────────────────────────
-    void ClearImage()
-    {
-        previewImage = null;
-        Model.ImageUrl = null;
-        selectedImage = null;
-    }
-
-    async Task OnImageSelected(InputFileChangeEventArgs e)
-    {
-        var file = e.File;
-        if (file is null) return;
-
-        selectedImage = file;
-        using var stream = file.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024);
-        using var ms = new MemoryStream();
-        await stream.CopyToAsync(ms);
-        previewImage = $"data:{file.ContentType};base64,{Convert.ToBase64String(ms.ToArray())}";
-    }
-
-    async Task HandleDrop(DragEventArgs e)
-    {
-        isDragOver = false;
-        // Drag-drop de archivos en Blazor Server requiere JS interop real;
-        // el InputFile estándar cubre el flujo habitual.
-        // Si se necesita drag-drop nativo, se puede agregar un módulo JS.
-        await Task.CompletedTask;
-    }
-
-    private async Task<string?> SaveImageAsync(IBrowserFile file)
-    {
-        if (file is null) return null;
-
-        var uploadsFolder = Path.Combine(Env.WebRootPath, "images", "products");
-        if (!Directory.Exists(uploadsFolder))
-            Directory.CreateDirectory(uploadsFolder);
-
-        var fileName = $"{Guid.NewGuid()}{Path.GetExtension(file.Name)}";
-        var filePath = Path.Combine(uploadsFolder, fileName);
-
-        using var stream = file.OpenReadStream(10 * 1024 * 1024);
-        using var fileStream = new FileStream(filePath, FileMode.Create);
-        await stream.CopyToAsync(fileStream);
-
-        return $"/images/products/{fileName}";
-    }
-}
