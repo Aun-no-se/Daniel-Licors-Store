@@ -1,4 +1,5 @@
 ﻿@using Microsoft.AspNetCore.Components.Authorization
+@using Daniel_Licors_Store.Components.Pages
 
 <CascadingAuthenticationState>
 
@@ -16,7 +17,7 @@
         </Found>
 
         <NotFound>
-            <p>Página no encontrada</p>
+            <NotFoundPage />
         </NotFound>
     </Router>
 

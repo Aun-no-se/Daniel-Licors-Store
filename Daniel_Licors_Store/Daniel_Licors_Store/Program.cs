@@ -105,6 +105,17 @@ else
 }
 
 app.UseHttpsRedirection();
+
+// ── PÁGINA 404 TEMÁTICA ──────────────────────────────────────────────────────
+// Blazor's <NotFound> del Router SOLO funciona para navegación interna
+// (cuando ya estás dentro de la app y das click a un link que no existe).
+// Si alguien escribe una URL a mano, refresca, o entra por un link externo
+// a una ruta que no existe, ASP.NET Core devuelve un 404 crudo ANTES de que
+// Blazor cargue — por eso Edge/Chrome mostraban su propia pantalla de error
+// en vez de nuestra página. Esto reejecuta el pipeline contra /not-found
+// (que sí es una @page real) manteniendo el status code 404.
+app.UseStatusCodePagesWithReExecute("/not-found");
+
 app.UseStaticFiles();
 app.UseAntiforgery();
 app.UseAuthentication();

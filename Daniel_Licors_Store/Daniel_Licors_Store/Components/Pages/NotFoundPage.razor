@@ -1,0 +1,330 @@
+﻿@namespace Daniel_Licors_Store.Components.Pages
+@page "/not-found"
+
+<PageTitle>Botella vacía · Daniel Licors Store</PageTitle>
+
+<div class="nf-stage">
+
+    <div class="nf-vignette"></div>
+    <div class="nf-grain"></div>
+
+    <div class="nf-content">
+
+        <span class="nf-eyebrow">Pasillo 4 · Estante vacío</span>
+
+        <div class="nf-scene">
+
+            <svg class="nf-bottle" viewBox="0 0 400 260" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <linearGradient id="nfGlass" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stop-color="#302f2f" />
+                        <stop offset="45%" stop-color="#171616" />
+                        <stop offset="100%" stop-color="#040404" />
+                    </linearGradient>
+                    <linearGradient id="nfLabel" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stop-color="#F3CA6E" />
+                        <stop offset="100%" stop-color="#C6912E" />
+                    </linearGradient>
+                    <linearGradient id="nfFoil" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stop-color="#E8C468" />
+                        <stop offset="100%" stop-color="#8A6A2E" />
+                    </linearGradient>
+                    <radialGradient id="nfPuddle" cx="50%" cy="50%" r="50%">
+                        <stop offset="0%" stop-color="#FF1744" stop-opacity="0.6" />
+                        <stop offset="100%" stop-color="#FF1744" stop-opacity="0" />
+                    </radialGradient>
+                </defs>
+
+                <!-- charco -->
+                <ellipse class="nf-puddle" cx="60" cy="223" rx="66" ry="13" fill="url(#nfPuddle)" />
+                <ellipse cx="60" cy="223" rx="40" ry="6" fill="#5E0E1C" opacity="0.55" />
+
+                <!-- ondas de salpicadura -->
+                <ellipse class="nf-ripple nf-ripple-1" cx="60" cy="223" rx="14" ry="4" fill="none" stroke="#FF4569" stroke-width="1.4" />
+                <ellipse class="nf-ripple nf-ripple-2" cx="60" cy="223" rx="14" ry="4" fill="none" stroke="#FF4569" stroke-width="1.4" />
+
+                <!-- gota cayendo desde la boca -->
+                <circle class="nf-drop nf-drop-1" cx="26" cy="140" r="4" fill="#FF3D5E" />
+                <circle class="nf-drop nf-drop-2" cx="18" cy="140" r="2.8" fill="#FF3D5E" />
+
+                <!-- botella de vino acostada, boca hacia la izquierda -->
+                <g class="nf-bottle-body">
+                    <!-- cuerpo -->
+                    <rect x="160" y="68" width="190" height="96" rx="20" fill="url(#nfGlass)" stroke="#3a3a3a" stroke-width="1.5" />
+                    <!-- brillo del vidrio -->
+                    <path d="M 175,76 C 195,74 215,75 232,78 L 228,100 C 210,97 192,96 173,98 Z" fill="rgba(255,255,255,0.05)" />
+
+                    <!-- hombro largo y gradual, como botella de vino -->
+                    <path d="M 160,80 C 112,84 88,92 79,103 L 79,129 C 88,140 112,148 160,152 Z"
+                          fill="url(#nfGlass)" stroke="#3a3a3a" stroke-width="1.5" />
+
+                    <!-- cuello delgado -->
+                    <rect x="40" y="104" width="39" height="24" rx="4" fill="url(#nfGlass)" stroke="#3a3a3a" stroke-width="1.5" />
+
+                    <!-- cápsula de foil dorada, justo en la boca -->
+                    <rect x="24" y="102" width="20" height="28" rx="3" fill="url(#nfFoil)" stroke="#5c4519" stroke-width="1" />
+                    <line x1="30" y1="103" x2="30" y2="129" stroke="#5c4519" stroke-width="0.8" opacity="0.6" />
+                    <line x1="36" y1="103" x2="36" y2="129" stroke="#5c4519" stroke-width="0.8" opacity="0.6" />
+
+                    <!-- corcho asomando, torcido -->
+                    <rect class="nf-cork" x="4" y="106" width="22" height="20" rx="4" fill="#D9B26A" transform="rotate(-8 15 116)" />
+
+                    <!-- etiqueta dorada, texto negro -->
+                    <rect x="200" y="90" width="120" height="52" rx="8" fill="url(#nfLabel)" />
+                    <rect x="200" y="90" width="120" height="52" rx="8" fill="none" stroke="#8A6A2E" stroke-width="1.5" opacity="0.6" />
+                    <line x1="212" y1="102" x2="308" y2="102" stroke="#3a2c0d" stroke-width="1" opacity="0.35" />
+                    <text x="260" y="128" text-anchor="middle" class="nf-label-text">404</text>
+                    <line x1="212" y1="130" x2="308" y2="130" stroke="#3a2c0d" stroke-width="1" opacity="0.35" />
+                </g>
+            </svg>
+
+        </div>
+
+        <h1 class="nf-title">Esta botella se acabó</h1>
+        <p class="nf-copy">
+            La página que buscas no está en nuestro inventario. Puede que se haya
+            movido de estante, se haya agotado, o que la referencia esté mal escrita.
+        </p>
+
+        <div class="nf-actions">
+            <a href="/" class="nf-btn nf-btn-primary">
+                <span>Ver catálogo</span>
+            </a>
+        </div>
+
+    </div>
+</div>
+
+<style>
+    @@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;900&family=Poppins:wght@300;400;500;600;700&display=swap');
+
+    .nf-stage {
+        --nf-black: #050505;
+        --nf-crimson: #FF1744;
+        --nf-crimson-deep: #7A0C1E;
+        --nf-gold: #E8C468;
+        --nf-gold-soft: #F5DFA0;
+        --nf-ink: #F3EFE7;
+        --nf-muted: #B9AFAE;
+        position: relative;
+        min-height: calc(100dvh - 72px);
+        width: 100%;
+        background: radial-gradient(120% 90% at 50% -10%, rgba(255,23,68,0.10), transparent 55%), radial-gradient(90% 70% at 90% 110%, rgba(232,196,104,0.07), transparent 60%), var(--nf-black);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        font-family: 'Poppins', sans-serif;
+        padding: 32px 20px;
+        box-sizing: border-box;
+    }
+
+    .nf-vignette {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        box-shadow: inset 0 0 160px 40px rgba(0,0,0,0.75);
+    }
+
+    .nf-grain {
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        opacity: 0.035;
+        background-image: repeating-linear-gradient(115deg, #fff 0px, #fff 1px, transparent 1px, transparent 3px);
+    }
+
+    .nf-content {
+        position: relative;
+        z-index: 2;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        max-width: 560px;
+    }
+
+    .nf-eyebrow {
+        font-size: 0.7rem;
+        font-weight: 700;
+        letter-spacing: 3px;
+        text-transform: uppercase;
+        color: var(--nf-gold);
+        opacity: 0.85;
+        margin-bottom: 6px;
+    }
+
+    .nf-scene {
+        width: min(88vw, 380px);
+        margin: 10px 0 8px;
+    }
+
+    .nf-bottle {
+        width: 100%;
+        height: auto;
+        filter: drop-shadow(0 26px 34px rgba(0,0,0,0.55));
+    }
+
+    .nf-label-text {
+        font-family: 'Playfair Display', serif;
+        font-weight: 900;
+        font-size: 26px;
+        fill: #0d0d0d;
+    }
+
+    /* leve balanceo de reposo */
+    .nf-bottle-body {
+        animation: nf-settle 4.5s ease-in-out infinite;
+        transform-origin: 350px 164px;
+    }
+
+    @@keyframes nf-settle {
+        0%, 100% {
+            transform: rotate(0deg);
+        }
+
+        50% {
+            transform: rotate(-1.2deg);
+        }
+    }
+
+    .nf-puddle {
+        animation: nf-puddle-pulse 3.4s ease-in-out infinite;
+        transform-origin: 60px 223px;
+    }
+
+    @@keyframes nf-puddle-pulse {
+        0%, 100% {
+            transform: scale(1);
+            opacity: 0.9;
+        }
+
+        50% {
+            transform: scale(1.06);
+            opacity: 1;
+        }
+    }
+
+    .nf-ripple {
+        opacity: 0;
+        transform-box: fill-box;
+        transform-origin: center;
+        animation: nf-ripple-out 3.4s ease-out infinite;
+    }
+
+    .nf-ripple-2 {
+        animation-delay: 1.7s;
+    }
+
+    @@keyframes nf-ripple-out {
+        0% {
+            opacity: 0.7;
+            transform: scale(0.3);
+        }
+
+        80% {
+            opacity: 0;
+            transform: scale(2.6);
+        }
+
+        100% {
+            opacity: 0;
+            transform: scale(2.6);
+        }
+    }
+
+    .nf-drop {
+        opacity: 0;
+        animation: nf-drip 3.4s linear infinite;
+    }
+
+    .nf-drop-2 {
+        animation-delay: 1.7s;
+    }
+
+    @@keyframes nf-drip {
+        0% {
+            opacity: 0;
+            transform: translateY(0);
+        }
+
+        8% {
+            opacity: 1;
+        }
+
+        55% {
+            opacity: 1;
+            transform: translateY(75px);
+        }
+
+        62% {
+            opacity: 0;
+            transform: translateY(80px);
+        }
+
+        100% {
+            opacity: 0;
+            transform: translateY(80px);
+        }
+    }
+
+    .nf-title {
+        font-family: 'Playfair Display', serif;
+        font-weight: 800;
+        font-size: clamp(1.7rem, 4.2vw, 2.5rem);
+        color: var(--nf-ink);
+        margin: 14px 0 12px;
+        letter-spacing: -0.01em;
+    }
+
+    .nf-copy {
+        font-size: 0.95rem;
+        line-height: 1.65;
+        color: var(--nf-muted);
+        margin: 0 0 30px;
+        max-width: 440px;
+    }
+
+    .nf-actions {
+        display: flex;
+        justify-content: center;
+    }
+
+    .nf-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0 36px;
+        height: 48px;
+        border-radius: 12px;
+        font-size: 0.88rem;
+        font-weight: 700;
+        letter-spacing: 0.4px;
+        text-decoration: none;
+        transition: all 0.25s ease;
+    }
+
+    .nf-btn-primary {
+        background: linear-gradient(135deg, var(--nf-crimson) 0%, var(--nf-crimson-deep) 100%);
+        color: white;
+        box-shadow: 0 8px 24px rgba(255,23,68,0.28);
+    }
+
+        .nf-btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 30px rgba(255,23,68,0.4);
+            filter: brightness(1.06);
+        }
+
+    @@media (max-width: 480px) {
+        .nf-btn {
+            width: 100%;
+        }
+    }
+
+    @@media (prefers-reduced-motion: reduce) {
+        .nf-bottle-body, .nf-puddle, .nf-drop, .nf-ripple {
+            animation: none !important;
+        }
+    }
+</style>
