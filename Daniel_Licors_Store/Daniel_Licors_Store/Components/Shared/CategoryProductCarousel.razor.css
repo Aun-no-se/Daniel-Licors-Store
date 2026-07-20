@@ -86,23 +86,31 @@
     }
 }
 
-.dlc-title-icon {
-    font-size: 1.3rem;
-    animation: dlc-icon-spin 4s ease-in-out infinite;
-    display: inline-block;
+.dlc-title-icon-wrap {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    flex-shrink: 0;
+    background: linear-gradient(135deg, rgba(232,196,104,0.18), rgba(255,23,68,0.12));
+    border: 1px solid rgba(232,196,104,0.32);
+    color: var(--liq-gold, #E8C468);
+    animation: dlc-icon-wiggle 4s ease-in-out infinite;
 }
 
-@keyframes dlc-icon-spin {
+@keyframes dlc-icon-wiggle {
     0% {
         transform: rotate(0deg) scale(1);
     }
 
     25% {
-        transform: rotate(-8deg) scale(1.1);
+        transform: rotate(-8deg) scale(1.08);
     }
 
     75% {
-        transform: rotate(8deg) scale(1.1);
+        transform: rotate(8deg) scale(1.08);
     }
 
     100% {
@@ -260,7 +268,18 @@
     position: relative;
     overflow: hidden;
     height: 200px;
+    background: radial-gradient(ellipse at center, #1c1c2a 0%, #121219 65%, #0e0e15 100%);
 }
+
+    /* funde el borde de CUALQUIER foto (tenga o no fondo propio) con el
+       marco oscuro de la tarjeta, simulando un efecto "sin fondo" */
+    .dlc-img-wrap::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(ellipse at center, transparent 50%, rgba(10,10,16,0.4) 100%), linear-gradient(to bottom, transparent 58%, rgba(15,15,22,0.65) 88%, #12121a 100%);
+        pointer-events: none;
+    }
 
 .dlc-img {
     width: 100%;
@@ -268,6 +287,7 @@
     object-fit: cover;
     display: block;
     transition: transform 0.5s ease;
+    mix-blend-mode: normal;
 }
 
 .dlc-pos-center .dlc-img:hover {
@@ -301,7 +321,9 @@
 }
 
 .dlc-cat-badge {
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
     background: linear-gradient(135deg, rgba(212,175,55,0.2), rgba(183,28,28,0.2));
     border: 1px solid rgba(212,175,55,0.3);
     color: #d4af37;
@@ -309,9 +331,13 @@
     font-weight: 800;
     text-transform: uppercase;
     letter-spacing: 0.12em;
-    padding: 3px 10px;
+    padding: 3px 10px 3px 8px;
     border-radius: 20px;
     margin-bottom: 8px;
+}
+
+.dlc-cat-badge-icon {
+    flex-shrink: 0;
 }
 
 .dlc-name {
@@ -345,14 +371,22 @@
 }
 
 /* ══════════════════════════════════════════════
-   ACCIONES
+   ACCIONES — grid fijo de 2 columnas.
+   Con 2 botones: una fila pareja. Con 4: dos filas
+   parejas. Nunca se descuadra, sea cual sea el rol.
    ══════════════════════════════════════════════ */
 .dlc-actions {
-    display: flex;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
     gap: 8px;
-    flex-wrap: wrap;
     animation: dlc-actions-in 0.4s ease-out both;
 }
+
+    /* si solo hay un botón visible (nadie logueado → solo "Ver"),
+       que ocupe todo el ancho en vez de dejar un hueco al lado */
+    .dlc-actions .dlc-btn-action:only-child {
+        grid-column: 1 / -1;
+    }
 
 @keyframes dlc-actions-in {
     from {
@@ -366,77 +400,105 @@
     }
 }
 
-.dlc-action-btn {
+.dlc-btn-action {
+    position: relative;
     display: flex;
     align-items: center;
-    gap: 5px;
-    padding: 7px 14px;
+    justify-content: center;
+    gap: 6px;
+    padding: 9px 8px;
     border-radius: 10px;
-    border: none;
-    font-size: 0.75rem;
+    border: 1px solid rgba(232,196,104,0.22);
+    background: rgba(12,8,9,0.55);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    color: var(--liq-ink, #F3EFE7);
+    font-family: 'Poppins', sans-serif;
+    font-size: 0.72rem;
     font-weight: 700;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
     cursor: pointer;
-    transition: transform 0.18s ease, box-shadow 0.18s ease, filter 0.18s ease;
-    letter-spacing: 0.02em;
+    overflow: hidden;
+    white-space: nowrap;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, background 0.2s ease, filter 0.2s ease;
 }
 
-    .dlc-action-btn:active {
-        transform: scale(0.93) !important;
-    }
-
-.dlc-view {
-    background: linear-gradient(135deg, #1a6fb5, #0d4f8a);
-    color: #fff;
-    box-shadow: 0 4px 14px rgba(26,111,181,0.35);
-}
-
-    .dlc-view:hover {
+    .dlc-btn-action:hover {
         transform: translateY(-2px);
-        box-shadow: 0 8px 22px rgba(26,111,181,0.5);
-        filter: brightness(1.15);
     }
 
-.dlc-add {
-    background: linear-gradient(135deg, #1a8a4a, #0f6334);
+    .dlc-btn-action:active {
+        transform: translateY(0) scale(0.95) !important;
+    }
+
+/* barrido dorado ("spoiler") al pasar el mouse */
+.dlc-btn-shine {
+    position: absolute;
+    top: 0;
+    left: -60%;
+    width: 40%;
+    height: 100%;
+    background: linear-gradient(115deg, transparent, rgba(232,196,104,0.4), transparent);
+    transform: skewX(-20deg);
+    transition: left 0.6s ease;
+    pointer-events: none;
+}
+
+.dlc-btn-action:hover .dlc-btn-shine {
+    left: 130%;
+}
+
+/* Ver — ghost dorado */
+.dlc-btn-view {
+    color: var(--liq-gold, #E8C468);
+    border-color: rgba(232,196,104,0.35);
+}
+
+    .dlc-btn-view:hover {
+        background: rgba(232,196,104,0.12);
+        border-color: var(--liq-gold, #E8C468);
+        box-shadow: 0 8px 20px rgba(232,196,104,0.18);
+    }
+
+/* Añadir — acción principal, crimson sólido */
+.dlc-btn-add {
+    background: linear-gradient(135deg, var(--liq-crimson, #FF1744), var(--liq-crimson-deep, #7A0C1E));
+    border-color: rgba(255,23,68,0.55);
     color: #fff;
-    box-shadow: 0 4px 14px rgba(26,138,74,0.35);
+    box-shadow: 0 4px 14px rgba(255,23,68,0.3);
 }
 
-    .dlc-add:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 22px rgba(26,138,74,0.5);
-        filter: brightness(1.15);
+    .dlc-btn-add:hover {
+        box-shadow: 0 10px 26px rgba(255,23,68,0.48);
+        filter: brightness(1.1);
     }
 
-.dlc-edit {
-    background: linear-gradient(135deg, #b8952a, #8c6e1a);
-    color: #fff;
-    box-shadow: 0 4px 14px rgba(184,149,42,0.35);
-    padding: 7px 12px;
+/* Editar — bronce/dorado, acción secundaria de admin */
+.dlc-btn-edit {
+    background: linear-gradient(135deg, rgba(232,196,104,0.22), rgba(138,106,46,0.3));
+    border-color: rgba(232,196,104,0.4);
+    color: var(--liq-gold-soft, #F5DFA0);
 }
 
-    .dlc-edit:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 22px rgba(184,149,42,0.5);
-        filter: brightness(1.15);
+    .dlc-btn-edit:hover {
+        background: linear-gradient(135deg, rgba(232,196,104,0.34), rgba(138,106,46,0.42));
+        box-shadow: 0 8px 20px rgba(232,196,104,0.2);
     }
 
-.dlc-del {
-    background: linear-gradient(135deg, #c0392b, #922b21);
-    color: #fff;
-    box-shadow: 0 4px 14px rgba(192,57,43,0.35);
-    padding: 7px 12px;
+/* Ocultar (antes "Eliminar") — crimson oscuro, coherente con que
+   el producto no se borra, solo se oculta */
+.dlc-btn-delete {
+    background: rgba(122,12,30,0.16);
+    border-color: rgba(122,12,30,0.55);
+    color: #ff8577;
 }
 
-    .dlc-del:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 22px rgba(192,57,43,0.5);
-        filter: brightness(1.15);
+    .dlc-btn-delete:hover {
+        background: rgba(122,12,30,0.28);
+        border-color: var(--liq-crimson-deep, #7A0C1E);
+        box-shadow: 0 8px 20px rgba(122,12,30,0.3);
     }
-
-.dlc-action-icon {
-    font-size: 0.9rem;
-}
 
 /* ══════════════════════════════════════════════
    BOTONES NAV
@@ -698,6 +760,11 @@
 
     .dlc-header {
         margin: 0 16px 28px;
+    }
+
+    .dlc-btn-action {
+        font-size: 0.68rem;
+        padding: 8px 6px;
     }
 
     .dlc-skeleton-row {

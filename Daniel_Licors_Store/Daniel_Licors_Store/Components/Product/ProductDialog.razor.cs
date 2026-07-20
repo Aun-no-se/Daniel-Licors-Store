@@ -1,12 +1,13 @@
-﻿using Microsoft.AspNetCore.Components;
+﻿using Daniel_Licors_Store.Data.Entities;
+using Daniel_Licors_Store.Data.Repositories.Interfaces;
+using Daniel_Licors_Store.Models.Product;
+using Daniel_Licors_Store.Services;
+using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Hosting;
 using MudBlazor;
-using Daniel_Licors_Store.Data.Entities;
-using Daniel_Licors_Store.Models.Product;
-using Daniel_Licors_Store.Services;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -17,6 +18,13 @@ namespace Daniel_Licors_Store.Components.Product;
 
 public partial class ProductDialog
 {
+
+    [Inject] private ICatalogService CatalogService { get; set; } = default!;
+    [Inject] private IWebHostEnvironment Env { get; set; } = default!;
+    [Inject] private ProductStateService ProductState { get; set; } = default!;
+    [Inject] private IProductService ProductService { get; set; } = default!;
+    [Inject] private AuthenticationStateProvider AuthStateProvider { get; set; } = default!;
+    [Inject] private ISnackbar Snackbar { get; set; } = default!;
     [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = default!;
     [Parameter] public int? ProductId { get; set; }
 

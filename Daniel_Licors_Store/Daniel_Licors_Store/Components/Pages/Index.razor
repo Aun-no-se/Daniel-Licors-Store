@@ -4,8 +4,14 @@
 @using Daniel_Licors_Store.Components.Shared
 @using Microsoft.AspNetCore.Components.Authorization
 
-<div class="index-page">
+@if (mostrarCargando)
+{
+    <LoadingScreen Message="Autorizando tu acceso" Subtitle="Verificando usuario y contraseña" />
+}
 
+<button @onclick="() => mostrarCargando = true" style="margin:16px;">Ver el loading</button>
+
+<div class="index-page">
     <!--
         AutoCycle="false" siempre — el avance automático lo maneja
         un Timer en C# que solo arranca después de que los datos
@@ -21,7 +27,6 @@
                  AutoCycle="false"
                  TData="object"
                  Transition="@transition">
-
         <MudCarouselItem>
             <div class="hero-container">
                 <video class="hero-video"
@@ -35,7 +40,6 @@
                 <div class="hero-vignette"></div>
             </div>
         </MudCarouselItem>
-
         <MudCarouselItem Color="@Color.Secondary">
             <div class="carousel-content">
                 <MudIcon Icon="@Icons.Custom.Brands.MudBlazor"
@@ -56,9 +60,7 @@
                 </div>
             </div>
         </MudCarouselItem>
-
     </MudCarousel>
-
     <CategoryProductCarousel Title="Cervezas"
                              Products="@cervezas"
                              IsLoading="@_loading" />
@@ -66,3 +68,8 @@
                              Products="@rones"
                              IsLoading="@_loading" />
 </div>
+
+@code {
+    // ⚠️ SOLO PARA PROBAR el LoadingScreen — bórralo cuando ya lo veas.
+    private bool mostrarCargando = false;
+}

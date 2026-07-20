@@ -1,14 +1,15 @@
 ﻿@using MudBlazor
 @using Daniel_Licors_Store.Models.Product
 @using Microsoft.AspNetCore.Components.Authorization
-@inject IJSRuntime JS
 
 <div class="dlc-section">
 
     <div class="dlc-header">
         <div class="dlc-header-line"></div>
         <h2 class="dlc-title">
-            <span class="dlc-title-icon">🥃</span>
+            <span class="dlc-title-icon-wrap">
+                <MudIcon Icon="@GetCategoryIcon(Title)" Size="Size.Small" />
+            </span>
             @Title
         </h2>
         <div class="dlc-header-line"></div>
@@ -66,7 +67,10 @@
                             </div>
 
                             <div class="dlc-info">
-                                <span class="dlc-cat-badge">@product.Category</span>
+                                <span class="dlc-cat-badge">
+                                    <MudIcon Icon="@GetCategoryIcon(product.Category)" Size="Size.Small" Class="dlc-cat-badge-icon" />
+                                    @product.Category
+                                </span>
                                 <p class="dlc-name">@product.Name</p>
 
                                 @if (!string.IsNullOrEmpty(product.Description))
@@ -82,17 +86,19 @@
                                     }
 
                                     <div class="dlc-actions">
-                                        <button class="dlc-action-btn dlc-view" @onclick:stopPropagation="true"
+                                        <button class="dlc-btn-action dlc-btn-view" @onclick:stopPropagation="true"
                                                 @onclick="@(() => Nav.NavigateTo($"/producto/{product.ProductId}"))">
-                                            <span class="dlc-action-icon">👁</span>
+                                            <span class="dlc-btn-shine"></span>
+                                            <MudIcon Icon="@Icons.Material.Filled.Visibility" Size="Size.Small" />
                                             <span>Ver</span>
                                         </button>
 
                                         <AuthorizeView Roles="Admin, Empleado, Cliente">
                                             <Authorized>
-                                                <button class="dlc-action-btn dlc-add" @onclick:stopPropagation="true"
+                                                <button class="dlc-btn-action dlc-btn-add" @onclick:stopPropagation="true"
                                                         @onclick="@(async () => await AgregarAlCarrito(product.ProductId))">
-                                                    <span class="dlc-action-icon">🛒</span>
+                                                    <span class="dlc-btn-shine"></span>
+                                                    <MudIcon Icon="@Icons.Material.Filled.AddShoppingCart" Size="Size.Small" />
                                                     <span>Añadir</span>
                                                 </button>
                                             </Authorized>
@@ -100,13 +106,17 @@
 
                                         <AuthorizeView Roles="Admin, Empleado">
                                             <Authorized>
-                                                <button class="dlc-action-btn dlc-edit" @onclick:stopPropagation="true"
+                                                <button class="dlc-btn-action dlc-btn-edit" @onclick:stopPropagation="true"
                                                         @onclick="@(() => EditarProducto(product.ProductId))">
-                                                    <span class="dlc-action-icon">✏️</span>
+                                                    <span class="dlc-btn-shine"></span>
+                                                    <MudIcon Icon="@Icons.Material.Filled.Edit" Size="Size.Small" />
+                                                    <span>Editar</span>
                                                 </button>
-                                                <button class="dlc-action-btn dlc-del" @onclick:stopPropagation="true"
+                                                <button class="dlc-btn-action dlc-btn-delete" @onclick:stopPropagation="true"
                                                         @onclick="@(async () => await DeleteProduct(product.ProductId))">
-                                                    <span class="dlc-action-icon">🗑</span>
+                                                    <span class="dlc-btn-shine"></span>
+                                                    <MudIcon Icon="@Icons.Material.Filled.VisibilityOff" Size="Size.Small" />
+                                                    <span>Ocultar</span>
                                                 </button>
                                             </Authorized>
                                         </AuthorizeView>
@@ -143,95 +153,3 @@
         </div>
     }
 </div>
-
-@code {
-    private int _activeIndex = 0;
-
-    // ── Touch / drag ──────────────────────────────────────────────────────
-    private double _touchStartX = 0;
-    private double _mouseStartX = 0;
-    private bool _isDragging = false;
-    private const double SwipeThreshold = 50;
-
-    // Touch
-    private void OnTouchStart(TouchEventArgs e)
-    {
-        if (e.Touches.Length > 0)
-            _touchStartX = e.Touches[0].ClientX;
-    }
-
-    private void OnTouchEnd(TouchEventArgs e)
-    {
-        if (e.ChangedTouches.Length == 0) return;
-        double delta = e.ChangedTouches[0].ClientX - _touchStartX;
-        if (Math.Abs(delta) >= SwipeThreshold)
-        {
-            if (delta < 0) Next();
-            else Prev();
-        }
-    }
-
-    // Mouse drag
-    private void OnMouseDown(MouseEventArgs e)
-    {
-        _mouseStartX = e.ClientX;
-        _isDragging = true;
-    }
-
-    private void OnMouseUp(MouseEventArgs e)
-    {
-        if (!_isDragging) return;
-        _isDragging = false;
-        double delta = e.ClientX - _mouseStartX;
-        if (Math.Abs(delta) >= SwipeThreshold)
-        {
-            if (delta < 0) Next();
-            else Prev();
-        }
-    }
-
-    private void OnMouseLeave(MouseEventArgs e)
-    {
-        _isDragging = false;
-    }
-
-    // ── Carousel logic ────────────────────────────────────────────────────
-    private int GetPosition(int index)
-    {
-        if (Products == null || Products.Count == 0) return 99;
-        int count = Products.Count;
-        int raw = index - _activeIndex;
-        while (raw > count / 2) raw -= count;
-        while (raw < -count / 2) raw += count;
-        return raw;
-    }
-
-    private string GetCardClass(int pos) => pos switch
-    {
-        0 => "dlc-pos-center",
-        1 => "dlc-pos-right1",
-        -1 => "dlc-pos-left1",
-        2 => "dlc-pos-right2",
-        -2 => "dlc-pos-left2",
-        _ => "dlc-pos-hidden"
-    };
-
-    private void Next()
-    {
-        if (Products == null || Products.Count == 0) return;
-        _activeIndex = (_activeIndex + 1) % Products.Count;
-    }
-
-    private void Prev()
-    {
-        if (Products == null || Products.Count == 0) return;
-        _activeIndex = (_activeIndex - 1 + Products.Count) % Products.Count;
-    }
-
-    private void GoTo(int index) => _activeIndex = index;
-
-    private void CardClicked(int i)
-    {
-        if (i != _activeIndex) _activeIndex = i;
-    }
-}
