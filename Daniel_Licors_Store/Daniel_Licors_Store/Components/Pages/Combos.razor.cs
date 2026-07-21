@@ -39,6 +39,10 @@ namespace Daniel_Licors_Store.Components.Pages
         private ComboCreateModel _newCombo = new();
         private string? _currentUserId;
 
+        private bool HasComboImage =>
+            !string.IsNullOrEmpty(_previewBase64) ||
+            (!string.IsNullOrEmpty(_newCombo.ImageUrl) && _newCombo.ImageUrl != "/images/combo-default.png");
+
         // ════════════════════════════════════════════════════════
         // INIT
         // ════════════════════════════════════════════════════════
