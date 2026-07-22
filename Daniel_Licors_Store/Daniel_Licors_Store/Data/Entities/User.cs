@@ -18,6 +18,10 @@
 
         public DateTime CreatedAt { get; set; } = DateTime.Now;
 
+        // ── Bloqueo de cuenta por intentos fallidos de login ────────────
+        public int FailedLoginAttempts { get; set; } = 0;
+        public DateTime? LockoutEnd { get; set; }
+
         public ICollection<Cart> Carts { get; set; } = new List<Cart>();
         public ICollection<Order> Orders { get; set; } = new List<Order>();
 
