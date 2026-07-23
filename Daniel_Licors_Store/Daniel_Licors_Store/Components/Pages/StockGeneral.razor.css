@@ -92,7 +92,8 @@
         background: rgba(255,23,68,0.07);
     }
 
-.sg-kpi-icon {
+/* MudIcon — Class en un componente Mud, requiere ::deep */
+::deep .sg-kpi-icon {
     font-size: 1.6rem !important;
 }
 
@@ -118,7 +119,8 @@
     padding: 0 12px 24px;
 }
 
-.sg-tab-panel {
+/* PanelClass en MudTabs — vive dentro del árbol interno de MudTabs, requiere ::deep */
+::deep .sg-tab-panel {
     padding-top: 16px !important;
     background: transparent !important;
 }
@@ -236,12 +238,13 @@
     flex-wrap: wrap;
 }
 
-.sg-search {
+/* MudTextField / MudSelect — Class en componentes Mud, requieren ::deep */
+::deep .sg-search {
     flex: 1;
     min-width: 180px;
 }
 
-.sg-cat-select {
+::deep .sg-cat-select {
     width: 160px;
     flex-shrink: 0;
 }
@@ -253,7 +256,8 @@
     border: 1px solid rgba(255,255,255,0.09);
 }
 
-.sg-table {
+/* MudTable — Class en un componente Mud, requiere ::deep */
+::deep .sg-table {
     background: rgba(255,255,255,0.035) !important;
 }
 
