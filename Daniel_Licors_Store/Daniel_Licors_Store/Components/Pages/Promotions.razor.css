@@ -1,6 +1,24 @@
-/* === TABLA === */
+/* ── Variables ─────────────────────────────────────────────── */
+.promo-page-bg {
+    --pr-red: #FF1744;
+    --pr-red-dark: #B71C1C;
+    --pr-red-dim: rgba(255,23,68,0.14);
+    --pr-red-border: rgba(255,23,68,0.28);
+    --pr-gold-1: #b38728;
+    --pr-gold-2: #fbf5b7;
+    --pr-gold-3: #daa520;
+    --pr-gold-4: #aa771c;
+    --pr-gold-solid: #E8C468;
+    --pr-surface: rgba(255,255,255,0.035);
+    --pr-surface-2: rgba(255,255,255,0.055);
+    --pr-border: rgba(255,255,255,0.08);
+    --pr-text-muted: #a1a1aa;
+    --pr-text-dim: #71717a;
+}
+
+/* ── Utilitarios ──────────────────────────────────────────────── */
 .muted-text {
-    color: #a1a1aa !important;
+    color: var(--pr-text-muted) !important;
 }
 
 .desc-clamp {
@@ -9,40 +27,1019 @@
     -webkit-box-orient: vertical;
     overflow: hidden;
     max-width: 220px;
-}
-
-/* === FORMULARIO === */
-.form-panel {
-    border: 1px solid rgba(255, 165, 0, 0.15);
-    background-color: rgba(255, 165, 0, 0.03) !important;
-}
-
-/* === MINI DIALOG LÍNEA === */
-.line-dialog-wrapper {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 9999;
-    padding: 16px;
-}
-
-.line-dialog-card {
-    width: 100%;
-    max-width: 420px;
-    background: #1e1e2e !important;
-    border: 1px solid rgba(255, 165, 0, 0.25) !important;
+    font-size: .72rem;
+    margin-top: 2px;
 }
 
 .text-success-custom {
     color: #66bb6a;
 }
 
-/* === GAP UTILITIES === */
-.gap-x-2 { gap: 8px; }
-.gap-x-3 { gap: 12px; }
-.gap-2   { gap: 8px; }
+.gap-2 {
+    gap: 8px;
+}
+
+.gap-x-2 {
+    gap: 8px;
+}
+
+.gap-x-3 {
+    gap: 12px;
+}
+
+/* ── Fondo de página ──────────────────────────────────────────── */
+.promo-page-bg {
+    position: relative;
+    min-height: 100vh;
+    background: radial-gradient(ellipse at top, #140707 0%, #0a0505 55%, #050303 100%);
+    overflow: hidden;
+}
+
+.promo-glow {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    pointer-events: none;
+    opacity: 0.22;
+    z-index: 0;
+    animation: promoFloat 14s ease-in-out infinite;
+}
+
+.promo-glow-crimson {
+    width: 420px;
+    height: 420px;
+    top: -120px;
+    right: -100px;
+    background: radial-gradient(circle, var(--pr-red) 0%, transparent 70%);
+}
+
+.promo-glow-gold {
+    width: 380px;
+    height: 380px;
+    bottom: 5%;
+    left: -110px;
+    background: radial-gradient(circle, var(--pr-gold-3) 0%, transparent 70%);
+    animation-delay: -7s;
+}
+
+@keyframes promoFloat {
+    0%, 100% {
+        transform: translate(0,0) scale(1);
+    }
+
+    50% {
+        transform: translate(-20px, 20px) scale(1.08);
+    }
+}
+
+/* ── Page ───────────────────────────────────────────────────── */
+/* MudContainer Class="pr-page" — el <div> real vive dentro del árbol interno
+   de MudContainer, por eso necesita ::deep */
+::deep .pr-page {
+    position: relative;
+    z-index: 1;
+    padding: 1.25rem 1rem 4rem;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+/* ── Header ─────────────────────────────────────────────────── */
+.pr-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: .85rem;
+    margin-bottom: 1.75rem;
+    animation: prFadeDown .5s ease both;
+}
+
+.pr-header-left {
+    display: flex;
+    align-items: center;
+    gap: .85rem;
+}
+
+.pr-header-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255,23,68,0.12);
+    border: 1px solid var(--pr-red-border);
+    flex-shrink: 0;
+}
+
+::deep .pr-header-icon-svg {
+    color: var(--pr-red) !important;
+    filter: drop-shadow(0 0 6px rgba(255,23,68,.5));
+}
+
+::deep .pr-page-title {
+    width: fit-content;
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, #ffffff 30%, var(--pr-gold-solid) 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+::deep .pr-page-sub {
+    margin: 0;
+    font-size: .78rem;
+    color: rgba(255,255,255,.4);
+}
+
+::deep .pr-btn-new {
+    background: linear-gradient(135deg, var(--pr-red), var(--pr-red-dark)) !important;
+    color: #fff !important;
+    border-radius: 10px !important;
+    text-transform: none !important;
+    font-weight: 700 !important;
+    padding: 0 22px !important;
+    height: 40px !important;
+    box-shadow: 0 4px 16px rgba(255,23,68,.3) !important;
+    transition: transform .2s ease, box-shadow .2s ease !important;
+}
+
+    ::deep .pr-btn-new:hover {
+        transform: translateY(-2px) !important;
+        box-shadow: 0 8px 22px rgba(255,23,68,.45) !important;
+    }
+
+.pr-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 4rem 0;
+    gap: 1rem;
+    color: rgba(255,255,255,.4);
+}
+
+/* ── Tabla de promociones ───────────────────────────────────── */
+.pr-table-wrap {
+    background: var(--pr-surface);
+    border: 1px solid var(--pr-border);
+    border-top: 2px solid var(--pr-red);
+    border-radius: 16px;
+    overflow: hidden;
+    backdrop-filter: blur(12px);
+    animation: prFadeUp .5s ease both;
+    animation-delay: .05s;
+}
+
+.pr-table-scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.pr-table {
+    width: 100%;
+    min-width: 760px;
+    border-collapse: collapse;
+}
+
+    .pr-table thead tr {
+        background: rgba(255,23,68,0.07);
+        border-bottom: 1px solid var(--pr-red-border);
+    }
+
+    .pr-table th {
+        padding: .7rem 1rem;
+        font-size: .68rem;
+        font-weight: 700;
+        letter-spacing: 1.1px;
+        text-transform: uppercase;
+        color: rgba(255,90,127,.9);
+        text-align: left;
+        white-space: nowrap;
+    }
+
+    .pr-table td {
+        padding: .7rem 1rem;
+        font-size: .82rem;
+        color: rgba(255,255,255,.82);
+        border-bottom: 1px solid rgba(255,255,255,.05);
+        vertical-align: middle;
+    }
+
+    .pr-table tbody tr {
+        transition: background .15s ease;
+    }
+
+        .pr-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .pr-table tbody tr:hover td {
+            background: rgba(255,23,68,.035);
+        }
+
+.pr-title-cell {
+    font-weight: 600;
+    color: #fff;
+}
+
+.pr-products-cell {
+    font-size: .78rem;
+    color: rgba(255,255,255,.6);
+}
+
+.pr-date-cell {
+    font-size: .8rem;
+    color: rgba(255,255,255,.65);
+    white-space: nowrap;
+}
+
+.pr-thumb {
+    width: 46px;
+    height: 46px;
+    object-fit: cover;
+    border-radius: 9px;
+    border: 1px solid var(--pr-border);
+}
+
+.pr-thumb-placeholder {
+    width: 46px;
+    height: 46px;
+    border-radius: 9px;
+    background: rgba(255,23,68,.08);
+    border: 1px dashed var(--pr-red-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(255,90,127,.6);
+}
+
+.pr-type-chip {
+    display: inline-block;
+    padding: 3px 11px;
+    border-radius: 20px;
+    font-size: .68rem;
+    font-weight: 700;
+    letter-spacing: .4px;
+    white-space: nowrap;
+}
+
+.pr-chip-discount {
+    background: rgba(255,23,68,.15);
+    color: #ff6b6b;
+}
+
+.pr-chip-specialprice {
+    background: rgba(218,165,32,.16);
+    color: var(--pr-gold-solid);
+}
+
+.pr-chip-payxgety {
+    background: rgba(76,175,80,.12);
+    color: #66bb6a;
+}
+
+.pr-chip-other {
+    background: rgba(148,163,184,.12);
+    color: #94a3b8;
+}
+
+.pr-chip-active {
+    background: rgba(76,175,80,.12);
+    color: #66bb6a;
+}
+
+.pr-chip-inactive {
+    background: rgba(255,255,255,.06);
+    color: rgba(255,255,255,.45);
+}
+
+.pr-vigente-dot {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: .75rem;
+    color: rgba(255,255,255,.75);
+}
+
+    .pr-vigente-dot::before {
+        content: '';
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: #4caf50;
+        box-shadow: 0 0 8px rgba(76,175,80,.7);
+        animation: prPulseDot 2s ease-in-out infinite;
+    }
+
+    .pr-vigente-dot.off::before {
+        background: #555;
+        box-shadow: none;
+        animation: none;
+    }
+
+@keyframes prPulseDot {
+    0%, 100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: .4;
+    }
+}
+
+.pr-actions {
+    display: flex;
+    gap: .25rem;
+}
+
+::deep .pr-action-btn {
+    transition: transform .15s ease;
+}
+
+    ::deep .pr-action-btn:hover {
+        transform: scale(1.15);
+    }
+
+/* ── Empty state ─────────────────────────────────────────────── */
+.pr-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 4rem 1rem;
+    border-radius: 18px;
+    background: var(--pr-surface);
+    border: 1px solid var(--pr-border);
+    backdrop-filter: blur(12px);
+    animation: prFadeUp .5s ease both;
+}
+
+.pr-empty-icon-ring {
+    width: 76px;
+    height: 76px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: radial-gradient(circle, rgba(255,23,68,0.15), transparent 70%);
+    border: 1.5px solid rgba(255,23,68,0.3);
+    margin-bottom: 16px;
+    animation: prPulseRing 2.4s ease-in-out infinite;
+}
+
+@keyframes prPulseRing {
+    0%, 100% {
+        box-shadow: 0 0 0 0 rgba(255,23,68,0.25);
+    }
+
+    50% {
+        box-shadow: 0 0 0 12px rgba(255,23,68,0);
+    }
+}
+
+::deep .pr-empty-icon {
+    font-size: 2rem !important;
+    color: var(--pr-red);
+}
+
+.pr-empty-title {
+    font-size: .95rem;
+    font-weight: 700;
+    color: #fff;
+    margin: 0 0 .3rem;
+}
+
+.pr-empty-sub {
+    font-size: .8rem;
+    color: var(--pr-text-muted);
+    margin: 0;
+}
+
+/* ═══════════════ FORMULARIO ═══════════════ */
+.pr-form-wrap {
+    margin-top: 2rem;
+    position: relative;
+    z-index: 1;
+    background: linear-gradient(165deg, #150707 0%, #0a0505 70%);
+    border: 1px solid var(--pr-red-border);
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 32px 80px rgba(0,0,0,.8), 0 0 0 1px rgba(255,255,255,.04);
+    animation: prSlideUp .35s cubic-bezier(.22,1,.36,1);
+}
+
+@keyframes prSlideUp {
+    from {
+        opacity: 0;
+        transform: translateY(14px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes prFadeUp {
+    from {
+        opacity: 0;
+        transform: translateY(14px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes prFadeDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.pr-form-header {
+    padding: 20px 24px 16px;
+    background: linear-gradient(135deg,#1a0000 0%,#0d0d0d 60%);
+    border-bottom: 1px solid var(--pr-red-border);
+    position: relative;
+    overflow: hidden;
+}
+
+    .pr-form-header::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(circle at 0% 50%, rgba(255,23,68,.12) 0%, transparent 70%);
+        pointer-events: none;
+    }
+
+.pr-form-header-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.pr-form-accent {
+    width: 4px;
+    height: 26px;
+    border-radius: 4px;
+    flex-shrink: 0;
+    background: linear-gradient(180deg, var(--pr-red), var(--pr-red-dark));
+    box-shadow: 0 0 12px rgba(255,23,68,.5);
+}
+
+.pr-form-title {
+    margin: 0;
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #fff;
+}
+
+.pr-form-subtitle {
+    margin: 2px 0 0;
+    font-size: .72rem;
+    color: rgba(255,255,255,.4);
+}
+
+.pr-form-badge {
+    font-size: .62rem;
+    font-weight: 700;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    padding: 3px 10px;
+    border-radius: 20px;
+    border: 1px solid;
+}
+
+.pr-badge-new {
+    color: #4caf50;
+    border-color: rgba(76,175,80,.4);
+    background: rgba(76,175,80,.08);
+}
+
+.pr-badge-edit {
+    color: var(--pr-gold-solid);
+    border-color: rgba(218,165,32,.4);
+    background: rgba(218,165,32,.08);
+}
+
+.pr-form-body {
+    padding: 22px 22px 10px;
+}
+
+.pr-section-label {
+    font-size: .67rem;
+    font-weight: 700;
+    letter-spacing: 1.4px;
+    text-transform: uppercase;
+    color: rgba(255,90,127,.9);
+    margin: 18px 0 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+::deep .pr-section-icon {
+    color: var(--pr-red) !important;
+    font-size: 1rem !important;
+}
+
+.pr-section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, rgba(255,23,68,.25), transparent);
+}
+
+/* Grid de campos */
+.pr-field-grid {
+    display: grid;
+    gap: 14px;
+    margin-bottom: 14px;
+}
+
+    .pr-field-grid.cols-2 {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .pr-field-grid.cols-3 {
+        grid-template-columns: 1fr 1fr 1fr;
+    }
+
+    .pr-field-grid.cols-1 {
+        grid-template-columns: 1fr;
+    }
+
+@media (max-width: 600px) {
+    .pr-field-grid.cols-2,
+    .pr-field-grid.cols-3 {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Input overrides — .mud-input-root vive dentro del árbol de MudTextField,
+   nunca lleva nuestro atributo de scope: necesita ::deep */
+.pr-form-wrap ::deep .mud-input-root {
+    background: rgba(255,255,255,.035) !important;
+    border-radius: 10px !important;
+}
+
+    .pr-form-wrap ::deep .mud-input-root:hover {
+        background: rgba(255,255,255,.055) !important;
+    }
+
+    .pr-form-wrap ::deep .mud-input-root.mud-input-root-focused {
+        background: rgba(255,23,68,.06) !important;
+        box-shadow: 0 0 0 2px rgba(255,23,68,.25) !important;
+    }
+
+/* Select nativo — antes sin estilo, ahora acorde al tema */
+.pr-select-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.pr-select-label {
+    font-size: .72rem;
+    color: rgba(255,255,255,.55);
+    padding-left: 2px;
+}
+
+.pr-native-select {
+    background: rgba(255,255,255,.035);
+    border: 1px solid rgba(255,255,255,.12);
+    border-radius: 10px;
+    color: #fff;
+    padding: 12px 36px 12px 14px;
+    font-size: .88rem;
+    width: 100%;
+    box-sizing: border-box;
+    -webkit-appearance: none;
+    appearance: none;
+    cursor: pointer;
+    transition: border-color .2s, box-shadow .2s, background .2s;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ff5c7f' stroke-width='2'><path d='M6 9l6 6 6-6'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 16px;
+}
+
+    .pr-native-select:hover {
+        background-color: rgba(255,255,255,.055);
+    }
+
+    .pr-native-select:focus {
+        outline: none;
+        border-color: rgba(255,23,68,.5);
+        box-shadow: 0 0 0 2px rgba(255,23,68,.2);
+        background-color: rgba(255,23,68,.05);
+    }
+
+    .pr-native-select option {
+        background: #150707;
+        color: #fff;
+    }
+
+/* Date inputs nativos */
+.pr-date-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.pr-date-label {
+    font-size: .72rem;
+    color: rgba(255,255,255,.55);
+    padding-left: 2px;
+}
+
+.pr-date-input {
+    background: rgba(255,255,255,.035);
+    border: 1px solid rgba(255,255,255,.12);
+    border-radius: 10px;
+    color: #fff;
+    padding: 12px 14px;
+    font-size: .88rem;
+    width: 100%;
+    box-sizing: border-box;
+    -webkit-appearance: none;
+    color-scheme: dark;
+    transition: border-color .2s, box-shadow .2s;
+}
+
+    .pr-date-input:focus {
+        outline: none;
+        border-color: rgba(255,23,68,.5);
+        box-shadow: 0 0 0 2px rgba(255,23,68,.2);
+        background: rgba(255,23,68,.05);
+    }
+
+/* Toggle activo */
+.pr-active-toggle {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(255,255,255,.03);
+    border: 1px solid rgba(255,255,255,.08);
+    border-radius: 10px;
+    padding: 10px 14px;
+    cursor: pointer;
+    user-select: none;
+    transition: all .2s;
+}
+
+    .pr-active-toggle.on {
+        background: rgba(76,175,80,.08);
+        border-color: rgba(76,175,80,.3);
+    }
+
+    .pr-active-toggle.off {
+        opacity: .7;
+    }
+
+.pr-toggle-title {
+    font-size: .8rem;
+    font-weight: 600;
+    color: rgba(255,255,255,.8);
+}
+
+.pr-toggle-sub {
+    font-size: .68rem;
+    color: rgba(255,255,255,.38);
+}
+
+.pr-toggle-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    transition: all .2s;
+}
+
+    .pr-toggle-dot.on {
+        background: #4caf50;
+        box-shadow: 0 0 8px rgba(76,175,80,.5);
+    }
+
+    .pr-toggle-dot.off {
+        background: rgba(255,255,255,.2);
+    }
+
+/* Zona imagen */
+.pr-img-label {
+    display: block;
+    cursor: pointer;
+}
+
+.pr-img-zone {
+    border: 2px dashed rgba(255,23,68,.28);
+    border-radius: 14px;
+    overflow: hidden;
+    min-height: 190px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    background: rgba(255,255,255,.02);
+    transition: all .22s;
+    position: relative;
+}
+
+    .pr-img-zone:hover, .pr-img-zone.has-image {
+        border-style: solid;
+        border-color: rgba(255,23,68,.5);
+    }
+
+    .pr-img-zone img {
+        width: 100%;
+        max-height: 220px;
+        object-fit: contain;
+        display: block;
+    }
+
+.pr-img-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,.55);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    opacity: 0;
+    transition: opacity .22s;
+    border-radius: 12px;
+}
+
+.pr-img-zone:hover .pr-img-overlay {
+    opacity: 1;
+}
+
+.pr-overlay-btn {
+    display: inline-flex;
+    align-items: center;
+    background: rgba(255,255,255,.1);
+    border: 1px solid rgba(255,255,255,.2);
+    border-radius: 8px;
+    color: white;
+    font-size: .76rem;
+    padding: 7px 13px;
+    cursor: pointer;
+    backdrop-filter: blur(8px);
+    font-weight: 600;
+    transition: background .2s;
+}
+
+    .pr-overlay-btn:hover {
+        background: rgba(255,23,68,.3);
+        border-color: rgba(255,23,68,.5);
+    }
+
+.pr-img-placeholder {
+    padding: 24px 14px;
+    text-align: center;
+}
+
+::deep .pr-img-icon {
+    font-size: 2.4rem !important;
+    opacity: .3;
+    color: #fff;
+    margin-bottom: 6px;
+}
+
+.pr-img-text {
+    font-size: .82rem;
+    color: rgba(255,255,255,.5);
+}
+
+.pr-img-sub {
+    font-size: .7rem;
+    color: rgba(255,255,255,.28);
+    margin-top: 3px;
+}
+
+.pr-uploading-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+    font-size: .75rem;
+    color: rgba(255,255,255,.45);
+}
+
+.pr-upload-error {
+    color: #ff6b6b;
+    font-size: .75rem;
+    margin-top: 6px;
+}
+
+/* Tabla de picker de productos */
+.pr-picker-wrap {
+    border: 1px solid var(--pr-border);
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+.pr-form-wrap ::deep .products-picker-table {
+    background: rgba(255,255,255,.02) !important;
+}
+
+::deep .pr-picker-name {
+    color: #fff;
+}
+
+::deep .pr-picker-price {
+    color: var(--pr-gold-solid) !important;
+}
+
+/* Chips builder */
+.pr-included-label {
+    font-size: .72rem;
+    color: rgba(255,255,255,.4);
+    margin-bottom: 8px;
+}
+
+.pr-chips-wrap {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+::deep .pr-included-chip {
+    animation: prChipIn .3s cubic-bezier(.34,1.56,.64,1) both;
+}
+
+@keyframes prChipIn {
+    from {
+        opacity: 0;
+        transform: scale(.7);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* Footer del form */
+.pr-form-footer {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 10px;
+    background: rgba(5,5,5,.9);
+    border-top: 1px solid rgba(255,255,255,.06);
+    padding: 14px 22px;
+}
+
+::deep .pr-cancel-btn {
+    color: rgba(255,255,255,.4) !important;
+    border-radius: 10px !important;
+    height: 40px !important;
+    padding: 0 16px !important;
+    text-transform: none !important;
+}
+
+    ::deep .pr-cancel-btn:hover {
+        color: rgba(255,255,255,.8) !important;
+        background: rgba(255,255,255,.05) !important;
+    }
+
+::deep .pr-save-btn {
+    background: linear-gradient(135deg, var(--pr-red), var(--pr-red-dark)) !important;
+    color: #fff !important;
+    font-weight: 700 !important;
+    border-radius: 10px !important;
+    padding: 0 26px !important;
+    height: 40px !important;
+    text-transform: none !important;
+    box-shadow: 0 4px 16px rgba(255,23,68,.3) !important;
+    transition: transform .2s ease, box-shadow .2s ease !important;
+}
+
+    ::deep .pr-save-btn:hover:not(:disabled) {
+        transform: translateY(-2px) !important;
+        box-shadow: 0 8px 22px rgba(255,23,68,.45) !important;
+    }
+
+    ::deep .pr-save-btn:disabled {
+        opacity: .5 !important;
+    }
+
+/* Mini-dialog */
+.pr-linedialog-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.72);
+    backdrop-filter: blur(3px);
+    z-index: 9998;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    animation: prFadeIn .2s ease;
+}
+
+@keyframes prFadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+.pr-linedialog-card {
+    background: linear-gradient(165deg, #180808 0%, #0d0505 80%);
+    border: 1px solid var(--pr-red-border);
+    border-radius: 16px;
+    padding: 24px;
+    width: 100%;
+    max-width: 380px;
+    box-shadow: 0 24px 60px rgba(0,0,0,.8);
+    animation: prSlideUp .28s ease;
+}
+
+.pr-linedialog-title {
+    font-weight: 700;
+    font-size: 1rem;
+    color: #fff;
+    margin-bottom: 3px;
+}
+
+.pr-linedialog-sub {
+    font-size: .75rem;
+    margin-bottom: 16px;
+}
+
+.pr-linedialog-hr {
+    border-top: 1px solid rgba(255,255,255,.08);
+    margin-bottom: 16px;
+}
+
+.pr-linedialog-result {
+    font-size: .82rem;
+    font-weight: 600;
+    margin-top: 8px;
+}
+
+.pr-linedialog-pxgy {
+    margin-bottom: 10px;
+}
+
+.pr-linedialog-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 20px;
+}
+
+/* ══════════ RESPONSIVE ══════════ */
+@media (max-width: 700px) {
+    ::deep .pr-page {
+        padding: 1rem .75rem 3rem;
+    }
+
+    .pr-header {
+        gap: .6rem;
+    }
+
+    ::deep .pr-page-title {
+        font-size: 1.25rem !important;
+    }
+
+    .pr-form-body {
+        padding: 18px 16px 6px;
+    }
+
+    .pr-form-footer {
+        padding: 12px 16px;
+        flex-wrap: wrap;
+    }
+
+    ::deep .pr-cancel-btn, ::deep .pr-save-btn {
+        flex: 1;
+    }
+
+    ::deep .pr-btn-new {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .promo-glow {
+        filter: blur(55px);
+        opacity: .18;
+    }
+}

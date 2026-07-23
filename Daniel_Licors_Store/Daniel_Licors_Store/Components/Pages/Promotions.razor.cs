@@ -61,6 +61,9 @@ public partial class Promotions
     // ─── Referencia al ancla del formulario ─────────────────
     private ElementReference _formAnchor;
 
+    // ── Helper para la imagen (base64 preview o URL guardada) ──────
+    private bool HasPromoImage => !string.IsNullOrEmpty(_previewBase64 ?? _form.ImageUrl);
+
     // ════════════════════════════════════════════════════════
     // INIT
     // ════════════════════════════════════════════════════════
@@ -321,6 +324,14 @@ public partial class Promotions
         "SpecialPrice" => "Precio Especial",
         "PayXGetY" => "Lleva X Paga Y",
         _ => type ?? "Promo"
+    };
+
+    private string GetTypeChipClass(string? type) => type switch
+    {
+        "Discount" => "pr-chip-discount",
+        "SpecialPrice" => "pr-chip-specialprice",
+        "PayXGetY" => "pr-chip-payxgety",
+        _ => "pr-chip-other"
     };
 
     private string GetLineLabel(PromotionProductLine line)
