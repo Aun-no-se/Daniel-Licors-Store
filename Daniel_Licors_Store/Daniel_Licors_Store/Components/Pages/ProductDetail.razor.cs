@@ -1,20 +1,35 @@
 ﻿using Daniel_Licors_Store.Data.Repositories.Interfaces;
+using Daniel_Licors_Store.Data.Services;
 using Daniel_Licors_Store.Models.Combo;
 using Daniel_Licors_Store.Models.Product;
 using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Components.Authorization;
 using MudBlazor;
+using System.Security.Claims;
 
 namespace Daniel_Licors_Store.Components.Pages
 {
     public partial class ProductDetail
     {
+        // ── Ruta ──────────────────────────────────────────────────────────────
         [Parameter] public int ProductId { get; set; }
-        [Inject] public ICatalogService CatalogService { get; set; } = default!;
 
-        ProductDetailDto? Product;
-        List<ComboDto> Combos = new();
-        List<PromotionDto> Promotions = new();
-        bool _loading = true;
+        // ── Inyecciones (todas centralizadas aquí, nada en el .razor) ──────────
+        [Inject] private NavigationManager Nav { get; set; } = default!;
+        [Inject] private ICartService CartService { get; set; } = default!;
+        [Inject] private ICatalogService CatalogService { get; set; } = default!;
+        [Inject] private ISnackbar Snackbar { get; set; } = default!;
+        [Inject] private AuthenticationStateProvider AuthStateProvider { get; set; } = default!;
+
+        // ── Estado ───────────────────────────────────────────────────────────
+        protected ProductDetailDto? Product;
+        protected List<ComboDto> Combos = new();
+        protected List<PromotionDto> Promotions = new();
+        protected bool _loading = true;
+        protected bool _adding = false;
+        protected int _quantity = 1;
+
+        private const int StoreId = 1;
         private HashSet<int> _expandedPromoIds = new();
 
         protected override async Task OnInitializedAsync()
@@ -40,7 +55,29 @@ namespace Daniel_Licors_Store.Components.Pages
             }
         }
 
-        private Color GetPromoBadgeColor(PromotionDto promo)
+        // ── Selector de cantidad ─────────────────────────────────────────────
+        protected void IncreaseQuantity()
+        {
+            if (Product != null && _quantity < Product.Stock)
+                _quantity++;
+        }
+
+        protected void DecreaseQuantity()
+        {
+            if (_quantity > 1)
+                _quantity--;
+        }
+
+        // ── Barra visual de disponibilidad (decorativa) ─────────────────────
+        protected double StockPercentage()
+        {
+            if (Product is null || Product.Stock <= 0) return 0;
+            const int visualCap = 25;
+            return Math.Min(100, Product.Stock * 100.0 / visualCap);
+        }
+
+        // ── Badges / colores de promoción ───────────────────────────────────
+        protected Color GetPromoBadgeColor(PromotionDto promo)
         {
             if (promo.IsPayXGetY) return Color.Success;
             if (promo.HasDiscount) return Color.Error;
@@ -48,10 +85,10 @@ namespace Daniel_Licors_Store.Components.Pages
             return Color.Info;
         }
 
-        // ── Expandir/colapsar "Ver detalle" de una promoción ──
-        private bool IsPromoExpanded(int promotionId) => _expandedPromoIds.Contains(promotionId);
+        // ── Expandir/colapsar "Ver detalle" de una promoción ────────────────
+        protected bool IsPromoExpanded(int promotionId) => _expandedPromoIds.Contains(promotionId);
 
-        private void TogglePromoDetail(int promotionId)
+        protected void TogglePromoDetail(int promotionId)
         {
             if (!_expandedPromoIds.Remove(promotionId))
             {
@@ -59,17 +96,53 @@ namespace Daniel_Licors_Store.Components.Pages
             }
         }
 
-        // ── Agregar producto al carrito ──
-        private async Task AddToCart(int productId)
+        // ── Helper: obtiene el UserId autenticado, o manda a /login ─────────
+        private async Task<string?> GetUserIdOrRedirectAsync()
+        {
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            var userId = authState.User.FindFirst(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userId))
+            {
+                Nav.NavigateTo("/login");
+                return null;
+            }
+            return userId;
+        }
+
+        // ── Agregar producto al carrito ──────────────────────────────────────
+        protected async Task AddToCart(int productId)
+        {
+            if (_adding) return;
+            _adding = true;
+            try
+            {
+                var userId = await GetUserIdOrRedirectAsync();
+                if (userId is null) return;
+
+                await CartService.AddProductToCartAsync(userId, productId, _quantity, StoreId);
+                Snackbar.Add("Producto agregado al carrito", Severity.Success);
+                _quantity = 1;
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Error: {ex.Message}", Severity.Error);
+            }
+            finally
+            {
+                _adding = false;
+            }
+        }
+
+        // ── Agregar combo al carrito ─────────────────────────────────────────
+        protected async Task AddComboToCart(int comboId)
         {
             try
             {
-                var authState = await AuthStateProvider.GetAuthenticationStateAsync();
-                var userId = authState.User.FindFirst(c => c.Type == System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-                if (string.IsNullOrEmpty(userId)) { Nav.NavigateTo("/login"); return; }
+                var userId = await GetUserIdOrRedirectAsync();
+                if (userId is null) return;
 
-                await CartService.AddProductToCartAsync(userId, productId, 1, 1);
-                Snackbar.Add("Producto agregado al carrito ✓", Severity.Success);
+                await CartService.AddComboToCartAsync(userId, comboId, 1, StoreId);
+                Snackbar.Add("Combo agregado al carrito", Severity.Success);
             }
             catch (Exception ex)
             {
@@ -77,36 +150,17 @@ namespace Daniel_Licors_Store.Components.Pages
             }
         }
 
-        // ── Agregar combo al carrito ──
-        private async Task AddComboToCart(int comboId)
+        // ── Agregar promoción al carrito ─────────────────────────────────────
+        protected async Task AddPromotionToCart(PromotionDto promo)
         {
             try
             {
-                var authState = await AuthStateProvider.GetAuthenticationStateAsync();
-                var userId = authState.User.FindFirst(c => c.Type == System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-                if (string.IsNullOrEmpty(userId)) { Nav.NavigateTo("/login"); return; }
-
-                await CartService.AddComboToCartAsync(userId, comboId, 1, 1);
-                Snackbar.Add("Combo agregado al carrito ✓", Severity.Success);
-            }
-            catch (Exception ex)
-            {
-                Snackbar.Add($"Error: {ex.Message}", Severity.Error);
-            }
-        }
-
-        // ── Agregar promoción al carrito ──
-        private async Task AddPromotionToCart(PromotionDto promo)
-        {
-            try
-            {
-                var authState = await AuthStateProvider.GetAuthenticationStateAsync();
-                var userId = authState.User.FindFirst(c => c.Type == System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-                if (string.IsNullOrEmpty(userId)) { Nav.NavigateTo("/login"); return; }
+                var userId = await GetUserIdOrRedirectAsync();
+                if (userId is null) return;
 
                 var qty = promo.IsPayXGetY ? (promo.RequiredQuantity ?? 1) : 1;
-                await CartService.AddPromotionToCartAsync(userId, promo.PromotionId, qty, 1);
-                Snackbar.Add($"Promoción «{promo.Title}» agregada al carrito ✓", Severity.Success);
+                await CartService.AddPromotionToCartAsync(userId, promo.PromotionId, qty, StoreId);
+                Snackbar.Add($"Promoción «{promo.Title}» agregada al carrito", Severity.Success);
             }
             catch (Exception ex)
             {

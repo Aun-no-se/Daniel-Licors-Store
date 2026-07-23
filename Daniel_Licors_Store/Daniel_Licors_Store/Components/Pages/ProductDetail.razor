@@ -1,17 +1,12 @@
 ﻿@page "/producto/{ProductId:int}"
 
-@using Daniel_Licors_Store.Data.Services
 @using Daniel_Licors_Store.Models.Product
 @using Daniel_Licors_Store.Models.Combo
-@using Microsoft.AspNetCore.Components.Authorization
-@inject NavigationManager Nav
-@inject ICartService CartService
-@inject ISnackbar Snackbar
-@inject AuthenticationStateProvider AuthStateProvider
 
 <div class="pd-page-bg">
     <div class="pd-glow pd-glow-crimson"></div>
     <div class="pd-glow pd-glow-gold"></div>
+    <div class="pd-noise-overlay"></div>
 
     <MudContainer MaxWidth="MaxWidth.Large" Class="mt-4 mb-8 pd-page-content">
 
@@ -24,18 +19,28 @@
 
         @if (_loading)
         {
-            <div class="d-flex justify-center align-center flex-column my-12 py-12">
-                <MudProgressCircular Color="Color.Error" Size="Size.Large" Indeterminate="true" />
-                <MudText Typo="Typo.body1" Class="mt-4 pd-muted-text">Cargando producto...</MudText>
+            <!-- ===== SKELETON DE CARGA ===== -->
+            <div class="pd-skeleton-wrap">
+                <div class="pd-skeleton pd-skeleton-image"></div>
+                <div class="pd-skeleton-info">
+                    <div class="pd-skeleton pd-skeleton-line pd-skeleton-line--chip"></div>
+                    <div class="pd-skeleton pd-skeleton-line pd-skeleton-line--title"></div>
+                    <div class="pd-skeleton pd-skeleton-line pd-skeleton-line--pill"></div>
+                    <div class="pd-skeleton pd-skeleton-line pd-skeleton-line--price"></div>
+                    <div class="pd-skeleton pd-skeleton-line pd-skeleton-line--desc"></div>
+                    <div class="pd-skeleton pd-skeleton-line pd-skeleton-line--desc" style="width:70%"></div>
+                    <div class="pd-skeleton pd-skeleton-line pd-skeleton-line--btn"></div>
+                </div>
             </div>
         }
         else if (Product != null)
         {
             <!-- ===== HERO: Imagen + Info ===== -->
-            <MudGrid Spacing="4" Class="align-center justify-center">
+            <MudGrid Spacing="4" Class="align-center justify-center pd-hero">
 
                 <MudItem xs="12" md="6" Class="d-flex justify-center justify-md-end">
                     <div class="pd-image-frame">
+                        <div class="pd-image-shimmer"></div>
                         @if (Product.IsPremium)
                         {
                             <span class="pd-badge-premium">
@@ -58,7 +63,7 @@
                 <MudItem xs="12" md="6" Class="d-flex justify-center justify-md-start">
                     <div class="d-flex flex-column gap-y-3 pd-info-container">
 
-                        <div class="d-flex align-center gap-x-2 flex-wrap">
+                        <div class="d-flex align-center gap-x-2 flex-wrap pd-fade-in" style="--pd-delay: 0.05s">
                             @if (!string.IsNullOrWhiteSpace(Product.Brand))
                             {
                                 <span class="pd-brand-chip">@Product.Brand</span>
@@ -66,9 +71,9 @@
                             <span class="pd-category-text">@Product.Category</span>
                         </div>
 
-                        <MudText Typo="Typo.h3" Class="font-weight-black pd-title">@Product.Name</MudText>
+                        <MudText Typo="Typo.h3" Class="font-weight-black pd-title pd-fade-in" style="--pd-delay: 0.1s">@Product.Name</MudText>
 
-                        <div class="d-flex align-center mt-1">
+                        <div class="pd-fade-in" style="--pd-delay: 0.15s">
                             @if (Product.Stock <= 0)
                             {
                                 <span class="pd-stock-pill pd-stock-pill--out">
@@ -78,16 +83,21 @@
                             }
                             else
                             {
-                                <span class="pd-stock-pill pd-stock-pill--in">
-                                    <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Size="Size.Small" Class="mr-1" />
-                                    Disponibles: <strong class="ml-1">@Product.Stock uds.</strong>
-                                </span>
+                                <div class="pd-stock-block">
+                                    <span class="pd-stock-pill pd-stock-pill--in">
+                                        <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Size="Size.Small" Class="mr-1" />
+                                        Disponibles: <strong class="ml-1">@Product.Stock uds.</strong>
+                                    </span>
+                                    <div class="pd-stock-bar-track">
+                                        <div class="pd-stock-bar-fill" style="--pd-stock-pct: @(StockPercentage().ToString(System.Globalization.CultureInfo.InvariantCulture))%"></div>
+                                    </div>
+                                </div>
                             }
                         </div>
 
-                        <div class="pd-divider my-2"></div>
+                        <div class="pd-divider my-2 pd-fade-in" style="--pd-delay: 0.2s"></div>
 
-                        <div class="pd-price-container py-1">
+                        <div class="pd-price-container py-1 pd-fade-in" style="--pd-delay: 0.25s">
                             <MudText Typo="Typo.h2" Class="font-weight-bold mb-0 pd-price">
                                 $@Product.Price.ToString("N2")
                             </MudText>
@@ -96,21 +106,38 @@
 
                         @if (!string.IsNullOrWhiteSpace(Product.Description))
                         {
-                            <div class="mt-1">
+                            <div class="mt-1 pd-fade-in" style="--pd-delay: 0.3s">
                                 <MudText Typo="Typo.subtitle1" Class="font-weight-bold pd-desc-label">Descripción</MudText>
                                 <MudText Typo="Typo.body1" Class="mt-1 pd-description">@Product.Description</MudText>
                             </div>
                         }
 
-                        <div class="pd-actions-box mt-2">
+                        <div class="pd-actions-box mt-2 pd-fade-in" style="--pd-delay: 0.35s">
+
+                            @if (Product.Stock > 0)
+                            {
+                                <div class="pd-quantity-selector">
+                                    <span class="pd-quantity-label">Cantidad</span>
+                                    <div class="pd-quantity-stepper">
+                                        <button class="pd-qty-btn" @onclick="DecreaseQuantity" disabled="@(_quantity <= 1)">
+                                            <MudIcon Icon="@Icons.Material.Filled.Remove" Size="Size.Small" />
+                                        </button>
+                                        <span class="pd-qty-value">@_quantity</span>
+                                        <button class="pd-qty-btn" @onclick="IncreaseQuantity" disabled="@(_quantity >= Product.Stock)">
+                                            <MudIcon Icon="@Icons.Material.Filled.Add" Size="Size.Small" />
+                                        </button>
+                                    </div>
+                                </div>
+                            }
+
                             <MudButton Variant="Variant.Filled"
                                        Size="Size.Large"
                                        FullWidth="true"
                                        StartIcon="@Icons.Material.Filled.ShoppingCart"
-                                       Disabled="@(Product.Stock <= 0)"
+                                       Disabled="@(Product.Stock <= 0 || _adding)"
                                        OnClick="@(() => AddToCart(Product.ProductId))"
                                        Class="py-3 pd-btn-add-cart">
-                                @(Product.Stock <= 0 ? "Sin existencias" : "Agregar al carrito")
+                                @(Product.Stock <= 0 ? "Sin existencias" : (_adding ? "Agregando..." : "Agregar al carrito"))
                             </MudButton>
                         </div>
 
@@ -136,7 +163,7 @@
 
                     @if (Combos.Any())
                     {
-                        <div class="pd-cards-stack">
+                        <div class="pd-cards-stack pd-cards-scroll">
                             @foreach (var combo in Combos)
                             {
                                 <div class="pd-item-card pd-item-card--gold" @onclick="@(() => Nav.NavigateTo($"/combo/{combo.ComboId}"))">
@@ -209,7 +236,7 @@
 
                     @if (Promotions.Any())
                     {
-                        <div class="pd-cards-stack">
+                        <div class="pd-cards-stack pd-cards-scroll">
                             @foreach (var promo in Promotions)
                             {
                                 var expanded = IsPromoExpanded(promo.PromotionId);
@@ -226,7 +253,7 @@
                                                 <MudIcon Icon="@Icons.Material.Filled.LocalOffer" Class="pd-item-placeholder-svg" />
                                             </div>
                                         }
-                                        <div class="pd-item-type-badge">
+                                        <div class="pd-item-type-badge pd-item-type-badge--pulse">
                                             @promo.BadgeLabel
                                         </div>
                                     </div>
@@ -309,10 +336,25 @@
                 </div>
 
             </div>
+
+            <!-- ===== BARRA FLOTANTE MÓVIL ===== -->
+            @if (Product.Stock > 0)
+            {
+                <div class="pd-mobile-cta">
+                    <div class="pd-mobile-cta-info">
+                        <span class="pd-mobile-cta-name">@Product.Name</span>
+                        <span class="pd-mobile-cta-price">$@Product.Price.ToString("N2")</span>
+                    </div>
+                    <button class="pd-mobile-cta-btn" disabled="@_adding" @onclick="@(() => AddToCart(Product.ProductId))">
+                        <MudIcon Icon="@Icons.Material.Filled.ShoppingCart" Size="Size.Small" Class="mr-1" />
+                        Agregar
+                    </button>
+                </div>
+            }
         }
         else
         {
-            <div class="d-flex justify-center align-center flex-column my-12 py-12">
+            <div class="d-flex justify-center align-center flex-column my-12 py-12 pd-fade-in">
                 <MudIcon Icon="@Icons.Material.Filled.HeartBroken" Class="pd-notfound-icon" />
                 <MudText Typo="Typo.h5" Class="mt-4 font-weight-bold pd-notfound-title">El producto no existe</MudText>
                 <MudButton Variant="Variant.Filled" Class="mt-3 pd-btn-add-cart"
@@ -324,737 +366,3 @@
 
     </MudContainer>
 </div>
-
-<style>
-    :root {
-        --pd-crimson: #FF1744;
-        --pd-crimson-dark: #B71C1C;
-        --pd-crimson-glow: rgba(255,23,68,0.35);
-        --pd-gold-1: #b38728;
-        --pd-gold-2: #fbf5b7;
-        --pd-gold-3: #daa520;
-        --pd-gold-4: #aa771c;
-        --pd-gold-solid: #E8C468;
-        --pd-surface: rgba(255,255,255,0.045);
-        --pd-surface-2: rgba(255,255,255,0.03);
-        --pd-border: rgba(255,255,255,0.09);
-        --pd-text-muted: #a1a1aa;
-        --pd-text-dim: #71717a;
-    }
-
-    /* ══════════ FONDO ══════════ */
-    .pd-page-bg {
-        position: relative;
-        min-height: 100vh;
-        background: radial-gradient(ellipse at top, #140707 0%, #0a0505 55%, #050303 100%);
-        overflow: hidden;
-    }
-
-    .pd-glow {
-        position: absolute;
-        border-radius: 50%;
-        filter: blur(80px);
-        pointer-events: none;
-        opacity: 0.26;
-        z-index: 0;
-        animation: pdFloat 14s ease-in-out infinite;
-    }
-
-    .pd-glow-crimson {
-        width: 460px;
-        height: 460px;
-        top: -140px;
-        right: -120px;
-        background: radial-gradient(circle, var(--pd-crimson) 0%, transparent 70%);
-    }
-
-    .pd-glow-gold {
-        width: 400px;
-        height: 400px;
-        bottom: 10%;
-        left: -120px;
-        background: radial-gradient(circle, var(--pd-gold-3) 0%, transparent 70%);
-        animation-delay: -7s;
-    }
-
-    @@keyframes pdFloat {
-        0%, 100% {
-            transform: translate(0,0) scale(1);
-        }
-
-        50% {
-            transform: translate(-25px, 25px) scale(1.08);
-        }
-    }
-
-    .pd-page-content {
-        position: relative;
-        z-index: 1;
-    }
-
-    .pd-btn-back {
-        color: rgba(255,255,255,0.65) !important;
-        transition: color 0.2s ease;
-    }
-
-        .pd-btn-back:hover {
-            color: var(--pd-crimson) !important;
-        }
-
-    .pd-muted-text {
-        color: var(--pd-text-muted) !important;
-    }
-
-    /* ══════════ IMAGEN HERO ══════════ */
-    .pd-image-frame {
-        position: relative;
-        width: 280px;
-        height: 280px;
-        max-width: 100%;
-        background: linear-gradient(150deg, #1a0a0a, #100808);
-        border-radius: 24px;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        box-shadow: 0 16px 40px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.06);
-        border: 1px solid rgba(255,255,255,0.08);
-        overflow: hidden;
-        animation: pdFadeUp 0.55s ease both;
-    }
-
-    .pd-image {
-        width: 100%;
-        height: 100%;
-        object-fit: contain;
-        object-position: center;
-        padding: 18px;
-        transition: transform 0.45s cubic-bezier(0.25,1,0.5,1);
-        image-rendering: -webkit-optimize-contrast;
-    }
-
-    .pd-image-frame:hover .pd-image {
-        transform: scale(1.06);
-    }
-
-    .pd-image-placeholder {
-        width: 100%;
-        height: 100%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .pd-image-placeholder-icon {
-        font-size: 4rem !important;
-        opacity: 0.15;
-        color: #fff;
-    }
-
-    .pd-badge-premium {
-        position: absolute;
-        top: 16px;
-        left: 16px;
-        background: linear-gradient(135deg, var(--pd-gold-1), var(--pd-gold-2), var(--pd-gold-3), var(--pd-gold-4));
-        color: #1a1005;
-        font-weight: 800;
-        font-size: 0.75rem;
-        padding: 6px 14px;
-        border-radius: 30px;
-        display: inline-flex;
-        align-items: center;
-        box-shadow: 0 4px 14px rgba(179,135,40,0.4);
-        letter-spacing: 1px;
-        z-index: 2;
-    }
-
-    /* ══════════ INFO DEL PRODUCTO ══════════ */
-    .pd-info-container {
-        width: 100%;
-        max-width: 460px;
-        animation: pdFadeUp 0.55s ease both;
-        animation-delay: 0.06s;
-    }
-
-    .pd-brand-chip {
-        font-size: 12px;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.6px;
-        padding: 4px 12px;
-        border-radius: 20px;
-        color: var(--pd-crimson);
-        background: rgba(255,23,68,0.12);
-        border: 1px solid rgba(255,23,68,0.28);
-    }
-
-    .pd-category-text {
-        font-size: 12px;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        color: var(--pd-text-muted);
-    }
-
-    .pd-title {
-        color: #fff;
-        line-height: 1.15;
-    }
-
-    .pd-stock-pill {
-        display: inline-flex;
-        align-items: center;
-        font-size: 13px;
-        font-weight: 600;
-        padding: 6px 14px;
-        border-radius: 30px;
-        border: 1px solid;
-    }
-
-    .pd-stock-pill--in {
-        color: #7be3a0;
-        background: rgba(76,175,80,0.1);
-        border-color: rgba(76,175,80,0.3);
-    }
-
-    .pd-stock-pill--out {
-        color: #ff8fa3;
-        background: rgba(255,23,68,0.1);
-        border-color: rgba(255,23,68,0.3);
-    }
-
-    .pd-divider {
-        border-top: 1px solid rgba(255,255,255,0.1);
-    }
-
-    .pd-price-container {
-        display: flex;
-        flex-direction: column;
-    }
-
-    .pd-price {
-        background: linear-gradient(135deg, var(--pd-gold-2) 10%, var(--pd-gold-solid) 60%, var(--pd-gold-4) 100%);
-        -webkit-background-clip: text;
-        background-clip: text;
-        -webkit-text-fill-color: transparent;
-    }
-
-    .pd-desc-label {
-        color: #fff;
-    }
-
-    .pd-description {
-        color: #d4d4d8;
-        line-height: 1.6;
-        font-size: 1.02rem;
-    }
-
-    .pd-btn-add-cart {
-        background: linear-gradient(135deg, var(--pd-crimson), var(--pd-crimson-dark)) !important;
-        color: #fff !important;
-        font-weight: 700 !important;
-        font-size: 1.05rem !important;
-        letter-spacing: 0.4px;
-        border-radius: 14px !important;
-        text-transform: none !important;
-        box-shadow: 0 8px 24px rgba(255,23,68,0.3) !important;
-        transition: transform 0.2s ease, box-shadow 0.2s ease !important;
-    }
-
-        .pd-btn-add-cart:hover:not(.mud-disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 12px 32px rgba(255,23,68,0.45) !important;
-        }
-
-    /* ══════════ SECCIÓN INFERIOR ══════════ */
-    .pd-lower-wrapper {
-        display: flex;
-        gap: 0;
-        border: 1px solid var(--pd-border);
-        border-radius: 22px;
-        overflow: hidden;
-        background: var(--pd-surface);
-        backdrop-filter: blur(14px);
-        align-items: flex-start;
-        animation: pdFadeUp 0.55s ease both;
-        animation-delay: 0.12s;
-    }
-
-    .pd-lower-col {
-        flex: 1;
-        min-width: 0;
-        padding: 20px;
-    }
-
-    .pd-vertical-divider {
-        width: 1px;
-        background: linear-gradient(180deg, transparent, rgba(255,255,255,0.1), transparent);
-        align-self: stretch;
-        flex-shrink: 0;
-    }
-
-    .pd-lower-col-header {
-        display: flex;
-        align-items: flex-start;
-        gap: 12px;
-        margin-bottom: 14px;
-    }
-
-    .pd-lower-col-icon {
-        width: 42px;
-        height: 42px;
-        border-radius: 12px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        flex-shrink: 0;
-        border: 1px solid rgba(255,255,255,0.1);
-    }
-
-    .pd-lower-col-icon--gold {
-        background: rgba(218,165,32,0.12);
-    }
-
-    .pd-lower-col-icon--crimson {
-        background: rgba(255,23,68,0.12);
-    }
-
-    .pd-lower-col-icon-svg--gold {
-        color: var(--pd-gold-solid) !important;
-    }
-
-    .pd-lower-col-icon-svg--crimson {
-        color: var(--pd-crimson) !important;
-    }
-
-    .pd-lower-col-title {
-        font-size: 17px;
-        font-weight: 700;
-        color: #fff;
-        line-height: 1.2;
-    }
-
-    .pd-lower-col-sub {
-        font-size: 11px;
-        color: var(--pd-text-dim);
-        margin-top: 3px;
-    }
-
-    /* ── Estado vacío ── */
-    .pd-empty-state {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        padding: 18px 20px;
-        border: 1.5px dashed rgba(255,255,255,0.1);
-        border-radius: 14px;
-        color: var(--pd-text-dim);
-        font-size: 13px;
-    }
-
-    .pd-empty-icon {
-        font-size: 22px !important;
-        color: #3f3f46 !important;
-    }
-
-    /* ── Stack de cards ── */
-    .pd-cards-stack {
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-    }
-
-    /* ══════════ ITEM CARD ══════════ */
-    .pd-item-card {
-        background: var(--pd-surface-2);
-        border-radius: 16px;
-        overflow: hidden;
-        display: flex;
-        flex-direction: column;
-        border: 1px solid var(--pd-border);
-        transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, background 0.2s ease;
-        cursor: pointer;
-        animation: pdCardIn 0.4s cubic-bezier(0.16,1,0.3,1) both;
-    }
-
-    .pd-item-card--gold:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 12px 30px rgba(218,165,32,0.16);
-        border-color: rgba(218,165,32,0.4);
-        background: rgba(218,165,32,0.04);
-    }
-
-    .pd-item-card--crimson {
-        cursor: default;
-    }
-
-        .pd-item-card--crimson:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 12px 30px rgba(255,23,68,0.16);
-            border-color: rgba(255,23,68,0.4);
-            background: rgba(255,23,68,0.04);
-        }
-
-    @@keyframes pdCardIn {
-        from {
-            opacity: 0;
-            transform: translateY(12px);
-        }
-
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-
-    .pd-item-img-wrap {
-        position: relative;
-        width: 100%;
-        height: 150px;
-        overflow: hidden;
-        flex-shrink: 0;
-    }
-
-    .pd-item-img {
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        transition: transform 0.35s ease;
-    }
-
-    .pd-item-card:hover .pd-item-img {
-        transform: scale(1.06);
-    }
-
-    .pd-item-img-placeholder {
-        width: 100%;
-        height: 100%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .pd-item-img-placeholder--gold {
-        background: rgba(218,165,32,0.06);
-    }
-
-    .pd-item-img-placeholder--crimson {
-        background: rgba(255,23,68,0.06);
-    }
-
-    .pd-item-placeholder-svg {
-        font-size: 2rem !important;
-        opacity: 0.3;
-        color: #fff;
-    }
-
-    .pd-item-price-pill {
-        position: absolute;
-        bottom: 8px;
-        right: 8px;
-        font-size: 13px;
-        font-weight: 800;
-        padding: 4px 11px;
-        border-radius: 20px;
-        backdrop-filter: blur(6px);
-        background: linear-gradient(135deg, var(--pd-gold-2), var(--pd-gold-3));
-        color: #1a1005;
-    }
-
-    .pd-item-type-badge {
-        position: absolute;
-        top: 8px;
-        left: 8px;
-        font-size: 10px;
-        font-weight: 800;
-        padding: 3px 10px;
-        border-radius: 20px;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        backdrop-filter: blur(6px);
-        background: rgba(255,23,68,0.85);
-        color: #fff;
-    }
-
-    .pd-item-body {
-        padding: 12px 14px 8px;
-        flex-grow: 1;
-    }
-
-    .pd-item-name {
-        font-size: 14px;
-        font-weight: 700;
-        color: #fff;
-        line-height: 1.3;
-        margin-bottom: 4px;
-        display: -webkit-box;
-        -webkit-line-clamp: 2;
-        -webkit-box-orient: vertical;
-        overflow: hidden;
-    }
-
-    .pd-item-desc {
-        font-size: 11px;
-        color: var(--pd-text-dim);
-        margin-bottom: 8px;
-        display: -webkit-box;
-        -webkit-line-clamp: 2;
-        -webkit-box-orient: vertical;
-        overflow: hidden;
-    }
-
-    /* ── Oferta promo ── */
-    .pd-promo-offer-box {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        flex-wrap: wrap;
-        background: rgba(0,0,0,0.25);
-        border-radius: 10px;
-        padding: 8px 12px;
-        margin-bottom: 8px;
-    }
-
-    .pd-promo-price-original {
-        font-size: 12px;
-        color: var(--pd-text-dim);
-        text-decoration: line-through;
-    }
-
-    .pd-promo-price-new {
-        font-size: 18px;
-        font-weight: 800;
-        color: var(--pd-gold-solid);
-    }
-
-    .pd-promo-pill {
-        font-size: 10px;
-        font-weight: 800;
-        padding: 2px 8px;
-        border-radius: 20px;
-        background: rgba(255,23,68,0.2);
-        color: #ff9aad;
-    }
-
-    .pd-pxgy-icon {
-        font-size: 20px !important;
-        color: var(--pd-gold-solid) !important;
-        margin-right: 4px;
-    }
-
-    .pd-pxgy-text {
-        font-size: 14px;
-        font-weight: 800;
-        color: var(--pd-gold-solid);
-    }
-
-    .pd-promo-validity {
-        display: flex;
-        align-items: center;
-        font-size: 10px;
-        color: #52525b;
-        margin-top: 4px;
-    }
-
-    /* ── Panel expandible "Ver detalle" ── */
-    .pd-promo-detail-panel {
-        max-height: 0;
-        overflow: hidden;
-        transition: max-height 0.35s ease, opacity 0.3s ease, margin-top 0.3s ease;
-        opacity: 0;
-    }
-
-    .pd-promo-detail-panel--open {
-        max-height: 120px;
-        opacity: 1;
-        margin-top: 8px;
-    }
-
-    .pd-promo-detail-inner {
-        background: rgba(255,255,255,0.04);
-        border: 1px solid rgba(255,255,255,0.08);
-        border-radius: 10px;
-        padding: 10px 12px;
-        display: flex;
-        flex-direction: column;
-        gap: 6px;
-    }
-
-    .pd-promo-detail-row {
-        display: flex;
-        align-items: center;
-        font-size: 11.5px;
-        color: #d4d4d8;
-    }
-
-    /* ── Footer con botones ── */
-    .pd-item-footer {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 8px 14px 14px;
-        gap: 8px;
-        border-top: 1px solid rgba(255,255,255,0.06);
-    }
-
-    .pd-item-btn {
-        display: inline-flex;
-        align-items: center;
-        font-size: 11.5px;
-        font-weight: 700;
-        padding: 6px 12px;
-        border-radius: 8px;
-        cursor: pointer;
-        transition: background 0.15s, transform 0.12s;
-        white-space: nowrap;
-        border: 1px solid;
-    }
-
-    .pd-item-btn--gold {
-        background: rgba(218,165,32,0.15);
-        border-color: rgba(218,165,32,0.35);
-        color: var(--pd-gold-solid);
-    }
-
-        .pd-item-btn--gold:hover {
-            background: rgba(218,165,32,0.28);
-            transform: scale(1.04);
-        }
-
-    .pd-item-btn--crimson {
-        background: rgba(255,23,68,0.15);
-        border-color: rgba(255,23,68,0.35);
-        color: #ff5c7f;
-    }
-
-        .pd-item-btn--crimson:hover {
-            background: rgba(255,23,68,0.28);
-            transform: scale(1.04);
-        }
-
-    .pd-item-link {
-        background: transparent;
-        border: none;
-        color: var(--pd-text-dim);
-        font-size: 11.5px;
-        font-weight: 600;
-        cursor: pointer;
-        padding: 6px 4px;
-        transition: color 0.15s;
-        white-space: nowrap;
-        display: inline-flex;
-        align-items: center;
-    }
-
-        .pd-item-link:hover {
-            color: #d4d4d8;
-        }
-
-    .pd-item-link--toggle {
-        color: rgba(255,92,127,0.75);
-    }
-
-        .pd-item-link--toggle:hover {
-            color: #ff5c7f;
-        }
-
-    .pd-chevron {
-        font-size: 16px !important;
-        margin-left: 2px;
-        transition: transform 0.25s ease;
-    }
-
-    .pd-item-link--toggle-open .pd-chevron {
-        transform: rotate(180deg);
-    }
-
-    /* ── Producto no encontrado ── */
-    .pd-notfound-icon {
-        font-size: 3rem !important;
-        color: var(--pd-crimson) !important;
-    }
-
-    .pd-notfound-title {
-        color: #fff;
-    }
-
-    /* ══════════ ANIMACIONES BASE ══════════ */
-    @@keyframes pdFadeUp {
-        from {
-            opacity: 0;
-            transform: translateY(16px);
-        }
-
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
-
-    /* ══════════ UTILITARIOS ══════════ */
-    .text-transform-none {
-        text-transform: none !important;
-    }
-
-    /* ══════════ RESPONSIVE — mobile es lo importante ══════════ */
-    @@media (max-width: 768px) {
-        .pd-lower-wrapper {
-            flex-direction: column;
-            border-radius: 18px;
-        }
-
-        .pd-vertical-divider {
-            width: auto;
-            height: 1px;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
-        }
-
-        .pd-lower-col {
-            padding: 20px 16px;
-        }
-
-        .pd-image-frame {
-            width: 100%;
-            max-width: 100%;
-            aspect-ratio: 4/3;
-        }
-    }
-
-    @@media (max-width: 600px) {
-        .pd-glow {
-            filter: blur(55px);
-            opacity: 0.2;
-        }
-
-        .pd-title {
-            font-size: 1.9rem !important;
-        }
-
-        .pd-price {
-            font-size: 2.1rem !important;
-        }
-
-        .pd-btn-add-cart {
-            height: 54px !important;
-            font-size: 1.05rem !important;
-        }
-
-        .pd-item-card:active {
-            transform: scale(0.98);
-        }
-
-        .pd-item-btn:active, .pd-item-link:active {
-            transform: scale(0.94);
-        }
-
-        .pd-info-container {
-            max-width: 100%;
-        }
-
-        .pd-lower-col-header {
-            margin-bottom: 16px;
-        }
-
-        .pd-item-footer {
-            flex-wrap: wrap;
-        }
-    }
-</style>
