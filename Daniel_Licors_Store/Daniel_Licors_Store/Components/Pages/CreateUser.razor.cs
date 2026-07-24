@@ -1,20 +1,18 @@
 ﻿using Daniel_Licors_Store.Models.Users;
 using Daniel_Licors_Store.Models.Users.Auth;
 using Daniel_Licors_Store.Services.Auth;
-using Daniel_Licors_Store.Data.Services;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Components;
-using Microsoft.AspNetCore.Components.Authorization;
 using MudBlazor;
 
 namespace Daniel_Licors_Store.Components.Pages
 {
-    public partial class CreateUser
+    public partial class CreateUser : AdminPageBase
     {
+        // AllowedRoles no se sobreescribe: por defecto AdminPageBase ya
+        // restringe a solo "Admin", que es lo que esta página necesita.
+
         [Inject] public IAuthService AuthService { get; set; } = default!;
-        [Inject] public NavigationManager Nav { get; set; } = default!;
         [Inject] public ISnackbar Snackbar { get; set; } = default!;
-        [Inject] public AuthenticationStateProvider AuthStateProvider { get; set; } = default!;
 
         private AdminRegisterModel model = new() { RoleId = 2 }; // Empleado por defecto
         private bool isLoading;
@@ -80,24 +78,6 @@ namespace Daniel_Licors_Store.Components.Pages
             2 => "Empleado",
             _ => "Cliente"
         };
-
-        // ── Guardia de seguridad: verificar rol Admin en el servidor ────────────
-        protected override async Task OnInitializedAsync()
-        {
-            var state = await AuthStateProvider.GetAuthenticationStateAsync();
-
-            // Protección interna — [Authorize] no funciona en recarga con LocalStorage auth
-            if (!state.User.Identity?.IsAuthenticated ?? true)
-            {
-                Nav.NavigateTo("/login", replace: true);
-                return;
-            }
-            if (!state.User.IsInRole("Admin"))
-            {
-                Nav.NavigateTo("/", replace: true);
-                return;
-            }
-        }
 
         // ── Acciones ────────────────────────────────────────────────────────────
         private void SelectRole(int roleId) => model.RoleId = roleId;
