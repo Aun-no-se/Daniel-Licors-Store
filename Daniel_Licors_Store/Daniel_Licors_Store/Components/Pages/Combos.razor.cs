@@ -1,6 +1,7 @@
 ﻿using Daniel_Licors_Store.Components.Dialogs;
 using Daniel_Licors_Store.Components.Shared;
 using Daniel_Licors_Store.Data.Repositories.Interfaces;
+using Daniel_Licors_Store.Data.Services;
 using Daniel_Licors_Store.Data.Services.Interfaces;
 using Daniel_Licors_Store.Models.Combo;
 using Daniel_Licors_Store.Models.Product;
@@ -32,7 +33,7 @@ namespace Daniel_Licors_Store.Components.Pages
         private int _editingComboId;
 
         private byte[]? _imageBytes;
-        private string? _imageFileName;
+        private string? _imageExtension;  // ya validada — nunca sale del nombre del archivo
         private string? _previewBase64;   // preview inmediato
 
         private ComboCreateModel _newCombo = new();
@@ -88,7 +89,7 @@ namespace Daniel_Licors_Store.Components.Pages
             _showCreateCombo = false;
             _comboBuilder.Clear();
             _imageBytes = null;
-            _imageFileName = null;
+            _imageExtension = null;
             _previewBase64 = null;
             _newCombo = new ComboCreateModel();
             _isEditMode = false;
@@ -98,7 +99,7 @@ namespace Daniel_Licors_Store.Components.Pages
         private void RemoveImage()
         {
             _imageBytes = null;
-            _imageFileName = null;
+            _imageExtension = null;
             _previewBase64 = null;
             _newCombo.ImageUrl = null;
         }
@@ -113,21 +114,23 @@ namespace Daniel_Licors_Store.Components.Pages
                 var file = e.File;
                 if (file is null || file.Size <= 0) return;
 
-                if (file.Size > 5 * 1024 * 1024)
+                // Tope duro de lectura — protege memoria aunque el tamaño
+                // declarado por el navegador esté manipulado.
+                await using var stream = file.OpenReadStream(maxAllowedSize: ImageUploadValidator.MaxSizeBytes);
+                using var ms = new MemoryStream();
+                await stream.CopyToAsync(ms);
+                var bytes = ms.ToArray();
+
+                // Validación real: firma de bytes, no nombre de archivo ni Content-Type.
+                var result = ImageUploadValidator.Validate(bytes, file.Size);
+                if (!result.IsValid)
                 {
-                    Snackbar.Add("La imagen no puede superar 5MB", Severity.Warning);
+                    Snackbar.Add(result.ErrorMessage!, Severity.Warning);
                     return;
                 }
 
-                var buffer = new byte[file.Size];
-                await using var stream = file.OpenReadStream(maxAllowedSize: 5 * 1024 * 1024);
-                var totalRead = 0;
-                int bytesRead;
-                while ((bytesRead = await stream.ReadAsync(buffer.AsMemory(totalRead, buffer.Length - totalRead))) > 0)
-                    totalRead += bytesRead;
-
-                _imageBytes = buffer[..totalRead];
-                _imageFileName = file.Name;
+                _imageBytes = bytes;
+                _imageExtension = result.Extension;
                 _previewBase64 = $"data:{file.ContentType};base64,{Convert.ToBase64String(_imageBytes)}";
 
                 Snackbar.Add("Imagen cargada correctamente", Severity.Success);
@@ -142,8 +145,9 @@ namespace Daniel_Licors_Store.Components.Pages
         {
             var folder = Path.Combine(Env.WebRootPath, "images", "combos");
             Directory.CreateDirectory(folder);
-            var extension = Path.GetExtension(_imageFileName ?? ".jpg");
-            var fileName = $"{Guid.NewGuid()}{extension}";
+            // La extensión sale de la firma de bytes validada en HandleFileSelected,
+            // nunca del nombre original del archivo.
+            var fileName = $"{Guid.NewGuid()}{_imageExtension}";
             var fullPath = Path.Combine(folder, fileName);
             await File.WriteAllBytesAsync(fullPath, _imageBytes!);
             return $"/images/combos/{fileName}";
@@ -198,7 +202,7 @@ namespace Daniel_Licors_Store.Components.Pages
                     ImageUrl = combo.ImageUrl != "/images/combo-default.png" ? combo.ImageUrl : null
                 };
                 _imageBytes = null;
-                _imageFileName = null;
+                _imageExtension = null;
                 _previewBase64 = null;
 
                 _comboBuilder = combo.Products.Select(p => new ComboProductTemp

@@ -1,5 +1,6 @@
 using Daniel_Licors_Store.Components.Shared;
 using Daniel_Licors_Store.Data.Repositories.Interfaces;
+using Daniel_Licors_Store.Data.Services;
 using Daniel_Licors_Store.Models.Product;
 using Daniel_Licors_Store.Models.Promotion;
 using Microsoft.AspNetCore.Components;
@@ -96,31 +97,38 @@ public partial class Promotions : AdminPageBase
         var file = e.File;
         if (file == null) return;
 
-        const long maxBytes = 5 * 1024 * 1024;
-        if (file.Size > maxBytes) { _uploadError = "La imagen no debe superar 5 MB."; return; }
-        if (!file.ContentType.StartsWith("image/")) { _uploadError = "Formato no permitido."; return; }
-
         _uploadingImage = true;
         StateHasChanged();
 
         try
         {
-            // Preview inmediato
-            using var msPreview = new MemoryStream();
-            await using var streamPrev = file.OpenReadStream(maxBytes);
-            await streamPrev.CopyToAsync(msPreview);
-            _previewBase64 = $"data:{file.ContentType};base64,{Convert.ToBase64String(msPreview.ToArray())}";
+            // Tope duro de lectura — protege memoria aunque el tamaño
+            // declarado por el navegador esté manipulado.
+            await using var stream = file.OpenReadStream(ImageUploadValidator.MaxSizeBytes);
+            using var ms = new MemoryStream();
+            await stream.CopyToAsync(ms);
+            var bytes = ms.ToArray();
 
-            // Guardar en disco
+            // Validación real: firma de bytes, no nombre de archivo ni Content-Type
+            // (ambos los controla quien sube el archivo y se falsifican fácil).
+            var result = ImageUploadValidator.Validate(bytes, file.Size);
+            if (!result.IsValid)
+            {
+                _uploadError = result.ErrorMessage!;
+                return;
+            }
+
+            _previewBase64 = $"data:image/{result.Extension!.TrimStart('.')};base64,{Convert.ToBase64String(bytes)}";
+
+            // Guardar en disco — la extensión sale de la firma de bytes
+            // validada arriba, nunca del nombre original del archivo.
             var uploadDir = Path.Combine(Env.WebRootPath, "images", "promociones");
             Directory.CreateDirectory(uploadDir);
-            var ext = Path.GetExtension(file.Name).ToLowerInvariant();
-            var fileName = $"promo_{Guid.NewGuid():N}{ext}";
+            var fileName = $"promo_{Guid.NewGuid():N}{result.Extension}";
             var fullPath = Path.Combine(uploadDir, fileName);
 
             await using var fs = new FileStream(fullPath, FileMode.Create);
-            await using var stream = file.OpenReadStream(maxBytes);
-            await stream.CopyToAsync(fs);
+            await fs.WriteAsync(bytes);
 
             _form.ImageUrl = $"/images/promociones/{fileName}";
         }

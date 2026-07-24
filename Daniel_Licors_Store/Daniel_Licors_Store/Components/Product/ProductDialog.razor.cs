@@ -1,5 +1,6 @@
 ﻿using Daniel_Licors_Store.Data.Entities;
 using Daniel_Licors_Store.Data.Repositories.Interfaces;
+using Daniel_Licors_Store.Data.Services;
 using Daniel_Licors_Store.Models.Product;
 using Daniel_Licors_Store.Services;
 using Microsoft.AspNetCore.Components;
@@ -43,6 +44,8 @@ public partial class ProductDialog
     private bool formIsValid;
 
     private IBrowserFile? selectedImage;
+    private byte[]? _validatedImageBytes;   // ya validados por firma real (magic number)
+    private string? _validatedImageExtension;
     private string? previewImage;
 
     private bool HasImage => !string.IsNullOrEmpty(previewImage ?? Model.ImageUrl);
@@ -131,8 +134,8 @@ public partial class ProductDialog
 
         try
         {
-            if (selectedImage != null)
-                Model.ImageUrl = await SaveImageAsync(selectedImage);
+            if (_validatedImageBytes != null)
+                Model.ImageUrl = await SaveImageAsync();
 
             if (ProductId.HasValue)
             {
@@ -180,6 +183,8 @@ public partial class ProductDialog
         previewImage = null;
         Model.ImageUrl = null;
         selectedImage = null;
+        _validatedImageBytes = null;
+        _validatedImageExtension = null;
     }
 
     private async Task OnImageSelected(InputFileChangeEventArgs e)
@@ -187,11 +192,25 @@ public partial class ProductDialog
         var file = e.File;
         if (file is null) return;
 
-        selectedImage = file;
-        using var stream = file.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024);
+        using var stream = file.OpenReadStream(maxAllowedSize: ImageUploadValidator.MaxSizeBytes);
         using var ms = new MemoryStream();
         await stream.CopyToAsync(ms);
-        previewImage = $"data:{file.ContentType};base64,{Convert.ToBase64String(ms.ToArray())}";
+        var bytes = ms.ToArray();
+
+        // Validación real: firma de bytes, no nombre de archivo ni Content-Type
+        // (antes este método no validaba nada — aceptaba cualquier archivo).
+        var result = ImageUploadValidator.Validate(bytes, file.Size);
+        if (!result.IsValid)
+        {
+            imageError = true;
+            Snackbar.Add(result.ErrorMessage!, Severity.Warning);
+            return;
+        }
+
+        selectedImage = file;
+        _validatedImageBytes = bytes;
+        _validatedImageExtension = result.Extension;
+        previewImage = $"data:image/{result.Extension!.TrimStart('.')};base64,{Convert.ToBase64String(bytes)}";
 
         imageError = false;
     }
@@ -204,20 +223,20 @@ public partial class ProductDialog
         await Task.CompletedTask;
     }
 
-    private async Task<string?> SaveImageAsync(IBrowserFile file)
+    private async Task<string?> SaveImageAsync()
     {
-        if (file is null) return null;
+        if (_validatedImageBytes == null || _validatedImageExtension == null) return null;
 
         var uploadsFolder = Path.Combine(Env.WebRootPath, "images", "products");
         if (!Directory.Exists(uploadsFolder))
             Directory.CreateDirectory(uploadsFolder);
 
-        var fileName = $"{Guid.NewGuid()}{Path.GetExtension(file.Name)}";
+        // La extensión sale de la firma de bytes validada en OnImageSelected,
+        // nunca del nombre original del archivo.
+        var fileName = $"{Guid.NewGuid()}{_validatedImageExtension}";
         var filePath = Path.Combine(uploadsFolder, fileName);
 
-        using var stream = file.OpenReadStream(10 * 1024 * 1024);
-        using var fileStream = new FileStream(filePath, FileMode.Create);
-        await stream.CopyToAsync(fileStream);
+        await File.WriteAllBytesAsync(filePath, _validatedImageBytes);
 
         return $"/images/products/{fileName}";
     }
