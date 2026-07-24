@@ -6,7 +6,17 @@ namespace Daniel_Licors_Store.Data.Services;
 
 /// <summary>
 /// Firma y verifica el payload de UserSession con HMAC-SHA256.
-/// La clave vive en appsettings.json → "SessionSecurity:HmacKey".
+///
+/// La clave YA NO vive en appsettings.json (ese archivo se commitea al
+/// repo). Vive en:
+///   - Desarrollo: User Secrets → dotnet user-secrets set "SessionSecurity:HmacKey" "..."
+///   - Producción: variable de entorno SessionSecurity__HmacKey
+///     (el doble guion bajo es la sintaxis de .NET para representar el
+///     ":" anidado de configuración en nombres de variables de entorno)
+///
+/// IConfiguration combina ambas fuentes automáticamente — este archivo
+/// no necesita saber de dónde vino el valor.
+///
 /// Si alguien edita el LocalStorage, la firma no coincide y la sesión
 /// se rechaza completamente — el usuario queda como anónimo.
 /// </summary>
@@ -16,9 +26,13 @@ public class SessionSigner
 
     public SessionSigner(IConfiguration configuration)
     {
-        var keyBase64 = configuration["SessionSecurity:HmacKey"]
-            ?? throw new InvalidOperationException(
-                "SessionSecurity:HmacKey no está configurado en appsettings.json");
+        var keyBase64 = configuration["SessionSecurity:HmacKey"];
+
+        if (string.IsNullOrWhiteSpace(keyBase64))
+            throw new InvalidOperationException(
+                "SessionSecurity:HmacKey no está configurado. " +
+                "En desarrollo: dotnet user-secrets set \"SessionSecurity:HmacKey\" \"<clave>\". " +
+                "En producción: variable de entorno SessionSecurity__HmacKey.");
 
         _key = Convert.FromBase64String(keyBase64);
     }
@@ -30,9 +44,9 @@ public class SessionSigner
     /// </summary>
     public string Sign<T>(T payload)
     {
-        var json    = JsonSerializer.Serialize(payload);
+        var json = JsonSerializer.Serialize(payload);
         var jsonB64 = Convert.ToBase64String(Encoding.UTF8.GetBytes(json));
-        var sig     = ComputeHmac(jsonB64);
+        var sig = ComputeHmac(jsonB64);
 
         return $"{jsonB64}.{sig}";
     }
@@ -51,9 +65,9 @@ public class SessionSigner
         if (parts.Length != 2)
             return null;
 
-        var jsonB64       = parts[0];
-        var receivedSig   = parts[1];
-        var expectedSig   = ComputeHmac(jsonB64);
+        var jsonB64 = parts[0];
+        var receivedSig = parts[1];
+        var expectedSig = ComputeHmac(jsonB64);
 
         // Comparación en tiempo constante — evita ataques de timing
         if (!CryptographicOperations.FixedTimeEquals(
