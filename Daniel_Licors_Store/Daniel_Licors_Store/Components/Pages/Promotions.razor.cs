@@ -1,4 +1,3 @@
-using Microsoft.AspNetCore.Components.Authorization;
 using Daniel_Licors_Store.Components.Shared;
 using Daniel_Licors_Store.Data.Repositories.Interfaces;
 using Daniel_Licors_Store.Models.Product;
@@ -11,16 +10,16 @@ using System.Globalization;
 
 namespace Daniel_Licors_Store.Components.Pages;
 
-public partial class Promotions
+public partial class Promotions : AdminPageBase
 {
+    protected override string[] AllowedRoles => new[] { "Admin", "Empleado" };
+
     [Inject] public IPromotionService PromotionService { get; set; } = default!;
     [Inject] public IProductService ProductService { get; set; } = default!;
     [Inject] public ISnackbar Snackbar { get; set; } = default!;
     [Inject] public IDialogService DialogService { get; set; } = default!;
     [Inject] public IWebHostEnvironment Env { get; set; } = default!;
     [Inject] public IJSRuntime JS { get; set; } = default!;
-    [Inject] public NavigationManager Nav { get; set; } = default!;
-    [Inject] public AuthenticationStateProvider AuthStateProvider { get; set; } = default!;
 
     // ─── Cultura española ────────────────────────────────────
     private static readonly CultureInfo _es = new CultureInfo("es-DO");
@@ -36,7 +35,6 @@ public partial class Promotions
     private int _editingPromoId;
 
     private PromotionCreateModel _form = new();
-    private string? _currentUserId;
 
     // ── Fechas como string para inputs nativos (evita bug removeChild de MudDatePicker en móvil)
     private string _startDateStr = DateTime.Today.ToString("yyyy-MM-dd");
@@ -65,29 +63,13 @@ public partial class Promotions
     private bool HasPromoImage => !string.IsNullOrEmpty(_previewBase64 ?? _form.ImageUrl);
 
     // ════════════════════════════════════════════════════════
-    // INIT
+    // INIT — el chequeo de auth ya lo hizo AdminPageBase antes de
+    // llegar aquí; esto es solo la carga de datos de la página.
     // ════════════════════════════════════════════════════════
-    protected override async Task OnInitializedAsync()
+    protected override async Task OnInitializedAuthorizedAsync()
     {
         try
         {
-            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
-
-            // Protección interna — [Authorize] no funciona en recarga con LocalStorage auth
-            if (!authState.User.Identity?.IsAuthenticated ?? true)
-            {
-                Nav.NavigateTo("/login", replace: true);
-                return;
-            }
-            if (!authState.User.IsInRole("Admin") && !authState.User.IsInRole("Empleado"))
-            {
-                Nav.NavigateTo("/", replace: true);
-                return;
-            }
-
-            _currentUserId = authState.User.FindFirst("UserId")?.Value
-                          ?? authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-
             _products = await ProductService.GetProductDetailsAsync();
             await LoadPromos();
         }
@@ -195,12 +177,12 @@ public partial class Promotions
         {
             if (_isEditMode)
             {
-                await PromotionService.UpdatePromotionAsync(_editingPromoId, _form, _currentUserId);
+                await PromotionService.UpdatePromotionAsync(_editingPromoId, _form, CurrentUserId);
                 Snackbar.Add("Promoción actualizada correctamente", Severity.Success);
             }
             else
             {
-                await PromotionService.CreatePromotionAsync(_form, _currentUserId);
+                await PromotionService.CreatePromotionAsync(_form, CurrentUserId);
                 Snackbar.Add("Promoción creada correctamente", Severity.Success);
             }
             ResetForm();
@@ -264,7 +246,7 @@ public partial class Promotions
         var result = await dialog.Result;
         if (result.Canceled) return;
 
-        try { await PromotionService.DeletePromotionAsync(id, _currentUserId); Snackbar.Add("Promoción eliminada", Severity.Success); await LoadPromos(); }
+        try { await PromotionService.DeletePromotionAsync(id, CurrentUserId); Snackbar.Add("Promoción eliminada", Severity.Success); await LoadPromos(); }
         catch (Exception ex) { Snackbar.Add($"Error eliminando: {ex.Message}", Severity.Error); }
     }
 

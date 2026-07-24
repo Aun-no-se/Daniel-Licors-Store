@@ -1,17 +1,17 @@
 using Daniel_Licors_Store.Data.Services;
 using Daniel_Licors_Store.Models.Admin;
 using Microsoft.AspNetCore.Components;
-using Microsoft.AspNetCore.Components.Authorization;
 using MudBlazor;
 
 namespace Daniel_Licors_Store.Components.Pages
 {
-    public partial class UsersAdmin : ComponentBase
+    public partial class UsersAdmin : AdminPageBase
     {
+        // AllowedRoles no se sobreescribe: por defecto AdminPageBase ya
+        // restringe a solo "Admin", que es lo que esta página necesita.
+
         [Inject] private UserManagementService UserMgmt { get; set; } = null!;
-        [Inject] private AuthenticationStateProvider AuthState { get; set; } = null!;
         [Inject] private ISnackbar Snackbar { get; set; } = null!;
-        [Inject] private NavigationManager Nav { get; set; } = null!;
 
         // ── Estado general ───────────────────────────────────────────────
         private bool loading = true;
@@ -36,37 +36,15 @@ namespace Daniel_Licors_Store.Components.Pages
         // ── Tab activa ───────────────────────────────────────────────────
         private int activeTab = 0;
 
-        // ── Usuario actual (quien está logueado) ─────────────────────────
-        private string currentUserId = string.Empty;
-
         // ── Totales rápidos ──────────────────────────────────────────────
         private int TotalUsers => roleSummaries.Sum(r => r.Total);
         private int TotalActive => roleSummaries.Sum(r => r.Active);
         private int TotalInactive => roleSummaries.Sum(r => r.Inactive);
 
-        protected override async Task OnInitializedAsync()
+        // El chequeo de auth ya lo hizo AdminPageBase antes de llegar aquí;
+        // CurrentUserId también lo resuelve la base.
+        protected override async Task OnInitializedAuthorizedAsync()
         {
-            // Obtener el usuario logueado
-            var authState = await AuthState.GetAuthenticationStateAsync();
-            // ClaimTypes.NameIdentifier es como CustomAuthStateProvider guarda el UserId
-            currentUserId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value
-                         ?? authState.User.FindFirst("sub")?.Value
-                         ?? authState.User.FindFirst("UserId")?.Value
-                         ?? string.Empty;
-
-            // ── Protección interna — [Authorize] no funciona en recarga con LocalStorage
-            var authStateCheck = await AuthState.GetAuthenticationStateAsync();
-            if (!authStateCheck.User.Identity?.IsAuthenticated ?? true)
-            {
-                Nav.NavigateTo("/login", replace: true);
-                return;
-            }
-            if (!authStateCheck.User.IsInRole("Admin"))
-            {
-                Nav.NavigateTo("/", replace: true);
-                return;
-            }
-
             await LoadDataAsync();
         }
 
@@ -147,23 +125,16 @@ namespace Daniel_Licors_Store.Components.Pages
         // ── Activar / Desactivar cuenta ──────────────────────────────────
         private async Task ToggleUserStatusAsync(UserDetailDto user)
         {
-            var ok = await UserMgmt.ToggleUserStatusAsync(user.UserId, currentUserId);
+            var ok = await UserMgmt.ToggleUserStatusAsync(user.UserId, CurrentUserId);
             if (ok)
             {
                 var msg = user.IsActive ? "desactivada" : "activada";
                 Snackbar.Add($"Cuenta de {user.FullName} {msg}.", Severity.Success);
-                // ── Protección interna — [Authorize] no funciona en recarga con LocalStorage
-                var authStateCheck = await AuthState.GetAuthenticationStateAsync();
-                if (!authStateCheck.User.Identity?.IsAuthenticated ?? true)
-                {
-                    Nav.NavigateTo("/login", replace: true);
+
+                // Re-chequeo defensivo antes de recargar — por si la sesión
+                // expiró o el rol cambió mientras la página ya estaba abierta.
+                if (!await EnsureStillAuthorizedAsync())
                     return;
-                }
-                if (!authStateCheck.User.IsInRole("Admin"))
-                {
-                    Nav.NavigateTo("/", replace: true);
-                    return;
-                }
 
                 await LoadDataAsync();
 

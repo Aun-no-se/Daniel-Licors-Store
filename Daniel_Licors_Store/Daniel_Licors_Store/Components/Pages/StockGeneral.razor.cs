@@ -1,15 +1,14 @@
 using Microsoft.AspNetCore.Components;
-using Microsoft.AspNetCore.Components.Authorization;
 using Daniel_Licors_Store.Data.Services;
 using Daniel_Licors_Store.Models.Product;
 
 namespace Daniel_Licors_Store.Components.Pages
 {
-    public partial class StockGeneral
+    public partial class StockGeneral : AdminPageBase
     {
+        protected override string[] AllowedRoles => new[] { "Admin", "Empleado" };
+
         [Inject] public StockGeneralService StockSvc { get; set; } = default!;
-        [Inject] public NavigationManager Nav { get; set; } = default!;
-        [Inject] public AuthenticationStateProvider AuthStateProvider { get; set; } = default!;
 
         bool _loading = true;
         int _tabIndex = 0;
@@ -23,21 +22,9 @@ namespace Daniel_Licors_Store.Components.Pages
         List<StockComboRow> _combos = new();
         List<(string Name, int Id)> _categorias = new();
 
-        protected override async Task OnInitializedAsync()
+        // El chequeo de auth ya lo hizo AdminPageBase antes de llegar aquí.
+        protected override async Task OnInitializedAuthorizedAsync()
         {
-            // Protección interna — [Authorize] no funciona en recarga con LocalStorage auth
-            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
-            if (!authState.User.Identity?.IsAuthenticated ?? true)
-            {
-                Nav.NavigateTo("/login", replace: true);
-                return;
-            }
-            if (!authState.User.IsInRole("Admin") && !authState.User.IsInRole("Empleado"))
-            {
-                Nav.NavigateTo("/", replace: true);
-                return;
-            }
-
             await RecargarTodo();
         }
 

@@ -2,21 +2,23 @@
 using Daniel_Licors_Store.Data.Services;
 using Daniel_Licors_Store.Models.Admin;
 using Microsoft.AspNetCore.Components;
-using Microsoft.AspNetCore.Components.Authorization;
 using MudBlazor;
 
 namespace Daniel_Licors_Store.Components.Pages;
 
-public partial class AdminDashboard
+public partial class AdminDashboard : AdminPageBase
 {
+    protected override string[] AllowedRoles => new[] { "Admin", "Empleado" };
+
     [Inject] private AdminDashboardService DashboardService { get; set; } = default!;
     [Inject] private CategoryBrandService CatalogMgmt { get; set; } = default!;
     [Inject] private HiddenItemsService HiddenItems { get; set; } = default!;
-    [Inject] private AuthenticationStateProvider AuthState { get; set; } = default!;
-    [Inject] private NavigationManager Nav { get; set; } = default!;
     [Inject] private ISnackbar Snackbar { get; set; } = default!;
 
-    // ── Auth ─────────────────────────────────────────────────────────────────
+    // ── Auth: sigue existiendo porque el dashboard de ventas es
+    // exclusivo de Admin, aunque Empleado también puede entrar a la
+    // página (para catálogo y elementos ocultos). Se resuelve desde
+    // CurrentUser, que ya expone AdminPageBase.
     bool isAdmin = false;
 
     // ── Dashboard (solo Admin) ────────────────────────────────────────────────
@@ -55,31 +57,13 @@ public partial class AdminDashboard
     List<HiddenProductDto> hiddenProducts = new();
     List<HiddenComboDto> hiddenCombos = new();
     List<HiddenPromotionDto> hiddenPromotions = new();
-    string? _currentUserId;
 
     // ─────────────────────────────────────────────────────────────────────────
-    protected override async Task OnInitializedAsync()
+    // El chequeo de auth ya lo hizo AdminPageBase antes de llegar aquí;
+    // CurrentUserId también lo resuelve la base.
+    protected override async Task OnInitializedAuthorizedAsync()
     {
-        var authState = await AuthState.GetAuthenticationStateAsync();
-        var user = authState.User;
-
-        if (!user.Identity?.IsAuthenticated ?? true)
-        {
-            Nav.NavigateTo("/login", replace: true);
-            return;
-        }
-
-        isAdmin = user.IsInRole("Admin");
-        bool isEmpleado = user.IsInRole("Empleado");
-
-        if (!isAdmin && !isEmpleado)
-        {
-            Nav.NavigateTo("/", replace: true);
-            return;
-        }
-
-        _currentUserId = user.FindFirst("UserId")?.Value
-                      ?? user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        isAdmin = CurrentUser.IsInRole("Admin");
 
         loading = true;
         try
@@ -320,7 +304,7 @@ public partial class AdminDashboard
         hiddenActionBusy = true;
         try
         {
-            var (ok, error) = await HiddenItems.RestoreProductAsync(productId, _currentUserId);
+            var (ok, error) = await HiddenItems.RestoreProductAsync(productId, CurrentUserId);
             if (ok)
             {
                 Snackbar.Add("Producto visible de nuevo ✓", Severity.Success);
@@ -344,7 +328,7 @@ public partial class AdminDashboard
         hiddenActionBusy = true;
         try
         {
-            var (ok, error) = await HiddenItems.RestoreComboAsync(comboId, _currentUserId);
+            var (ok, error) = await HiddenItems.RestoreComboAsync(comboId, CurrentUserId);
             if (ok)
             {
                 Snackbar.Add("Combo visible de nuevo ✓", Severity.Success);
@@ -368,7 +352,7 @@ public partial class AdminDashboard
         hiddenActionBusy = true;
         try
         {
-            var (ok, error) = await HiddenItems.RestorePromotionAsync(promotionId, _currentUserId);
+            var (ok, error) = await HiddenItems.RestorePromotionAsync(promotionId, CurrentUserId);
             if (ok)
             {
                 Snackbar.Add("Promoción visible de nuevo ✓", Severity.Success);

@@ -1,5 +1,4 @@
-﻿using Microsoft.AspNetCore.Components.Authorization;
-using Daniel_Licors_Store.Components.Dialogs;
+﻿using Daniel_Licors_Store.Components.Dialogs;
 using Daniel_Licors_Store.Components.Shared;
 using Daniel_Licors_Store.Data.Repositories.Interfaces;
 using Daniel_Licors_Store.Data.Services.Interfaces;
@@ -12,16 +11,16 @@ using MudBlazor;
 
 namespace Daniel_Licors_Store.Components.Pages
 {
-    public partial class Combos
+    public partial class Combos : AdminPageBase
     {
+        protected override string[] AllowedRoles => new[] { "Admin", "Empleado" };
+
         [Inject] public IComboService ComboService { get; set; } = default!;
         [Inject] public IProductService ProductService { get; set; } = default!;
         [Inject] public ISnackbar Snackbar { get; set; } = default!;
         [Inject] public IDialogService DialogService { get; set; } = default!;
         [Inject] public IWebHostEnvironment Env { get; set; } = default!;
-        [Inject] public NavigationManager Nav { get; set; } = default!;
         [Inject] public IJSRuntime JS { get; set; } = default!;
-        [Inject] public AuthenticationStateProvider AuthStateProvider { get; set; } = default!;
 
         private List<ProductDetailDto> _products = new();
         private List<ComboAdminDto> _adminCombos = new();
@@ -37,36 +36,19 @@ namespace Daniel_Licors_Store.Components.Pages
         private string? _previewBase64;   // preview inmediato
 
         private ComboCreateModel _newCombo = new();
-        private string? _currentUserId;
 
         private bool HasComboImage =>
             !string.IsNullOrEmpty(_previewBase64) ||
             (!string.IsNullOrEmpty(_newCombo.ImageUrl) && _newCombo.ImageUrl != "/images/combo-default.png");
 
         // ════════════════════════════════════════════════════════
-        // INIT
+        // INIT — el chequeo de auth ya lo hizo AdminPageBase antes de
+        // llegar aquí; esto es solo la carga de datos de la página.
         // ════════════════════════════════════════════════════════
-        protected override async Task OnInitializedAsync()
+        protected override async Task OnInitializedAuthorizedAsync()
         {
             try
             {
-                var authState = await AuthStateProvider.GetAuthenticationStateAsync();
-
-                // Protección interna — [Authorize] no funciona en recarga con LocalStorage auth
-                if (!authState.User.Identity?.IsAuthenticated ?? true)
-                {
-                    Nav.NavigateTo("/login", replace: true);
-                    return;
-                }
-                if (!authState.User.IsInRole("Admin") && !authState.User.IsInRole("Empleado"))
-                {
-                    Nav.NavigateTo("/", replace: true);
-                    return;
-                }
-
-                _currentUserId = authState.User.FindFirst("UserId")?.Value
-                              ?? authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-
                 _products = await ProductService.GetProductDetailsAsync();
                 await LoadCombos();
             }
@@ -183,12 +165,12 @@ namespace Daniel_Licors_Store.Components.Pages
 
                 if (_isEditMode)
                 {
-                    await ComboService.UpdateComboAsync(_editingComboId, _newCombo, _currentUserId);
+                    await ComboService.UpdateComboAsync(_editingComboId, _newCombo, CurrentUserId);
                     Snackbar.Add("Combo actualizado correctamente", Severity.Success);
                 }
                 else
                 {
-                    await ComboService.CreateComboAsync(_newCombo, _currentUserId);
+                    await ComboService.CreateComboAsync(_newCombo, CurrentUserId);
                     Snackbar.Add("Combo creado correctamente", Severity.Success);
                 }
                 ResetForm();
@@ -243,7 +225,7 @@ namespace Daniel_Licors_Store.Components.Pages
             var result = await dialog.Result;
             if (result.Canceled) return;
 
-            try { await ComboService.DeleteComboAsync(id, _currentUserId); Snackbar.Add("Combo eliminado correctamente", Severity.Success); await LoadCombos(); }
+            try { await ComboService.DeleteComboAsync(id, CurrentUserId); Snackbar.Add("Combo eliminado correctamente", Severity.Success); await LoadCombos(); }
             catch (Exception ex) { Snackbar.Add($"Error eliminando combo: {ex.Message}", Severity.Error); }
         }
 
