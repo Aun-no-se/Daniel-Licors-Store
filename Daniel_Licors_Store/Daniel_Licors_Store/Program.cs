@@ -27,7 +27,12 @@ builder.Services
     .AddInteractiveServerComponents()
     .AddHubOptions(options =>
     {
-        options.MaximumReceiveMessageSize = 64 * 1024 * 1024;
+        // Antes 64 MB — muy por encima de lo que la app realmente necesita
+        // (las imágenes se topan en 5 MB en ImageUploadValidator; en base64
+        // eso son ~7 MB más el resto del mensaje). Un límite más ajustado
+        // reduce la superficie de un DoS por payloads gigantes contra el
+        // circuito de Blazor Server, sin afectar el uso normal de la app.
+        options.MaximumReceiveMessageSize = 10 * 1024 * 1024;
         options.ClientTimeoutInterval = TimeSpan.FromSeconds(60);
         options.HandshakeTimeout = TimeSpan.FromSeconds(30);
     });
@@ -38,16 +43,22 @@ builder.Services.AddServerSideBlazor(options =>
 });
 
 // ── BASE DE DATOS ─────────────────────────────────────────────────────────────
-// DbContextFactory para Repository<T> (usa IDbContextFactory internamente)
+// Una sola fuente de verdad para la cadena de conexión: el factory.
+// IDbContextFactory<ApplicationDbContext> lo usan los servicios que crean su
+// propio contexto por operación (evita el TaskCanceledException de Blazor
+// Server cuando el pre-render cancela el scope antes de que termine una query).
 builder.Services.AddDbContextFactory<ApplicationDbContext>(options =>
     options.UseSqlServer(
         builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// DbContext scoped para servicios que lo reciben por constructor
-// (CatalogService, ProductService, AdminDashboardService, etc.)
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(
-        builder.Configuration.GetConnectionString("DefaultConnection")));
+// ApplicationDbContext scoped, para los servicios que lo reciben directo por
+// constructor — se crea A PARTIR del mismo factory de arriba en vez de tener
+// su propia configuración de UseSqlServer duplicada. Antes había dos
+// registros separados apuntando a la misma cadena de conexión: funcionaban,
+// pero si alguien cambiaba la config en uno y se le olvidaba el otro,
+// quedaban desincronizados sin ningún aviso.
+builder.Services.AddScoped<ApplicationDbContext>(sp =>
+    sp.GetRequiredService<IDbContextFactory<ApplicationDbContext>>().CreateDbContext());
 
 // ── MUD BLAZOR ────────────────────────────────────────────────────────────────
 builder.Services.AddMudServices();
@@ -124,7 +135,17 @@ app.UseAuthorization();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 
+// Antes esto escribía un fatal.txt en texto plano en la carpeta de la app —
+// sin pasar por ningún nivel de log, sin rotación, y con el detalle completo
+// de la excepción (que puede incluir datos sensibles) quedando ahí tal cual.
+// Usamos el logger real de la app, que ya está configurado arriba
+// (Console + Debug), para que las excepciones no controladas queden
+// integradas en el mismo lugar que el resto de los logs.
+var fatalLogger = app.Services.GetRequiredService<ILogger<Program>>();
 AppDomain.CurrentDomain.UnhandledException += (_, e) =>
-    File.WriteAllText("fatal.txt", e.ExceptionObject.ToString());
+    fatalLogger.LogCritical(
+        e.ExceptionObject as Exception,
+        "Excepción no controlada (UnhandledException). IsTerminating={IsTerminating}",
+        e.IsTerminating);
 
 app.Run();
