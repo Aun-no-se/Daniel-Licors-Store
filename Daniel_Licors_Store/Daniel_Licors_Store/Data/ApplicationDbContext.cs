@@ -161,6 +161,9 @@ public class ApplicationDbContext : DbContext
             entity.Property(e => e.Stock).IsRequired();
             entity.Property(e => e.IsAvailable).IsRequired();
 
+            entity.Property(e => e.RowVersion)
+                  .IsRowVersion();
+
             entity.HasIndex(e => new { e.ProductId, e.StoreId })
                   .IsUnique();
 

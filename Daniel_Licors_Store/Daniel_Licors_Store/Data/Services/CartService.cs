@@ -563,155 +563,187 @@ public class CartService : ICartService
         if (string.IsNullOrWhiteSpace(userId))
             throw new Exception("UserId inválido en CartService");
 
-        using var transaction = await _context.Database.BeginTransactionAsync();
+        // Si dos personas compran el mismo producto casi al mismo tiempo,
+        // la segunda en llegar a SaveChangesAsync recibe un
+        // DbUpdateConcurrencyException (el RowVersion de ProductStore ya
+        // cambió). En vez de fallar directo, reintentamos con el stock
+        // recién leído — igual que reaccionaría un cajero si otro cliente
+        // se le adelantó: revisa de nuevo antes de decir que no hay.
+        const int maxRetries = 3;
 
-        try
+        for (int attempt = 1; attempt <= maxRetries; attempt++)
         {
-            var cart = await _context.Carts
-                .Include(c => c.CartItems)
-                .Include(c => c.CartCombos)
-                    .ThenInclude(cc => cc.Combo)
-                        .ThenInclude(combo => combo.ComboProducts)
-                .FirstOrDefaultAsync(c => c.UserId == userId && c.CartStatus == "Active");
+            // Limpiamos el tracker al reintentar: las entidades del intento
+            // anterior tienen datos de stock que ya no son válidos.
+            if (attempt > 1)
+                _context.ChangeTracker.Clear();
 
-            if (cart == null)
-                return false;
+            using var transaction = await _context.Database.BeginTransactionAsync();
 
-            // ── 1. DESCONTAR STOCK DE PRODUCTOS DIRECTOS ─────────────────────────
-            foreach (var cartItem in cart.CartItems)
+            try
             {
-                var productStore = await _context.ProductStores
-                    .FirstOrDefaultAsync(ps => ps.ProductId == cartItem.ProductId
-                                            && ps.StoreId == cart.StoreId);
+                var cart = await _context.Carts
+                    .Include(c => c.CartItems)
+                    .Include(c => c.CartCombos)
+                        .ThenInclude(cc => cc.Combo)
+                            .ThenInclude(combo => combo.ComboProducts)
+                    .FirstOrDefaultAsync(c => c.UserId == userId && c.CartStatus == "Active");
 
-                if (productStore == null)
-                {
-                    _logger.LogWarning(
-                        "ProductStore no encontrado para ProductId={ProductId} StoreId={StoreId}. Se omite.",
-                        cartItem.ProductId, cart.StoreId);
-                    continue;
-                }
+                if (cart == null)
+                    return false;
 
-                // Validar stock suficiente (protección extra en checkout)
-                if (productStore.Stock < cartItem.Quantity)
-                    throw new InvalidOperationException(
-                        $"Stock insuficiente para '{cartItem.Product?.Name ?? cartItem.ProductId.ToString()}'. " +
-                        $"Disponible: {productStore.Stock}, solicitado: {cartItem.Quantity}.");
-
-                productStore.Stock -= cartItem.Quantity;
-                productStore.IsAvailable = productStore.Stock > 0;
-
-                // Auditoría de movimiento
-                _context.StockMovements.Add(new StockMovement
-                {
-                    ProductId = cartItem.ProductId,
-                    StoreId = cart.StoreId,
-                    Quantity = cartItem.Quantity,
-                    MovementType = "Out",
-                    UserId = userId,
-                    CreatedAt = DateTime.UtcNow
-                });
-            }
-
-            // ── 2. DESCONTAR STOCK DE COMBOS (cada producto dentro del combo) ────
-            foreach (var cartCombo in cart.CartCombos)
-            {
-                if (cartCombo.Combo?.ComboProducts == null) continue;
-
-                foreach (var comboProduct in cartCombo.Combo.ComboProducts)
+                // ── 1. DESCONTAR STOCK DE PRODUCTOS DIRECTOS ─────────────────────────
+                foreach (var cartItem in cart.CartItems)
                 {
                     var productStore = await _context.ProductStores
-                        .FirstOrDefaultAsync(ps => ps.ProductId == comboProduct.ProductId
+                        .FirstOrDefaultAsync(ps => ps.ProductId == cartItem.ProductId
                                                 && ps.StoreId == cart.StoreId);
 
                     if (productStore == null)
                     {
                         _logger.LogWarning(
-                            "ProductStore no encontrado para combo ProductId={ProductId}. Se omite.",
-                            comboProduct.ProductId);
+                            "ProductStore no encontrado para ProductId={ProductId} StoreId={StoreId}. Se omite.",
+                            cartItem.ProductId, cart.StoreId);
                         continue;
                     }
 
-                    // La cantidad total a descontar = unidades del combo × cantidad en el combo
-                    var totalQty = cartCombo.Quantity * comboProduct.Quantity;
-
-                    if (productStore.Stock < totalQty)
+                    // Validar stock suficiente (protección extra en checkout)
+                    if (productStore.Stock < cartItem.Quantity)
                         throw new InvalidOperationException(
-                            $"Stock insuficiente para producto en combo (ProductId={comboProduct.ProductId}). " +
-                            $"Disponible: {productStore.Stock}, requerido: {totalQty}.");
+                            $"Stock insuficiente para '{cartItem.Product?.Name ?? cartItem.ProductId.ToString()}'. " +
+                            $"Disponible: {productStore.Stock}, solicitado: {cartItem.Quantity}.");
 
-                    productStore.Stock -= totalQty;
+                    productStore.Stock -= cartItem.Quantity;
                     productStore.IsAvailable = productStore.Stock > 0;
 
+                    // Auditoría de movimiento
                     _context.StockMovements.Add(new StockMovement
                     {
-                        ProductId = comboProduct.ProductId,
+                        ProductId = cartItem.ProductId,
                         StoreId = cart.StoreId,
-                        Quantity = totalQty,
+                        Quantity = cartItem.Quantity,
                         MovementType = "Out",
                         UserId = userId,
                         CreatedAt = DateTime.UtcNow
                     });
                 }
-            }
 
-            // ── 3. CREAR LA ORDEN EN LA TABLA Orders ─────────────────────────────
-            // Calcular el total sumando productos + combos + promociones del carrito
-            decimal orderTotal = cart.CartItems.Sum(ci => ci.SubTotal)
-                               + cart.CartCombos.Sum(cc => cc.SubTotal)
-                               + cart.CartPromotions.Sum(cp => cp.SubTotal);
-
-            var order = new Order
-            {
-                UserId = userId,
-                StoreId = cart.StoreId,
-                OrderStatus = "Completed",
-                PaymentMethod = "WhatsApp",
-                TotalAmount = orderTotal,
-                CreatedAt = DateTime.Now
-            };
-            _context.Orders.Add(order);
-            await _context.SaveChangesAsync(); // necesitamos OrderId generado
-
-            // Crear OrderItems solo para productos directos (los combos no tienen
-            // una tabla OrderItem por diseño; se registran vía StockMovement)
-            foreach (var ci in cart.CartItems)
-            {
-                _context.OrderItems.Add(new OrderItem
+                // ── 2. DESCONTAR STOCK DE COMBOS (cada producto dentro del combo) ────
+                foreach (var cartCombo in cart.CartCombos)
                 {
-                    OrderId = order.OrderId,
-                    ProductId = ci.ProductId,
-                    Quantity = ci.Quantity,
-                    UnitPrice = ci.UnitPrice
-                });
+                    if (cartCombo.Combo?.ComboProducts == null) continue;
+
+                    foreach (var comboProduct in cartCombo.Combo.ComboProducts)
+                    {
+                        var productStore = await _context.ProductStores
+                            .FirstOrDefaultAsync(ps => ps.ProductId == comboProduct.ProductId
+                                                    && ps.StoreId == cart.StoreId);
+
+                        if (productStore == null)
+                        {
+                            _logger.LogWarning(
+                                "ProductStore no encontrado para combo ProductId={ProductId}. Se omite.",
+                                comboProduct.ProductId);
+                            continue;
+                        }
+
+                        // La cantidad total a descontar = unidades del combo × cantidad en el combo
+                        var totalQty = cartCombo.Quantity * comboProduct.Quantity;
+
+                        if (productStore.Stock < totalQty)
+                            throw new InvalidOperationException(
+                                $"Stock insuficiente para producto en combo (ProductId={comboProduct.ProductId}). " +
+                                $"Disponible: {productStore.Stock}, requerido: {totalQty}.");
+
+                        productStore.Stock -= totalQty;
+                        productStore.IsAvailable = productStore.Stock > 0;
+
+                        _context.StockMovements.Add(new StockMovement
+                        {
+                            ProductId = comboProduct.ProductId,
+                            StoreId = cart.StoreId,
+                            Quantity = totalQty,
+                            MovementType = "Out",
+                            UserId = userId,
+                            CreatedAt = DateTime.UtcNow
+                        });
+                    }
+                }
+
+                // ── 3. CREAR LA ORDEN EN LA TABLA Orders ─────────────────────────────
+                // Calcular el total sumando productos + combos + promociones del carrito
+                decimal orderTotal = cart.CartItems.Sum(ci => ci.SubTotal)
+                                   + cart.CartCombos.Sum(cc => cc.SubTotal)
+                                   + cart.CartPromotions.Sum(cp => cp.SubTotal);
+
+                var order = new Order
+                {
+                    UserId = userId,
+                    StoreId = cart.StoreId,
+                    OrderStatus = "Completed",
+                    PaymentMethod = "WhatsApp",
+                    TotalAmount = orderTotal,
+                    CreatedAt = DateTime.Now
+                };
+                _context.Orders.Add(order);
+                await _context.SaveChangesAsync(); // necesitamos OrderId generado
+
+                // Crear OrderItems solo para productos directos (los combos no tienen
+                // una tabla OrderItem por diseño; se registran vía StockMovement)
+                foreach (var ci in cart.CartItems)
+                {
+                    _context.OrderItems.Add(new OrderItem
+                    {
+                        OrderId = order.OrderId,
+                        ProductId = ci.ProductId,
+                        Quantity = ci.Quantity,
+                        UnitPrice = ci.UnitPrice
+                    });
+                }
+
+                // ── 4. CERRAR EL CARRITO ─────────────────────────────────────────────
+                cart.CartStatus = "Sent";
+                cart.UpdatedAt = DateTime.UtcNow;
+
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                _logger.LogInformation(
+                    "Checkout completado para UserId={UserId}. CartId={CartId}.",
+                    userId, cart.CartId);
+
+                return true;
             }
+            catch (DbUpdateConcurrencyException ex)
+            {
+                await transaction.RollbackAsync();
+                _logger.LogWarning(ex,
+                    "Conflicto de concurrencia en checkout (intento {Attempt}/{MaxRetries}) para UserId={UserId} — otra venta modificó el mismo stock al mismo tiempo.",
+                    attempt, maxRetries, userId);
 
-            // ── 4. CERRAR EL CARRITO ─────────────────────────────────────────────
-            cart.CartStatus = "Sent";
-            cart.UpdatedAt = DateTime.UtcNow;
+                if (attempt == maxRetries)
+                    throw new InvalidOperationException(
+                        "Uno de los productos de tu carrito se acaba de vender en otra compra. Revisa tu carrito e intenta de nuevo.");
 
-            await _context.SaveChangesAsync();
-            await transaction.CommitAsync();
-
-            _logger.LogInformation(
-                "Checkout completado para UserId={UserId}. CartId={CartId}.",
-                userId, cart.CartId);
-
-            return true;
+                // si no fue el último intento, el for vuelve a empezar
+                // con el stock recién leído de la base de datos
+            }
+            catch (InvalidOperationException ex)
+            {
+                // Stock insuficiente — rollback y re-lanzar para que el frontend muestre el mensaje
+                await transaction.RollbackAsync();
+                _logger.LogWarning(ex, "Checkout cancelado por stock insuficiente para UserId={UserId}", userId);
+                throw;
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                _logger.LogError(ex, "Error during checkout para UserId={UserId}", userId);
+                return false;
+            }
         }
-        catch (InvalidOperationException ex)
-        {
-            // Stock insuficiente — rollback y re-lanzar para que el frontend muestre el mensaje
-            await transaction.RollbackAsync();
-            _logger.LogWarning(ex, "Checkout cancelado por stock insuficiente para UserId={UserId}", userId);
-            throw;
-        }
-        catch (Exception ex)
-        {
-            await transaction.RollbackAsync();
-            _logger.LogError(ex, "Error during checkout para UserId={UserId}", userId);
-            return false;
-        }
+
+        return false; // no debería llegarse aquí
     }
 
     // FIX PRINCIPAL: UNA card por item con Quantity real — sin expandir duplicados
