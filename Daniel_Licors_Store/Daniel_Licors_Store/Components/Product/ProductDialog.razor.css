@@ -403,7 +403,9 @@
 
 /* ── Save / Cancel Buttons (Class="" pasado a MudButton → internals) ── */
 .pd-root ::deep .pd-save-btn {
-    background: linear-gradient(135deg, #FF1744 0%, #B71C1C 100%) !important;
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(135deg, var(--liq-crimson, #FF1744) 0%, var(--liq-crimson-mid, #B71C1C) 100%) !important;
     color: white !important;
     font-weight: 700 !important;
     border-radius: 10px !important;
@@ -416,11 +418,27 @@
     min-width: 120px !important;
 }
 
+    .pd-root ::deep .pd-save-btn::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: -60%;
+        width: 40%;
+        height: 100%;
+        background: linear-gradient(115deg, transparent, rgba(255,255,255,0.35), transparent);
+        transform: skewX(-20deg);
+        transition: left 0.6s ease;
+    }
+
     .pd-root ::deep .pd-save-btn:hover:not(:disabled) {
         transform: translateY(-1px) !important;
-        box-shadow: 0 6px 22px rgba(255,23,68,0.45) !important;
+        box-shadow: 0 8px 22px rgba(255,23,68,0.5) !important;
         filter: brightness(1.08) !important;
     }
+
+        .pd-root ::deep .pd-save-btn:hover:not(:disabled)::before {
+            left: 130%;
+        }
 
     .pd-root ::deep .pd-save-btn:disabled {
         opacity: 0.55 !important;
