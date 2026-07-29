@@ -1,0 +1,55 @@
+@typeparam TItem
+@using Microsoft.AspNetCore.Components.Web
+
+<div class="mc-stage" style="height:@StageHeight"
+     @ontouchstart="OnTouchStart"
+     @ontouchend="OnTouchEnd"
+     @onmousedown="OnMouseDown"
+     @onmouseup="OnMouseUp"
+     @onmouseleave="OnMouseLeave">
+
+    @if (Items != null && Items.Count > 1)
+    {
+        <button type="button" class="mc-btn mc-btn-prev" @onclick="Prev" aria-label="Anterior">
+            <span class="mc-btn-arrow">‹</span>
+        </button>
+    }
+
+    <div class="mc-track">
+        @if (Items != null)
+        {
+            @for (int i = 0; i < Items.Count; i++)
+            {
+                var item = Items[i];
+                int pos = GetPosition(i);
+                string cls = GetCardClass(pos);
+                int idx = i;
+
+                <div class="mc-card @cls" @onclick="@(() => CardClicked(idx))">
+                    @ItemTemplate(item)
+                </div>
+            }
+        }
+    </div>
+
+    @if (Items != null && Items.Count > 1)
+    {
+        <button type="button" class="mc-btn mc-btn-next" @onclick="Next" aria-label="Siguiente">
+            <span class="mc-btn-arrow">›</span>
+        </button>
+    }
+</div>
+
+@if (Items != null && Items.Count > 1)
+{
+    <div class="mc-dots">
+        @for (int i = 0; i < Items.Count; i++)
+        {
+            int idx = i;
+            <button type="button" class="mc-dot @(idx == _activeIndex ? "active" : "")"
+                    @onclick="@(() => GoTo(idx))"
+                    aria-label="Ir a @(idx + 1)">
+            </button>
+        }
+    </div>
+}

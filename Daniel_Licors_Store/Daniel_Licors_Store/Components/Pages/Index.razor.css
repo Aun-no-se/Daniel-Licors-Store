@@ -1,6 +1,5 @@
 ﻿.index-page {
     min-height: 100vh;
-   
 }
 
 .promo-carousel {
@@ -8,9 +7,8 @@
 }
 
 /* ===========================
-   HERO VIDEO / IMAGEN
+   HERO: LOTTIE + IMAGEN + OVERLAY
 =========================== */
-
 .hero-container {
     height: 75vh;
     width: 100%;
@@ -18,42 +16,45 @@
     position: relative;
 }
 
-/* VIDEO DESKTOP */
-.hero-video {
+/* Animación Lottie de fondo, capa más baja */
+.hero-lottie {
+    position: absolute;
+    inset: 0;
     width: 100%;
     height: 100%;
+    z-index: 1;
     object-fit: cover;
-    display: block;
 }
 
-/* IMAGEN MOBILE */
-.hero-container {
-    height: 75vh;
-    width: 100%;
-    overflow: hidden;
-}
-
+/* Imagen de producto, encima de la animación */
 .hero-image {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
+    position: absolute;
+    bottom: 5%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: auto;
+    height: 60%;
+    object-fit: contain;
+    z-index: 2;
+}eros
+
+/* Overlay animado, encima de imagen + lottie */
+.hero-animated-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 3;
 }
 
-/* MOBILE / TABLET */
-@media (max-width: 768px) {
-    .hero-video {
-        display: none;
-    }
-
-    .hero-image {
-        display: block;
-    }
+/* Viñeta, capa más alta */
+.hero-vignette {
+    position: absolute;
+    inset: 0;
+    z-index: 4;
 }
 
 /* ===========================
    CONTENIDO SLIDE NORMAL
 =========================== */
-
 .carousel-content {
     height: 100%;
     display: flex;
@@ -113,41 +114,5 @@
     to {
         opacity: 1;
         transform: translateY(0) scale(1);
-    }
-}
-
-
-.hero-container {
-    height: 75vh;
-    width: 100%;
-    overflow: hidden;
-    position: relative;
-}
-
-.hero-video,
-.hero-image {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-
-/* MOBILE = imagen */
-.hero-image {
-    display: none;
-}
-
-/* DESKTOP = video */
-.hero-video {
-    display: block;
-}
-
-/* BREAKPOINT */
-@media (max-width: 768px) {
-    .hero-video {
-        display: none;
-    }
-
-    .hero-image {
-        display: block;
     }
 }

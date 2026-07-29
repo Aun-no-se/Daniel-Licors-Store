@@ -2,6 +2,8 @@
 
 @using Daniel_Licors_Store.Models.Product
 @using Daniel_Licors_Store.Models.Combo
+@using Daniel_Licors_Store.Components.Shared
+@using Microsoft.AspNetCore.Components.Authorization
 
 <div class="pd-page-bg">
     <div class="pd-glow pd-glow-crimson"></div>
@@ -114,31 +116,45 @@
 
                         <div class="pd-actions-box mt-2 pd-fade-in" style="--pd-delay: 0.35s">
 
-                            @if (Product.Stock > 0)
-                            {
-                                <div class="pd-quantity-selector">
-                                    <span class="pd-quantity-label">Cantidad</span>
-                                    <div class="pd-quantity-stepper">
-                                        <button class="pd-qty-btn" @onclick="DecreaseQuantity" disabled="@(_quantity <= 1)">
-                                            <MudIcon Icon="@Icons.Material.Filled.Remove" Size="Size.Small" />
-                                        </button>
-                                        <span class="pd-qty-value">@_quantity</span>
-                                        <button class="pd-qty-btn" @onclick="IncreaseQuantity" disabled="@(_quantity >= Product.Stock)">
-                                            <MudIcon Icon="@Icons.Material.Filled.Add" Size="Size.Small" />
-                                        </button>
-                                    </div>
-                                </div>
-                            }
+                            <AuthorizeView Roles="Admin, Empleado, Cliente">
+                                <Authorized>
+                                    @if (Product.Stock > 0)
+                                    {
+                                        <div class="pd-quantity-selector">
+                                            <span class="pd-quantity-label">Cantidad</span>
+                                            <div class="pd-quantity-stepper">
+                                                <button class="pd-qty-btn" @onclick="DecreaseQuantity" disabled="@(_quantity <= 1)">
+                                                    <MudIcon Icon="@Icons.Material.Filled.Remove" Size="Size.Small" />
+                                                </button>
+                                                <span class="pd-qty-value">@_quantity</span>
+                                                <button class="pd-qty-btn" @onclick="IncreaseQuantity" disabled="@(_quantity >= Product.Stock)">
+                                                    <MudIcon Icon="@Icons.Material.Filled.Add" Size="Size.Small" />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    }
 
-                            <MudButton Variant="Variant.Filled"
-                                       Size="Size.Large"
-                                       FullWidth="true"
-                                       StartIcon="@Icons.Material.Filled.ShoppingCart"
-                                       Disabled="@(Product.Stock <= 0 || _adding)"
-                                       OnClick="@(() => AddToCart(Product.ProductId))"
-                                       Class="py-3 pd-btn-add-cart">
-                                @(Product.Stock <= 0 ? "Sin existencias" : (_adding ? "Agregando..." : "Agregar al carrito"))
-                            </MudButton>
+                                    <MudButton Variant="Variant.Filled"
+                                               Size="Size.Large"
+                                               FullWidth="true"
+                                               StartIcon="@Icons.Material.Filled.ShoppingCart"
+                                               Disabled="@(Product.Stock <= 0 || _adding)"
+                                               OnClick="@(() => AddToCart(Product.ProductId))"
+                                               Class="py-3 pd-btn-add-cart">
+                                        @(Product.Stock <= 0 ? "Sin existencias" : (_adding ? "Agregando..." : "Agregar al carrito"))
+                                    </MudButton>
+                                </Authorized>
+                                <NotAuthorized>
+                                    <MudButton Variant="Variant.Outlined"
+                                               Size="Size.Large"
+                                               FullWidth="true"
+                                               StartIcon="@Icons.Material.Filled.Login"
+                                               OnClick="@(() => Nav.NavigateTo("/login"))"
+                                               Class="py-3 pd-btn-login-prompt">
+                                        Inicia sesión para comprar
+                                    </MudButton>
+                                </NotAuthorized>
+                            </AuthorizeView>
                         </div>
 
                     </div>
@@ -163,10 +179,9 @@
 
                     @if (Combos.Any())
                     {
-                        <div class="pd-cards-stack pd-cards-scroll">
-                            @foreach (var combo in Combos)
-                            {
-                                <div class="pd-item-card pd-item-card--gold" @onclick="@(() => Nav.NavigateTo($"/combo/{combo.ComboId}"))">
+                        <MiniCarousel TItem="ComboDto" Items="Combos" StageHeight="480px">
+                            <ItemTemplate Context="combo">
+                                <div class="pd-item-card pd-item-card--gold">
 
                                     <div class="pd-item-img-wrap">
                                         @if (!string.IsNullOrWhiteSpace(combo.ImageUrl))
@@ -193,11 +208,15 @@
                                     </div>
 
                                     <div class="pd-item-footer" @onclick:stopPropagation="true">
-                                        <button class="pd-item-btn pd-item-btn--gold"
-                                                @onclick="@(() => AddComboToCart(combo.ComboId))">
-                                            <MudIcon Icon="@Icons.Material.Filled.ShoppingCart" Size="Size.Small" Class="mr-1" />
-                                            Añadir
-                                        </button>
+                                        <AuthorizeView Roles="Admin, Empleado, Cliente">
+                                            <Authorized>
+                                                <button class="pd-item-btn pd-item-btn--gold"
+                                                        @onclick="@(() => AddComboToCart(combo.ComboId))">
+                                                    <MudIcon Icon="@Icons.Material.Filled.ShoppingCart" Size="Size.Small" Class="mr-1" />
+                                                    Añadir
+                                                </button>
+                                            </Authorized>
+                                        </AuthorizeView>
                                         <button class="pd-item-link"
                                                 @onclick="@(() => Nav.NavigateTo($"/combo/{combo.ComboId}"))">
                                             Ver detalle →
@@ -205,8 +224,8 @@
                                     </div>
 
                                 </div>
-                            }
-                        </div>
+                            </ItemTemplate>
+                        </MiniCarousel>
                     }
                     else
                     {
@@ -236,10 +255,11 @@
 
                     @if (Promotions.Any())
                     {
-                        <div class="pd-cards-stack pd-cards-scroll">
-                            @foreach (var promo in Promotions)
-                            {
-                                var expanded = IsPromoExpanded(promo.PromotionId);
+                        <MiniCarousel TItem="PromotionDto" Items="Promotions" StageHeight="480px">
+                            <ItemTemplate Context="promo">
+                                @{
+                                    var expanded = IsPromoExpanded(promo.PromotionId);
+                                }
                                 <div class="pd-item-card pd-item-card--crimson">
 
                                     <div class="pd-item-img-wrap">
@@ -308,12 +328,16 @@
                                         </div>
                                     </div>
 
-                                    <div class="pd-item-footer">
-                                        <button class="pd-item-btn pd-item-btn--crimson"
-                                                @onclick="@(() => AddPromotionToCart(promo))">
-                                            <MudIcon Icon="@Icons.Material.Filled.ShoppingCart" Size="Size.Small" Class="mr-1" />
-                                            Añadir
-                                        </button>
+                                    <div class="pd-item-footer" @onclick:stopPropagation="true">
+                                        <AuthorizeView Roles="Admin, Empleado, Cliente">
+                                            <Authorized>
+                                                <button class="pd-item-btn pd-item-btn--crimson"
+                                                        @onclick="@(() => AddPromotionToCart(promo))">
+                                                    <MudIcon Icon="@Icons.Material.Filled.ShoppingCart" Size="Size.Small" Class="mr-1" />
+                                                    Añadir
+                                                </button>
+                                            </Authorized>
+                                        </AuthorizeView>
                                         <button class="pd-item-link pd-item-link--toggle @(expanded ? "pd-item-link--toggle-open" : "")"
                                                 @onclick="@(() => TogglePromoDetail(promo.PromotionId))">
                                             Ver detalle
@@ -322,8 +346,8 @@
                                     </div>
 
                                 </div>
-                            }
-                        </div>
+                            </ItemTemplate>
+                        </MiniCarousel>
                     }
                     else
                     {
@@ -345,10 +369,20 @@
                         <span class="pd-mobile-cta-name">@Product.Name</span>
                         <span class="pd-mobile-cta-price">$@Product.Price.ToString("N2")</span>
                     </div>
-                    <button class="pd-mobile-cta-btn" disabled="@_adding" @onclick="@(() => AddToCart(Product.ProductId))">
-                        <MudIcon Icon="@Icons.Material.Filled.ShoppingCart" Size="Size.Small" Class="mr-1" />
-                        Agregar
-                    </button>
+                    <AuthorizeView Roles="Admin, Empleado, Cliente">
+                        <Authorized>
+                            <button class="pd-mobile-cta-btn" disabled="@_adding" @onclick="@(() => AddToCart(Product.ProductId))">
+                                <MudIcon Icon="@Icons.Material.Filled.ShoppingCart" Size="Size.Small" Class="mr-1" />
+                                Agregar
+                            </button>
+                        </Authorized>
+                        <NotAuthorized>
+                            <button class="pd-mobile-cta-btn" @onclick="@(() => Nav.NavigateTo("/login"))">
+                                <MudIcon Icon="@Icons.Material.Filled.Login" Size="Size.Small" Class="mr-1" />
+                                Iniciar sesión
+                            </button>
+                        </NotAuthorized>
+                    </AuthorizeView>
                 </div>
             }
         }

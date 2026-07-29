@@ -475,6 +475,26 @@
         box-shadow: 0 12px 32px rgba(255, 23, 68, 0.45) !important;
     }
 
+/* Botón para visitantes sin sesión: mismo tamaño que "Agregar al
+   carrito" pero en versión outline, para no confundirlo con una
+   compra real ya habilitada. */
+.pd-btn-login-prompt {
+    color: var(--pd-gold-solid) !important;
+    border: 1.5px solid rgba(232, 196, 104, 0.4) !important;
+    font-weight: 700 !important;
+    font-size: 1.05rem !important;
+    letter-spacing: 0.4px;
+    border-radius: 14px !important;
+    text-transform: none !important;
+    transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease !important;
+}
+
+    .pd-btn-login-prompt:hover {
+        background: rgba(232, 196, 104, 0.1) !important;
+        border-color: var(--pd-gold-solid) !important;
+        transform: translateY(-2px);
+    }
+
 /* ══════════ SECCIÓN INFERIOR ══════════ */
 .pd-lower-wrapper {
     display: flex;
@@ -567,6 +587,17 @@
     color: #3f3f46 !important;
 }
 
+/* ── Wrap que contiene la fila scrolleable + sus indicadores ── */
+.pd-scroll-wrap {
+    position: relative;
+    /* Contiene el coverflow del MiniCarousel al ancho de la columna:
+       sin esto, las tarjetas laterales (que se desplazan mas alla del
+       borde a proposito, para "asomar") empujaban overflow horizontal
+       de pagina y todo el carrusel se veia corrido/descentrado. */
+    overflow: hidden;
+    border-radius: 16px;
+}
+
 /* ── Stack de cards ── */
 .pd-cards-stack {
     display: flex;
@@ -576,7 +607,11 @@
 
 /* ══════════ ITEM CARD ══════════ */
 .pd-item-card {
-    background: var(--pd-surface-2);
+    /* Fondo solido: antes era casi transparente (pensado para el glass
+       del fondo de la pagina) y dejaba "sangrar" la tarjeta de atras del
+       coverflow a traves de la de adelante. Ahora tapa completamente lo
+       que hay detras, tal como el carrusel de productos del Index. */
+    background: linear-gradient(160deg, #1c1013 0%, #150c0e 55%, #0e0809 100%);
     border-radius: 16px;
     overflow: hidden;
     display: flex;
@@ -623,6 +658,15 @@
     height: 150px;
     overflow: hidden;
     flex-shrink: 0;
+}
+
+/* Los combos tienen menos texto que las promociones (sin badge, sin
+   caja de oferta, sin fecha de vigencia), asi que su tarjeta queda mas
+   corta por naturaleza. Compensamos agrandando su imagen para que el
+   tamano final de ambas tarjetas quede parejo, en vez de dejar la
+   promocion mas chica para igualar al combo. */
+.pd-item-card--gold .pd-item-img-wrap {
+    height: 230px;
 }
 
 .pd-item-img {
@@ -935,24 +979,6 @@
         max-width: 100%;
         aspect-ratio: 4 / 3;
     }
-
-    .pd-cards-scroll {
-        flex-direction: row;
-        overflow-x: auto;
-        scroll-snap-type: x mandatory;
-        padding-bottom: 6px;
-        -webkit-overflow-scrolling: touch;
-        scrollbar-width: none;
-    }
-
-        .pd-cards-scroll::-webkit-scrollbar {
-            display: none;
-        }
-
-        .pd-cards-scroll .pd-item-card {
-            min-width: 78vw;
-            scroll-snap-align: start;
-        }
 
     /* Espacio para no tapar contenido con la barra flotante */
     .pd-page-content {

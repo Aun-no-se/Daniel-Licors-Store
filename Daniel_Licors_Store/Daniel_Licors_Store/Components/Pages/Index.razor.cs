@@ -26,6 +26,7 @@ namespace Daniel_Licors_Store.Components.Pages
         // Timer que reemplaza AutoCycle — controlado 100% por Blazor
         private System.Threading.Timer? _cycleTimer;
         private bool _disposed = false;
+        private string heroLottieUrl = "animations/wine-bottle-animation.json";
 
         protected override async Task OnInitializedAsync()
         {
