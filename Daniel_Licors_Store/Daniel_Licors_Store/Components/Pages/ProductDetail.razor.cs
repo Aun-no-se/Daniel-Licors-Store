@@ -158,6 +158,18 @@ namespace Daniel_Licors_Store.Components.Pages
                 var userId = await GetUserIdOrRedirectAsync();
                 if (userId is null) return;
 
+                // A diferencia de un producto (que sí tiene sentido seguir
+                // sumando unidades), una promoción es un trato puntual: si ya
+                // está en el carrito, avisamos en vez de volver a agregarla.
+                var carritoActual = await CartService.GetCartAsync(userId, StoreId);
+                var yaEstaEnCarrito = carritoActual.Promotions.Any(p => p.PromotionId == promo.PromotionId);
+
+                if (yaEstaEnCarrito)
+                {
+                    Snackbar.Add($"Ya tienes la promoción «{promo.Title}» en tu carrito", Severity.Info);
+                    return;
+                }
+
                 var qty = promo.IsPayXGetY ? (promo.RequiredQuantity ?? 1) : 1;
                 await CartService.AddPromotionToCartAsync(userId, promo.PromotionId, qty, StoreId);
                 Snackbar.Add($"Promoción «{promo.Title}» agregada al carrito", Severity.Success);
