@@ -200,6 +200,12 @@ public partial class Cart
         {
             Logger.LogError(ex, "Error al actualizar cantidad item {ItemId}", itemId);
             Snackbar.Add($"Error al actualizar cantidad: {ex.Message}", Severity.Error);
+
+            // El contador (+) del item ya se había incrementado visualmente
+            // antes de llamar al servicio; si el servidor lo rechazó (p.ej.
+            // por stock insuficiente), recargamos el carrito para que la
+            // cantidad mostrada vuelva a coincidir con la real.
+            await LoadCart();
         }
     }
 
