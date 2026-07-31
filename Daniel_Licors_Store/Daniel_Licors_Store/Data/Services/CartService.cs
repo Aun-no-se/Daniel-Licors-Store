@@ -180,9 +180,10 @@ public class CartService : ICartService
                 await _context.SaveChangesAsync();
             }
 
-            // Validar que cada producto que compone el combo tenga stock
-            // suficiente para cubrir lo que ya está reservado en el carrito
-            // (directo o en otros combos) más lo que este combo necesita.
+            // Los combos NO se bloquean por lo que ya tengas reservado en el
+            // carrito (ni como producto directo ni en otro combo) — si el
+            // cliente quiere comprarlo empaquetado, se le deja. Solo se valida
+            // que el negocio tenga stock físico real para armarlo.
             foreach (var comboProduct in combo.ComboProducts)
             {
                 var productStore = await _context.ProductStores
@@ -192,13 +193,12 @@ public class CartService : ICartService
                     throw new InvalidOperationException(
                         $"'{comboProduct.Product?.Name ?? comboProduct.ProductId.ToString()}' no está disponible en esta tienda");
 
-                var yaReservado = GetReservedQuantity(cart, comboProduct.ProductId);
                 var necesario = quantity * comboProduct.Quantity;
 
-                if (yaReservado + necesario > productStore.Stock)
+                if (necesario > productStore.Stock)
                     throw new InvalidOperationException(
                         $"No contamos con esa cantidad de '{comboProduct.Product?.Name ?? comboProduct.ProductId.ToString()}' " +
-                        $"para armar este combo. Disponible: {productStore.Stock}, ya tienes {yaReservado} en tu carrito.");
+                        $"para armar este combo. Disponible: {productStore.Stock}.");
             }
 
             var existingItem = cart.CartCombos.FirstOrDefault(cc => cc.ComboId == comboId);
@@ -422,13 +422,12 @@ public class CartService : ICartService
                             var productStore = await _context.ProductStores
                                 .FirstOrDefaultAsync(ps => ps.ProductId == comboProduct.ProductId && ps.StoreId == cart.StoreId);
 
-                            var yaReservado = GetReservedQuantity(cart, comboProduct.ProductId, excludeCartComboId: cartItemId);
                             var necesario = newQuantity * comboProduct.Quantity;
 
-                            if (productStore == null || yaReservado + necesario > productStore.Stock)
+                            if (productStore == null || necesario > productStore.Stock)
                                 throw new InvalidOperationException(
                                     $"No contamos con esa cantidad de '{comboProduct.Product?.Name ?? comboProduct.ProductId.ToString()}' " +
-                                    $"para este combo. Disponible: {productStore?.Stock ?? 0}, ya tienes {yaReservado} en tu carrito.");
+                                    $"para este combo. Disponible: {productStore?.Stock ?? 0}.");
                         }
                     }
 

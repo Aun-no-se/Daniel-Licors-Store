@@ -141,6 +141,20 @@ namespace Daniel_Licors_Store.Components.Pages
                 var userId = await GetUserIdOrRedirectAsync();
                 if (userId is null) return;
 
+                var nombreCombo = Combos.FirstOrDefault(c => c.ComboId == comboId)?.Name ?? "el combo";
+
+                // Igual que en ComboDetail: el combo no se bloquea por stock ya
+                // reservado con productos sueltos u otros combos, solo por si
+                // ese mismo combo ya está en el carrito.
+                var carritoActual = await CartService.GetCartAsync(userId, StoreId);
+                var yaEstaEnCarrito = carritoActual.Combos.Any(c => c.ComboId == comboId);
+
+                if (yaEstaEnCarrito)
+                {
+                    Snackbar.Add($"Ya tienes «{nombreCombo}» en tu carrito", Severity.Info);
+                    return;
+                }
+
                 await CartService.AddComboToCartAsync(userId, comboId, 1, StoreId);
                 Snackbar.Add("Combo agregado al carrito", Severity.Success);
             }

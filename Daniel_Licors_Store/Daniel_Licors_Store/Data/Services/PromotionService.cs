@@ -87,6 +87,32 @@ public class PromotionService : IPromotionService
     }
 
     // ============================================================
+    // VALIDAR STOCK — evita crear una promoción "Lleva X Paga Y" que
+    // pida más unidades de las que realmente hay en stock (quedaría
+    // una promoción que ningún cliente podría cumplir jamás).
+    // ============================================================
+    private async Task ValidarStockParaPromocionAsync(List<PromotionProductLine> productos)
+    {
+        foreach (var line in productos)
+        {
+            if (!line.RequiredQuantity.HasValue || line.RequiredQuantity <= 0) continue;
+
+            var productStore = await _context.ProductStores
+                .Include(ps => ps.Product)
+                .FirstOrDefaultAsync(ps => ps.ProductId == line.ProductId && ps.StoreId == Components.Shared.AppStore.StoreId);
+
+            var nombre = productStore?.Product?.Name ?? line.ProductName;
+
+            if (productStore == null)
+                throw new Exception($"'{nombre}' no está disponible en esta tienda");
+
+            if (line.RequiredQuantity > productStore.Stock)
+                throw new Exception(
+                    $"No puedes pedir 'Lleva {line.RequiredQuantity}' de '{nombre}' — solo hay {productStore.Stock} en stock.");
+        }
+    }
+
+    // ============================================================
     // CREAR
     // ============================================================
     public async Task<bool> CreatePromotionAsync(PromotionCreateModel model, string? userId = null)
@@ -94,6 +120,8 @@ public class PromotionService : IPromotionService
         using var tx = await _context.Database.BeginTransactionAsync();
         try
         {
+            await ValidarStockParaPromocionAsync(model.Products);
+
             var promo = new Promotion
             {
                 Title = model.Title.Trim(),
@@ -147,6 +175,8 @@ public class PromotionService : IPromotionService
         using var tx = await _context.Database.BeginTransactionAsync();
         try
         {
+            await ValidarStockParaPromocionAsync(model.Products);
+
             var promo = await _context.Promotions
                 .Include(p => p.PromotionProducts)
                 .FirstOrDefaultAsync(p => p.PromotionId == promotionId)

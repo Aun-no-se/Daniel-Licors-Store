@@ -182,6 +182,30 @@ namespace Daniel_Licors_Store.Data.Services
                 .ToListAsync();
         }
 
+        // Evita que se cree/edite un combo pidiendo más unidades de un
+        // producto de las que realmente hay en stock — si eso pasa, el
+        // combo queda "roto" (nadie lo puede comprar nunca).
+        private async Task ValidarStockParaComboAsync(List<ComboProductTemp> productos)
+        {
+            foreach (var prod in productos)
+            {
+                if (prod.Quantity <= 0) continue;
+
+                var productStore = await _context.ProductStores
+                    .Include(ps => ps.Product)
+                    .FirstOrDefaultAsync(ps => ps.ProductId == prod.ProductId && ps.StoreId == Components.Shared.AppStore.StoreId);
+
+                var nombre = productStore?.Product?.Name ?? $"Producto #{prod.ProductId}";
+
+                if (productStore == null)
+                    throw new Exception($"'{nombre}' no está disponible en esta tienda");
+
+                if (prod.Quantity > productStore.Stock)
+                    throw new Exception(
+                        $"No puedes pedir {prod.Quantity} de '{nombre}' en este combo — solo hay {productStore.Stock} en stock.");
+            }
+        }
+
         public async Task<bool> CreateComboAsync(ComboCreateModel model, string? userId = null)
         {
             using var transaction = await _context.Database.BeginTransactionAsync();
@@ -190,6 +214,8 @@ namespace Daniel_Licors_Store.Data.Services
             {
                 if (model.Products == null || !model.Products.Any())
                     throw new Exception("El combo debe tener al menos un producto");
+
+                await ValidarStockParaComboAsync(model.Products);
 
                 var combo = new Combo
                 {
@@ -238,6 +264,11 @@ namespace Daniel_Licors_Store.Data.Services
 
         public async Task UpdateComboAsync(int comboId, ComboCreateModel model, string? userId = null)
         {
+            if (model.Products == null || !model.Products.Any())
+                throw new Exception("El combo debe tener al menos un producto");
+
+            await ValidarStockParaComboAsync(model.Products);
+
             var combo = await _context.Combos
                 .Include(c => c.ComboProducts)
                 .FirstOrDefaultAsync(c => c.ComboId == comboId);

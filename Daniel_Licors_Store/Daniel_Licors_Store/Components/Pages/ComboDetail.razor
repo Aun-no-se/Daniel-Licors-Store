@@ -115,8 +115,10 @@
                                                Size="Size.Large"
                                                FullWidth="true"
                                                StartIcon="@Icons.Material.Filled.ShoppingCart"
+                                               Disabled="@_adding"
+                                               OnClick="@AddComboToCart"
                                                Class="py-3 cd-btn-add-cart">
-                                        Agregar combo al carrito
+                                        @(_adding ? "Agregando..." : "Agregar combo al carrito")
                                     </MudButton>
                                 </Authorized>
                                 <NotAuthorized>
