@@ -11,6 +11,10 @@ namespace Daniel_Licors_Store.Data.Repositories.Interfaces
         Task<ProductDetailDto?> GetProductDetailAsync(int productId);
         Task<List<ProductResponseModel>> GetProductsAsync();
         Task<List<ProductResponseModel>> GetProductsByCategoryAsync(int categoryId);
+
+        // Una sección por cada categoría y marca activa (con sus productos), en el mismo
+        // orden que la barra infinita: primero categorías A→Z, luego marcas A→Z.
+        Task<List<CatalogSectionModel>> GetCatalogSectionsAsync();
         Task<List<ComboDto>> GetCombosByProductAsync(int productId);
 
         // Devuelve promociones activas de un producto con todos los campos del DTO

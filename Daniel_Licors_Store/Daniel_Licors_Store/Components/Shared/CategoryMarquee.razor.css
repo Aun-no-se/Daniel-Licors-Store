@@ -1,0 +1,306 @@
+/* ══════════════════════════════════════════════════════════════════════
+   DANIEL LIQUOR — BARRA INFINITA DE CATEGORÍAS Y MARCAS
+   Glass oscuro · crimson + oro · misma familia visual que la topbar.
+   Colores desde los tokens globales (--liq-*) con fallback.
+   ══════════════════════════════════════════════════════════════════════ */
+
+.lic-marquee {
+    position: relative;
+    width: 100%;
+    padding: 14px 0;
+    overflow: hidden;
+    z-index: 2;
+    background: linear-gradient(180deg, rgba(22, 10, 13, 0.95) 0%, rgba(8, 5, 6, 0.98) 100%);
+    border-top: 1px solid rgba(232, 196, 104, 0.38);
+    border-bottom: 1px solid rgba(232, 196, 104, 0.16);
+    box-shadow: 0 18px 40px -18px rgba(0, 0, 0, 0.85), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+/* textura "cristal tallado" + viñetas de color, igual que la topbar */
+.lic-marquee::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background-image: repeating-linear-gradient(115deg, rgba(255, 255, 255, 0.026) 0px, rgba(255, 255, 255, 0.026) 1px, transparent 1px, transparent 10px), radial-gradient(60% 140% at 8% 0%, rgba(255, 23, 68, 0.10), transparent 60%), radial-gradient(60% 140% at 92% 100%, rgba(232, 196, 104, 0.09), transparent 60%);
+}
+
+/* filo superior animado oro → crimson → oro */
+.lic-marquee::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: -1px;
+    height: 2px;
+    pointer-events: none;
+    opacity: 0.85;
+    background: linear-gradient(90deg, transparent, var(--liq-gold, #E8C468) 20%, var(--liq-crimson, #FF1744) 50%, var(--liq-gold, #E8C468) 80%, transparent);
+    background-size: 220% 100%;
+    animation: lic-marquee-shimmer 7s linear infinite;
+}
+
+@keyframes lic-marquee-shimmer {
+    0% {
+        background-position: 0% 0%;
+    }
+
+    100% {
+        background-position: 220% 0%;
+    }
+}
+
+/* ── Viewport (zona visible, con bordes que se desvanecen) ─────────────── */
+.lic-marquee-viewport {
+    position: relative;
+    z-index: 1;
+    overflow: hidden;
+    padding: 14px 0; /* NUEVO: espacio para que no se corte el hover */
+    margin: -14px 0; /* NUEVO: compensa el padding, la altura no cambia */
+    cursor: grab;
+    touch-action: pan-y; /* el dedo mueve la barra en horizontal; vertical sigue scrolleando la página */
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 7%, #000 93%, transparent 100%);
+    mask-image: linear-gradient(90deg, transparent 0, #000 7%, #000 93%, transparent 100%);
+}
+
+    .lic-marquee-viewport.is-dragging {
+        cursor: grabbing;
+    }
+
+.lic-marquee-track {
+    display: flex;
+    width: max-content;
+    will-change: transform;
+}
+
+.lic-marquee-set {
+    display: flex;
+    align-items: center;
+    flex: 0 0 auto;
+}
+
+/* ── Separador entre categorías y marcas ──────────────────────────────── */
+.lic-sep {
+    flex: 0 0 auto;
+    width: 8px;
+    height: 8px;
+    margin: 0 26px 0 12px;
+    transform: rotate(45deg);
+    background: var(--liq-gold, #E8C468);
+    opacity: 0.55;
+    box-shadow: 0 0 10px rgba(232, 196, 104, 0.55);
+}
+
+/* ── Chip ─────────────────────────────────────────────────────────────── */
+.lic-chip {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    margin-right: 14px; /* separación por margen: así el ancho del grupo es exacto para el bucle */
+    padding: 6px 26px 6px 6px;
+    border-radius: 999px;
+    border: 1px solid rgba(232, 196, 104, 0.16);
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.015));
+    color: var(--liq-ink, #F3EFE7);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    outline-offset: 3px;
+    -webkit-tap-highlight-color: transparent;
+    transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease, background 0.25s ease;
+}
+
+    .lic-chip:hover,
+    .lic-chip:focus-visible {
+        transform: translateY(-2px);
+        border-color: rgba(232, 196, 104, 0.7);
+        background: linear-gradient(180deg, rgba(232, 196, 104, 0.12), rgba(255, 255, 255, 0.02));
+        box-shadow: 0 10px 22px -10px rgba(0, 0, 0, 0.9), 0 0 22px -6px rgba(232, 196, 104, 0.45);
+    }
+
+    .lic-chip:focus-visible {
+        outline: 2px solid var(--liq-gold, #E8C468);
+    }
+
+    .lic-chip:active {
+        transform: translateY(0) scale(0.98);
+    }
+
+/* medallón con el "logo" de la categoría */
+.lic-chip-medal {
+    flex: 0 0 auto;
+    width: 46px;
+    height: 46px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    color: var(--chip-accent, #E8C468);
+    background: radial-gradient(circle at 32% 26%, rgba(255, 255, 255, 0.14), rgba(0, 0, 0, 0.45) 72%);
+    border: 1px solid rgba(232, 196, 104, 0.35);
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.5);
+    transition: box-shadow 0.25s ease, border-color 0.25s ease;
+}
+
+    .lic-chip-medal svg {
+        width: 25px;
+        height: 25px;
+        transition: transform 0.3s cubic-bezier(0.2, 0.9, 0.3, 1.4);
+        filter: drop-shadow(0 0 5px rgba(232, 196, 104, 0.4));
+    }
+
+.lic-chip:hover .lic-chip-medal,
+.lic-chip:focus-visible .lic-chip-medal {
+    border-color: var(--chip-accent, #E8C468);
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.5), 0 0 16px -2px var(--chip-accent, #E8C468);
+}
+
+.lic-chip:hover .lic-chip-medal svg,
+.lic-chip:focus-visible .lic-chip-medal svg {
+    transform: scale(1.12) rotate(-6deg);
+}
+
+/* textos */
+.lic-chip-text {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    line-height: 1.05;
+}
+
+.lic-chip-kind {
+    font-family: 'Poppins', sans-serif;
+    font-size: 0.56rem;
+    font-weight: 600;
+    letter-spacing: 0.24em;
+    text-transform: uppercase;
+    color: var(--liq-muted, #B9AFAE);
+}
+
+.lic-chip--categoria .lic-chip-kind {
+    color: rgba(232, 196, 104, 0.8);
+}
+
+.lic-chip-name {
+    white-space: nowrap;
+    color: var(--liq-ink, #F3EFE7);
+}
+
+.lic-chip--categoria .lic-chip-name {
+    font-family: 'Poppins', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+}
+
+/* las marcas van en Playfair, como el logotipo de la tienda */
+.lic-chip--marca {
+    border-color: rgba(255, 23, 68, 0.2);
+}
+
+    .lic-chip--marca:hover,
+    .lic-chip--marca:focus-visible {
+        border-color: rgba(255, 23, 68, 0.6);
+        background: linear-gradient(180deg, rgba(255, 23, 68, 0.12), rgba(255, 255, 255, 0.02));
+        box-shadow: 0 10px 22px -10px rgba(0, 0, 0, 0.9), 0 0 22px -6px rgba(255, 23, 68, 0.45);
+    }
+
+    .lic-chip--marca .lic-chip-name {
+        font-family: 'Playfair Display', serif;
+        font-size: 1.02rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+    }
+
+/* ── Carga (skeleton) ─────────────────────────────────────────────────── */
+.lic-skel-row {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    gap: 14px;
+    padding: 0 24px;
+    overflow: hidden;
+}
+
+.lic-skel-pill {
+    flex: 0 0 auto;
+    width: 190px;
+    height: 58px;
+    border-radius: 999px;
+    border: 1px solid rgba(232, 196, 104, 0.1);
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.08) 50%, rgba(255, 255, 255, 0.03) 100%);
+    background-size: 200% 100%;
+    animation: lic-skel 1.6s ease-in-out infinite;
+}
+
+@keyframes lic-skel {
+    0% {
+        background-position: 200% 0;
+    }
+
+    100% {
+        background-position: -200% 0;
+    }
+}
+
+/* ── Móvil ────────────────────────────────────────────────────────────── */
+@media (max-width: 600px) {
+    .lic-marquee {
+        padding: 10px 0;
+    }
+
+    .lic-marquee-viewport {
+        padding: 10px 0;
+        margin: -10px 0;
+    }
+
+    .lic-chip {
+        gap: 10px;
+        margin-right: 10px;
+        padding: 5px 20px 5px 5px;
+    }
+
+    .lic-chip-medal {
+        width: 40px;
+        height: 40px;
+    }
+
+        .lic-chip-medal svg {
+            width: 22px;
+            height: 22px;
+        }
+
+    .lic-chip--categoria .lic-chip-name {
+        font-size: 0.8rem;
+    }
+
+    .lic-chip--marca .lic-chip-name {
+        font-size: 0.92rem;
+    }
+
+    .lic-sep {
+        margin: 0 18px 0 8px;
+    }
+
+    .lic-skel-pill {
+        width: 150px;
+        height: 50px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .lic-marquee::after,
+    .lic-skel-pill {
+        animation: none;
+    }
+
+    .lic-chip,
+    .lic-chip-medal svg {
+        transition: none;
+    }
+}

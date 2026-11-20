@@ -12,8 +12,8 @@ namespace Daniel_Licors_Store.Components.Pages
         [Inject] private ProductStateService State { get; set; } = default!;
         [Inject] private IWebHostEnvironment Env { get; set; } = default!;
 
-        private List<ProductResponseModel> cervezas = new();
-        private List<ProductResponseModel> rones = new();
+        // Secciones del index (una por categoría y marca registrada), armadas desde la BD.
+        private List<CatalogSectionModel> _sections = new();
 
         private bool arrows = true;
         private bool bullets = true;
@@ -122,8 +122,7 @@ namespace Daniel_Licors_Store.Components.Pages
 
         private async Task LoadData()
         {
-            cervezas = await CatalogService.GetProductsByCategoryAsync(5);
-            rones = await CatalogService.GetProductsByCategoryAsync(1);
+            _sections = await CatalogService.GetCatalogSectionsAsync();
         }
 
         private void PedirDemo() { }

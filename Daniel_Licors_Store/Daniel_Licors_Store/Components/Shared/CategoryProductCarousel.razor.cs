@@ -18,6 +18,15 @@ namespace Daniel_Licors_Store.Components.Shared
         [Parameter] public List<ProductResponseModel> Products { get; set; } = new();
         [Parameter] public bool IsLoading { get; set; } = true;
 
+        // Id HTML de la sección ("categoria-5", "marca-3"). Es el destino al que
+        // hace scroll la barra infinita (CategoryMarquee) cuando se toca un chip.
+        [Parameter] public string? SectionId { get; set; }
+
+        // Nombre de categoría que decide el ícono del título. Las secciones de
+        // marca lo usan para llevar el ícono de su categoría principal.
+        // Si es null se usa Title (comportamiento de siempre).
+        [Parameter] public string? IconHint { get; set; }
+
         [Inject] private NavigationManager Nav { get; set; } = default!;
         [Inject] private IDialogService DialogService { get; set; } = default!;
         [Inject] private IProductService ProductService { get; set; } = default!;

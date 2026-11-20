@@ -81,10 +81,17 @@
     <img src="@cristalinoDespues" alt="" />
 </div>
 
-<CategoryProductCarousel Title="Cervezas"
-                         Products="@cervezas"
-                         IsLoading="@_loading" />
-<CategoryProductCarousel Title="Rones"
-                         Products="@rones"
-                         IsLoading="@_loading" />
+<CategoryMarquee />
+
+@* Una sección por cada categoría y marca registrada (misma lista que el marquee).
+   Cada una lleva id="categoria-{id}" / "marca-{id}": a ese id hace scroll el chip. *@
+@foreach (var section in _sections)
+{
+    <CategoryProductCarousel @key="section.AnchorId"
+                             SectionId="@section.AnchorId"
+                             Title="@section.Title"
+                             IconHint="@section.IconHint"
+                             Products="@section.Products"
+                             IsLoading="@_loading" />
+}
 </div>

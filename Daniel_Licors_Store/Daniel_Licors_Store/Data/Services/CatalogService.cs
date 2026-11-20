@@ -57,6 +57,66 @@ namespace Daniel_Licors_Store.Data.Services
             return products.Select(Map).ToList();
         }
 
+        // Arma las secciones del index directamente desde la base de datos: una por
+        // cada categoría y marca ACTIVA, aunque todavía no tenga productos. Así, cuando
+        // un empleado registra una categoría o marca nueva, su sección (y su chip en la
+        // barra infinita) aparece sola, sin tocar código.
+        public async Task<List<CatalogSectionModel>> GetCatalogSectionsAsync()
+        {
+            await using var ctx = await _factory.CreateDbContextAsync();
+
+            var categories = await ctx.Categories.AsNoTracking()
+                .Where(c => c.IsActive)
+                .OrderBy(c => c.Name)
+                .ToListAsync();
+
+            var brands = await ctx.Brands.AsNoTracking()
+                .Where(b => b.IsActive)
+                .OrderBy(b => b.Name)
+                .ToListAsync();
+
+            var products = await ctx.Products.AsNoTracking()
+                .Include(p => p.Category)
+                .Include(p => p.Brand)
+                .Include(p => p.ProductStores)
+                .Where(p => p.IsActive)
+                .OrderByDescending(p => p.CreatedAt)
+                .ToListAsync();
+
+            var sections = new List<CatalogSectionModel>();
+
+            foreach (var c in categories)
+            {
+                sections.Add(new CatalogSectionModel
+                {
+                    Kind = "categoria",
+                    Id = c.CategoryId,
+                    Title = c.Name,
+                    Products = products.Where(p => p.CategoryId == c.CategoryId).Select(Map).ToList()
+                });
+            }
+
+            foreach (var b in brands)
+            {
+                var brandProducts = products.Where(p => p.BrandId == b.BrandId).ToList();
+
+                sections.Add(new CatalogSectionModel
+                {
+                    Kind = "marca",
+                    Id = b.BrandId,
+                    Title = b.Name,
+                    IconHint = brandProducts
+                        .GroupBy(p => p.Category?.Name)
+                        .OrderByDescending(g => g.Count())
+                        .Select(g => g.Key)
+                        .FirstOrDefault(),
+                    Products = brandProducts.Select(Map).ToList()
+                });
+            }
+
+            return sections;
+        }
+
         public async Task<ProductDetailDto?> GetProductDetailAsync(int productId)
         {
             await using var ctx = await _factory.CreateDbContextAsync();

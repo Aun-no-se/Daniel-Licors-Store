@@ -1,0 +1,66 @@
+@*
+    Barra infinita de Categorías y Marcas.
+    - Se llena desde la base de datos (categorías y marcas activas).
+    - data-marquee: wwwroot/js/category-marquee.js la anima y maneja el
+      arrastre / dedo / clic. El grupo se pinta DOS veces en el HTML
+      (el segundo es copia aria-hidden) para que el bucle sea continuo
+      sin que JS tenga que insertar nodos dentro del DOM de Blazor.
+    - Cada chip lleva data-target="categoria-{id}" o "marca-{id}": el JS
+      hace scroll al elemento de la página con ese id.
+*@
+
+@if (_loading)
+{
+    <section class="lic-marquee" aria-hidden="true">
+        <div class="lic-skel-row">
+            @for (int i = 0; i < 9; i++)
+            {
+                <span class="lic-skel-pill"></span>
+            }
+        </div>
+    </section>
+}
+else if (_items.Count > 0)
+{
+    <section class="lic-marquee" aria-label="Categorías y marcas">
+        <div class="lic-marquee-viewport" data-marquee>
+            <div class="lic-marquee-track">
+                @for (int s = 0; s < 2; s++)
+                {
+                    bool copy = s == 1;
+                    <div class="lic-marquee-set" aria-hidden="@(copy ? "true" : null)">
+                        @for (int r = 0; r < _repeat; r++)
+                        {
+                            @foreach (var item in _items)
+                            {
+                                @if (item.Kind == "sep")
+                                {
+                                    <span class="lic-sep" aria-hidden="true"></span>
+                                }
+                                else
+                                {
+                                    <button type="button"
+                                            class="lic-chip lic-chip--@item.Kind"
+                                            data-target="@item.Target"
+                                            tabindex="@(copy ? -1 : 0)"
+                                            style="--chip-accent:@item.Accent"
+                                            title="Ir a @item.Name">
+                                        <span class="lic-chip-medal">
+                                            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false">
+                                                @((MarkupString)item.Glyph)
+                                            </svg>
+                                        </span>
+                                        <span class="lic-chip-text">
+                                            <span class="lic-chip-kind">@item.Label</span>
+                                            <span class="lic-chip-name">@item.Name</span>
+                                        </span>
+                                    </button>
+                                }
+                            }
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    </section>
+}

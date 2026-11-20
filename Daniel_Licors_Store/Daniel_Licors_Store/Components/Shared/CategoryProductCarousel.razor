@@ -2,13 +2,13 @@
 @using Daniel_Licors_Store.Models.Product
 @using Microsoft.AspNetCore.Components.Authorization
 
-<div class="dlc-section">
+<div class="dlc-section" id="@SectionId">
 
     <div class="dlc-header">
         <div class="dlc-header-line"></div>
         <h2 class="dlc-title">
             <span class="dlc-title-icon-wrap">
-                <MudIcon Icon="@GetCategoryIcon(Title)" Size="Size.Small" />
+                <MudIcon Icon="@GetCategoryIcon(IconHint ?? Title)" Size="Size.Small" />
             </span>
             @Title
         </h2>
