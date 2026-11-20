@@ -37,34 +37,38 @@
     z-index: 1300;
 }
 
-/* textura "cristal tallado": líneas diagonales finísimas + viñeta dorada */
-.topbar::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    background-image:
-        repeating-linear-gradient(115deg, rgba(255,255,255,0.028) 0px, rgba(255,255,255,0.028) 1px, transparent 1px, transparent 10px),
-        radial-gradient(120% 140% at 12% 0%, rgba(255,23,68,0.10), transparent 55%),
-        radial-gradient(80% 160% at 90% 100%, rgba(232,196,104,0.08), transparent 60%);
-}
+    /* textura "cristal tallado": líneas diagonales finísimas + viñeta dorada */
+    .topbar::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        pointer-events: none;
+        background-image: repeating-linear-gradient(115deg, rgba(255,255,255,0.028) 0px, rgba(255,255,255,0.028) 1px, transparent 1px, transparent 10px), radial-gradient(120% 140% at 12% 0%, rgba(255,23,68,0.10), transparent 55%), radial-gradient(80% 160% at 90% 100%, rgba(232,196,104,0.08), transparent 60%);
+    }
 
-/* filo inferior animado oro→crimson→oro */
-.topbar::after {
-    content: "";
-    position: absolute;
-    left: 0; right: 0; bottom: -1px;
-    height: 2px;
-    background: linear-gradient(90deg, transparent, var(--liq-gold) 20%, var(--liq-crimson) 50%, var(--liq-gold) 80%, transparent);
-    background-size: 220% 100%;
-    animation: liq-shimmer 7s linear infinite;
-    opacity: 0.85;
-    pointer-events: none;
-}
+    /* filo inferior animado oro→crimson→oro */
+    .topbar::after {
+        content: "";
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: -1px;
+        height: 2px;
+        background: linear-gradient(90deg, transparent, var(--liq-gold) 20%, var(--liq-crimson) 50%, var(--liq-gold) 80%, transparent);
+        background-size: 220% 100%;
+        animation: liq-shimmer 7s linear infinite;
+        opacity: 0.85;
+        pointer-events: none;
+    }
 
 @keyframes liq-shimmer {
-    0%   { background-position: 0% 0%; }
-    100% { background-position: 220% 0%; }
+    0% {
+        background-position: 0% 0%;
+    }
+
+    100% {
+        background-position: 220% 0%;
+    }
 }
 
 .topbar-inner {
@@ -104,14 +108,19 @@
     flex-shrink: 0;
 }
 
-.brand-badge .mud-icon-root {
-    color: var(--liq-crimson) !important;
-    filter: drop-shadow(0 0 4px rgba(255,23,68,0.65));
-}
+    .brand-badge .mud-icon-root {
+        color: var(--liq-crimson) !important;
+        filter: drop-shadow(0 0 4px rgba(255,23,68,0.65));
+    }
 
 @keyframes liq-badge-glow {
-    0%, 100% { box-shadow: 0 0 0 1px rgba(0,0,0,0.4) inset, 0 0 10px rgba(255,23,68,0.15); }
-    50%      { box-shadow: 0 0 0 1px rgba(0,0,0,0.4) inset, 0 0 18px rgba(255,23,68,0.45); }
+    0%, 100% {
+        box-shadow: 0 0 0 1px rgba(0,0,0,0.4) inset, 0 0 10px rgba(255,23,68,0.15);
+    }
+
+    50% {
+        box-shadow: 0 0 0 1px rgba(0,0,0,0.4) inset, 0 0 18px rgba(255,23,68,0.45);
+    }
 }
 
 .brand-text {
@@ -190,8 +199,10 @@
     .btn-liq-solid::before {
         content: "";
         position: absolute;
-        top: 0; left: -60%;
-        width: 40%; height: 100%;
+        top: 0;
+        left: -60%;
+        width: 40%;
+        height: 100%;
         background: linear-gradient(115deg, transparent, rgba(255,255,255,0.35), transparent);
         transform: skewX(-20deg);
         transition: left 0.6s ease;
@@ -261,15 +272,44 @@
     border: 1px solid var(--liq-gold-dim) !important;
     border-radius: 16px !important;
     box-shadow: 0 20px 48px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(0,0,0,0.3), 0 0 30px rgba(255,23,68,0.08) !important;
-    overflow: hidden;
+    /* Scroll propio: antes era overflow:hidden y eso anulaba el overflow-y:auto
+       de MudBlazor, así que la lista de los selects (Categoría / Marca) no se
+       podía bajar con la rueda y se movía la pantalla de atrás. */
+    overflow-y: auto !important;
+    overflow-x: hidden;
+    overscroll-behavior: contain; /* la rueda se queda en la lista, no pasa a la página */
+    max-height: min(360px, 60vh) !important;
     padding: 8px !important;
     min-width: 240px;
     animation: liq-menu-reveal 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+    /* Barra delgada en tono dorado, en vez de la gris por defecto */
+    scrollbar-width: thin;
+    scrollbar-color: var(--liq-gold-dim) transparent;
 }
 
+    .mud-menu-paper::-webkit-scrollbar,
+    .mud-popover .mud-list::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .mud-menu-paper::-webkit-scrollbar-thumb,
+    .mud-popover .mud-list::-webkit-scrollbar-thumb {
+        background: var(--liq-gold-dim);
+        border-radius: 10px;
+    }
+
 @keyframes liq-menu-reveal {
-    from { opacity: 0; transform: translateY(-8px) scale(0.97); filter: blur(2px); }
-    to   { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+    from {
+        opacity: 0;
+        transform: translateY(-8px) scale(0.97);
+        filter: blur(2px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+        filter: blur(0);
+    }
 }
 
 .svc-group-title {
@@ -305,41 +345,65 @@
     animation: liq-item-fade 0.35s ease forwards;
 }
 
-.mud-menu-item .mud-icon-root {
-    margin-right: 12px !important;
-    font-size: 1.2rem;
-    color: var(--liq-gold) !important;
-    opacity: 0.85;
-    transition: all 0.2s ease;
-}
-
-.mud-menu-item:hover {
-    background: rgba(232, 196, 104, 0.10) !important;
-    color: var(--liq-gold-soft) !important;
-    padding-left: 22px !important;
-    transform: translateX(2px);
-}
-
-    .mud-menu-item:hover .mud-icon-root {
-        color: var(--liq-crimson) !important;
-        opacity: 1;
-        filter: drop-shadow(0 0 4px rgba(255,23,68,0.5));
+    .mud-menu-item .mud-icon-root {
+        margin-right: 12px !important;
+        font-size: 1.2rem;
+        color: var(--liq-gold) !important;
+        opacity: 0.85;
+        transition: all 0.2s ease;
     }
 
-.mud-menu-item:active {
-    transform: scale(0.98);
-}
+    .mud-menu-item:hover {
+        background: rgba(232, 196, 104, 0.10) !important;
+        color: var(--liq-gold-soft) !important;
+        padding-left: 22px !important;
+        transform: translateX(2px);
+    }
 
-.mud-menu-item:nth-of-type(1) { animation-delay: 0.02s; }
-.mud-menu-item:nth-of-type(2) { animation-delay: 0.06s; }
-.mud-menu-item:nth-of-type(3) { animation-delay: 0.10s; }
-.mud-menu-item:nth-of-type(4) { animation-delay: 0.14s; }
-.mud-menu-item:nth-of-type(5) { animation-delay: 0.18s; }
-.mud-menu-item:nth-of-type(6) { animation-delay: 0.22s; }
+        .mud-menu-item:hover .mud-icon-root {
+            color: var(--liq-crimson) !important;
+            opacity: 1;
+            filter: drop-shadow(0 0 4px rgba(255,23,68,0.5));
+        }
+
+    .mud-menu-item:active {
+        transform: scale(0.98);
+    }
+
+    .mud-menu-item:nth-of-type(1) {
+        animation-delay: 0.02s;
+    }
+
+    .mud-menu-item:nth-of-type(2) {
+        animation-delay: 0.06s;
+    }
+
+    .mud-menu-item:nth-of-type(3) {
+        animation-delay: 0.10s;
+    }
+
+    .mud-menu-item:nth-of-type(4) {
+        animation-delay: 0.14s;
+    }
+
+    .mud-menu-item:nth-of-type(5) {
+        animation-delay: 0.18s;
+    }
+
+    .mud-menu-item:nth-of-type(6) {
+        animation-delay: 0.22s;
+    }
 
 @keyframes liq-item-fade {
-    from { opacity: 0; transform: translateX(-6px); }
-    to   { opacity: 1; transform: translateX(0); }
+    from {
+        opacity: 0;
+        transform: translateX(-6px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
 }
 
 .svc-logout .mud-icon-root {
@@ -434,5 +498,8 @@
     .mud-menu-paper {
         animation: none !important;
     }
-    .mud-menu-item { opacity: 1; }
+
+    .mud-menu-item {
+        opacity: 1;
+    }
 }
