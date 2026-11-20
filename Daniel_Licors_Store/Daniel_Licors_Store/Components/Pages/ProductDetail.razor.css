@@ -3,7 +3,11 @@
    Paleta oficial del sistema: crimson + gold + glassmorphism oscuro
    ══════════════════════════════════════════════════════════════════ */
 
-:root {
+/* OJO: aquí va .pd-page-bg y NO :root. En CSS aislado de Blazor, ":root" se
+   convierte en ":root[b-xxxx]" y nunca coincide con <html>, así que todas las
+   variables quedaban sin definir y el dorado del badge PREMIUM (y otros
+   colores) no se aplicaban. .pd-page-bg envuelve toda la página. */
+.pd-page-bg {
     --pd-crimson: #FF1744;
     --pd-crimson-dark: #B71C1C;
     --pd-crimson-glow: rgba(255, 23, 68, 0.35);
@@ -267,9 +271,10 @@
     border-radius: 30px;
     display: inline-flex;
     align-items: center;
-    box-shadow: 0 4px 14px rgba(179, 135, 40, 0.4);
     letter-spacing: 1px;
     z-index: 2;
+    border: 1px solid rgba(251, 245, 183, 0.55);
+    box-shadow: 0 4px 14px rgba(179, 135, 40, 0.45), 0 0 18px rgba(232, 196, 104, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.35);
     animation: pdGoldShift 4s ease infinite;
 }
 

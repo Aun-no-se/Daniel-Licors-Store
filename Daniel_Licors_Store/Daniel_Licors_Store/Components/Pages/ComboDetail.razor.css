@@ -4,7 +4,9 @@
    glassmorphism oscuro, Playfair Display.
    ══════════════════════════════════════════════════════════════════ */
 
-:root {
+/* OJO: .cd-page-bg y NO :root (en CSS aislado de Blazor ":root" no coincide
+   con <html>, y las variables --cd-* quedaban sin definir). */
+.cd-page-bg {
     --cd-crimson: #FF1744;
     --cd-crimson-dark: #B71C1C;
     --cd-gold-1: #b38728;
