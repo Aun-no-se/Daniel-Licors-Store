@@ -2,9 +2,11 @@
     min-height: 100vh;
 }
 
-.promo-carousel {
-    width: 100%;
-}
+    /* La clase va puesta en un componente MudBlazor (no en un div propio),
+   por eso necesita ".padre ::deep .hijo" para que el aislamiento de CSS la alcance. */
+    .index-page ::deep .promo-carousel {
+        width: 100%;
+    }
 
 /* ===========================
    HERO: LOTTIE + IMAGEN + OVERLAY
@@ -36,13 +38,14 @@
     height: 60%;
     object-fit: contain;
     z-index: 2;
-}eros
+}
 
 /* Overlay animado, encima de imagen + lottie */
 .hero-animated-overlay {
     position: absolute;
     inset: 0;
     z-index: 3;
+    pointer-events: none;
 }
 
 /* Viñeta, capa más alta */
@@ -50,10 +53,103 @@
     position: absolute;
     inset: 0;
     z-index: 4;
+    pointer-events: none;
 }
 
 /* ===========================
-   CONTENIDO SLIDE NORMAL
+   SLIDES CON CURSOR REVEAL
+   Base (antes) visible por defecto. La imagen "después"
+   se descubre en un círculo que sigue al cursor.
+   Las variables --reveal-* las escribe js/image-reveal.js.
+=========================== */
+.reveal-slide {
+    --reveal-x: 0px;
+    --reveal-y: 0px;
+    --reveal-r: 0.1px;
+    --reveal-max: 220px;
+    --reveal-s: 0;
+    position: relative;
+    height: 75vh;
+    width: 100%;
+    overflow: hidden;
+    isolation: isolate;
+    contain: paint;
+    background: var(--liq-black, #050505);
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.reveal-img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    pointer-events: none;
+    -webkit-user-drag: none;
+}
+
+.reveal-base {
+    z-index: 1;
+}
+
+/* Imagen "después": solo se ve dentro del círculo */
+.reveal-top {
+    z-index: 2;
+    -webkit-mask-image: radial-gradient(circle var(--reveal-r) at var(--reveal-x) var(--reveal-y), #000 0%, #000 58%, rgba(0, 0, 0, 0.55) 78%, transparent 100%);
+    mask-image: radial-gradient(circle var(--reveal-r) at var(--reveal-x) var(--reveal-y), #000 0%, #000 58%, rgba(0, 0, 0, 0.55) 78%, transparent 100%);
+}
+
+/* Profundidad: viñeta suave + fundido inferior hacia el fondo de la tienda */
+.reveal-shade {
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    pointer-events: none;
+    background: radial-gradient(120% 90% at 50% 40%, transparent 55%, rgba(5, 5, 5, 0.5) 100%), linear-gradient(180deg, transparent 65%, rgba(5, 5, 5, 0.7) 100%);
+}
+
+/* Aro dorado que acompaña al círculo (misma paleta que la topbar) */
+.reveal-ring {
+    position: absolute;
+    left: 0;
+    top: 0;
+    z-index: 4;
+    width: calc(var(--reveal-max) * 1.7);
+    height: calc(var(--reveal-max) * 1.7);
+    border-radius: 50%;
+    pointer-events: none;
+    border: 1px solid rgba(232, 196, 104, 0.5);
+    box-shadow: 0 0 40px rgba(232, 196, 104, 0.16), inset 0 0 60px rgba(255, 23, 68, 0.1);
+    transform: translate(calc(var(--reveal-x) - var(--reveal-max) * 0.85), calc(var(--reveal-y) - var(--reveal-max) * 0.85)) scale(var(--reveal-s));
+    opacity: var(--reveal-s);
+    will-change: transform, opacity;
+}
+
+/* Precarga invisible de las imágenes del carrusel */
+.reveal-preload {
+    position: absolute;
+    width: 0;
+    height: 0;
+    overflow: hidden;
+    opacity: 0;
+    pointer-events: none;
+}
+
+    .reveal-preload img {
+        width: 1px;
+        height: 1px;
+    }
+
+@media (prefers-reduced-motion: reduce) {
+    .reveal-ring {
+        box-shadow: none;
+    }
+}
+
+/* ===========================
+   CONTENIDO SLIDE NORMAL (reserva: slide con botones)
 =========================== */
 .carousel-content {
     height: 100%;
@@ -65,8 +161,8 @@
     gap: 2rem;
 }
 
-/* Icono animado */
-.icon-animate {
+/* Icono animado (va sobre un MudIcon → ::deep) */
+.index-page ::deep .icon-animate {
     animation: floatIn 1s ease-out;
 }
 
@@ -77,7 +173,7 @@
 }
 
 /* Botón Pedir */
-::deep .btn-pedir {
+.index-page ::deep .btn-pedir {
     padding: 0.9rem 2.2rem;
     font-size: 1rem;
     font-weight: bold;
@@ -85,13 +181,13 @@
     box-shadow: 0 8px 20px rgba(244,67,54,0.4);
 }
 
-.btn-pedir:hover {
-    transform: translateY(-4px) scale(1.05);
-    box-shadow: 0 12px 30px rgba(244,67,54,0.7);
-}
+    .index-page ::deep .btn-pedir:hover {
+        transform: translateY(-4px) scale(1.05);
+        box-shadow: 0 12px 30px rgba(244,67,54,0.7);
+    }
 
 /* Botón Ver más */
-::deep .btn-ver {
+.index-page ::deep .btn-ver {
     padding: 0.9rem 2.2rem;
     font-size: 1rem;
     border-radius: 30px;
@@ -99,10 +195,10 @@
     border: 1px solid rgba(255,255,255,0.6);
 }
 
-.btn-ver:hover {
-    background-color: rgba(255,255,255,0.1);
-    transform: translateY(-3px);
-}
+    .index-page ::deep .btn-ver:hover {
+        background-color: rgba(255,255,255,0.1);
+        transform: translateY(-3px);
+    }
 
 /* Animaciones */
 @keyframes floatIn {

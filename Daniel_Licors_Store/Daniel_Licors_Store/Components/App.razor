@@ -21,76 +21,77 @@
 
     <script src="_framework/blazor.web.js"></script>
     <script src="https://unpkg.com/@@dotlottie/player-component@2.7.12/dist/dotlottie-player.mjs" type="module"></script>
+    <script src="js/image-reveal.js?v=1"></script>
     <script>
-        // Carrusel: scroll suave sin Swiper ni dependencias externas
-        window.catCarousel = {
-            scroll: function (trackId, direction) {
-                const track = document.getElementById(trackId);
-                if (!track) return;
-                track.scrollBy({ left: direction * 236, behavior: 'smooth' });
-            }
-        };
+            // Carrusel: scroll suave sin Swiper ni dependencias externas
+            window.catCarousel = {
+                scroll: function (trackId, direction) {
+                    const track = document.getElementById(trackId);
+                    if (!track) return;
+                    track.scrollBy({ left: direction * 236, behavior: 'smooth' });
+                }
+            };
 
-        // Scroll reveal por IntersectionObserver
-        window.initScrollReveal = () => {
-            const sections = document.querySelectorAll('.cat-section');
-            const observer = new IntersectionObserver((entries) => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) entry.target.classList.add('reveal');
-                });
-            }, { threshold: 0.1 });
-            sections.forEach(s => observer.observe(s));
-        };
+            // Scroll reveal por IntersectionObserver
+            window.initScrollReveal = () => {
+                const sections = document.querySelectorAll('.cat-section');
+                const observer = new IntersectionObserver((entries) => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) entry.target.classList.add('reveal');
+                    });
+                }, { threshold: 0.1 });
+                sections.forEach(s => observer.observe(s));
+            };
 
-        // Drag-to-scroll con mouse para filas horizontales (combos/promociones
-        // en ProductDetail). En teléfono el dedo ya scrollea nativo gracias a
-        // touch-action: pan-x en el CSS; esto es para cuando se prueba/usa con
-        // mouse normal, que no arrastra un overflow-x sin esto.
-        window.initDragScroll = () => {
-            document.querySelectorAll('.pd-cards-scroll').forEach(el => {
-                if (el.dataset.dragInit) return; // no enganchar el listener dos veces
-                el.dataset.dragInit = "true";
+            // Drag-to-scroll con mouse para filas horizontales (combos/promociones
+            // en ProductDetail). En teléfono el dedo ya scrollea nativo gracias a
+            // touch-action: pan-x en el CSS; esto es para cuando se prueba/usa con
+            // mouse normal, que no arrastra un overflow-x sin esto.
+            window.initDragScroll = () => {
+                document.querySelectorAll('.pd-cards-scroll').forEach(el => {
+                    if (el.dataset.dragInit) return; // no enganchar el listener dos veces
+                    el.dataset.dragInit = "true";
 
-                let isDown = false;
-                let startX = 0;
-                let scrollLeft = 0;
-                let moved = false;
+                    let isDown = false;
+                    let startX = 0;
+                    let scrollLeft = 0;
+                    let moved = false;
 
-                el.addEventListener('mousedown', (e) => {
-                    isDown = true;
-                    moved = false;
-                    el.classList.add('pd-dragging');
-                    startX = e.pageX - el.offsetLeft;
-                    scrollLeft = el.scrollLeft;
-                });
+                    el.addEventListener('mousedown', (e) => {
+                        isDown = true;
+                        moved = false;
+                        el.classList.add('pd-dragging');
+                        startX = e.pageX - el.offsetLeft;
+                        scrollLeft = el.scrollLeft;
+                    });
 
-                const stopDrag = () => {
-                    isDown = false;
-                    el.classList.remove('pd-dragging');
-                };
+                    const stopDrag = () => {
+                        isDown = false;
+                        el.classList.remove('pd-dragging');
+                    };
 
-                el.addEventListener('mouseleave', stopDrag);
-                el.addEventListener('mouseup', stopDrag);
+                    el.addEventListener('mouseleave', stopDrag);
+                    el.addEventListener('mouseup', stopDrag);
 
-                el.addEventListener('mousemove', (e) => {
-                    if (!isDown) return;
-                    e.preventDefault();
-                    const x = e.pageX - el.offsetLeft;
-                    const walk = (x - startX) * 1.2;
-                    if (Math.abs(walk) > 5) moved = true;
-                    el.scrollLeft = scrollLeft - walk;
-                });
-
-                // Si hubo arrastre real, cancela el click posterior (evita que
-                // "arrastrar" dispare accidentalmente el click de la tarjeta)
-                el.addEventListener('click', (e) => {
-                    if (moved) {
-                        e.stopPropagation();
+                    el.addEventListener('mousemove', (e) => {
+                        if (!isDown) return;
                         e.preventDefault();
-                    }
-                }, true);
-            });
-        };
+                        const x = e.pageX - el.offsetLeft;
+                        const walk = (x - startX) * 1.2;
+                        if (Math.abs(walk) > 5) moved = true;
+                        el.scrollLeft = scrollLeft - walk;
+                    });
+
+                    // Si hubo arrastre real, cancela el click posterior (evita que
+                    // "arrastrar" dispare accidentalmente el click de la tarjeta)
+                    el.addEventListener('click', (e) => {
+                        if (moved) {
+                            e.stopPropagation();
+                            e.preventDefault();
+                        }
+                    }, true);
+                });
+            };
     </script>
 </body>
 </html>

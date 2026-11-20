@@ -10,6 +10,7 @@ namespace Daniel_Licors_Store.Components.Pages
     {
         [Inject] private ICatalogService CatalogService { get; set; } = default!;
         [Inject] private ProductStateService State { get; set; } = default!;
+        [Inject] private IWebHostEnvironment Env { get; set; } = default!;
 
         private List<ProductResponseModel> cervezas = new();
         private List<ProductResponseModel> rones = new();
@@ -28,9 +29,21 @@ namespace Daniel_Licors_Store.Components.Pages
         private bool _disposed = false;
         private string heroLottieUrl = "animations/wine-bottle-animation.json";
 
+        // Imágenes del carrusel (wwwroot/images/Carrusel).
+        // "Antes" se ve por defecto; "Después" se descubre con el cursor.
+        // Se resuelven en LoadCarouselImages() para tolerar cualquier extensión.
+        private string buchanaAntes = "";
+        private string buchanaDespues = "";
+        private string cristalinoAntes = "";
+        private string cristalinoDespues = "";
+
+        private static readonly string[] _carouselImageExts =
+            { ".jpg", ".jpeg", ".png", ".webp", ".jfif", ".avif" };
+
         protected override async Task OnInitializedAsync()
         {
             State.OnChange += OnStateChanged;
+            LoadCarouselImages();
             await LoadData();
             _loading = false;
         }
@@ -77,6 +90,34 @@ namespace Daniel_Licors_Store.Components.Pages
                 _loading = false;
                 StateHasChanged();
             });
+        }
+
+        private void LoadCarouselImages()
+        {
+            buchanaAntes = ResolveCarouselImage("buchanaAntes");
+            buchanaDespues = ResolveCarouselImage("buchanaDespues");
+            cristalinoAntes = ResolveCarouselImage("cristalinoAntes");
+            cristalinoDespues = ResolveCarouselImage("cristalinoDespues");
+        }
+
+        // Busca la imagen en wwwroot/images/Carrusel con la extensión que tenga
+        // y le agrega ?v=<fecha de modificación> para que el navegador no
+        // muestre una versión vieja si reemplazas el archivo.
+        private string ResolveCarouselImage(string baseName)
+        {
+            var dir = Path.Combine(Env.WebRootPath, "images", "Carrusel");
+
+            foreach (var ext in _carouselImageExts)
+            {
+                var full = Path.Combine(dir, baseName + ext);
+                if (File.Exists(full))
+                {
+                    var v = File.GetLastWriteTimeUtc(full).Ticks;
+                    return $"images/Carrusel/{baseName}{ext}?v={v}";
+                }
+            }
+
+            return $"images/Carrusel/{baseName}.jpg";
         }
 
         private async Task LoadData()

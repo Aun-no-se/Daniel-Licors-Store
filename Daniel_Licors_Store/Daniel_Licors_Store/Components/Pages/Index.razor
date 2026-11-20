@@ -4,72 +4,87 @@
 @using Daniel_Licors_Store.Components.Shared
 @using Microsoft.AspNetCore.Components.Authorization
 
-@if (mostrarCargando)
-{
-    <LoadingScreen Message="Autorizando tu acceso" Subtitle="Verificando usuario y contraseña" />
-}
-
-<button @onclick="() => mostrarCargando = true" style="margin:16px;">Ver el loading</button>
-
 <div class="index-page">
     <!--
         AutoCycle="false" siempre — el avance automático lo maneja
         un Timer en C# que solo arranca después de que los datos
         ya cargaron. Esto elimina la race condition con el render
         inicial que causaba insertBefore on null.
+
+
+
+
+
+
+
+
+
+        Transition va en cada MudCarouselItem (MudCarousel no tiene esa
+        propiedad: puesta en el carrusel se ignoraba y los items usaban
+        Slide por defecto). Se controla desde el campo "transition" del .cs.
+
+        Slides de imagen: cada uno lleva data-reveal. El efecto del cursor
+        lo maneja wwwroot/js/image-reveal.js buscando ese atributo, así que
+        funciona en cada slide nuevo que el carrusel va montando.
     -->
     <MudCarousel @ref="_heroCarousel"
                  Class="mud-width-full promo-carousel"
-                 Style="height:75vh;"
-                 ShowArrows="@arrows"
-                 ShowBullets="@bullets"
-                 EnableSwipeGesture="@enableSwipeGesture"
-                 AutoCycle="false"
-                 TData="object"
-                 Transition="@transition">
-        <MudCarouselItem>
-            <div class="hero-container">
-                <dotlottie-player class="hero-lottie"
-                                  src="@heroLottieUrl"
-                                  background="transparent"
-                                  speed="1"
-                                  autoplay
-                                  loop>
-                </dotlottie-player>
-                <div class="hero-animated-overlay"></div>
-                <div class="hero-vignette"></div>
-            </div>
-        </MudCarouselItem>
-        <MudCarouselItem Color="@Color.Secondary">
-            <div class="carousel-content">
-                <MudIcon Icon="@Icons.Custom.Brands.MudBlazor"
-                         Size="@Size.Large"
-                         Class="icon-animate" />
-                <div class="actions">
-                    <MudButton Class="btn-pedir"
-                               Color="Color.Error"
-                               Variant="Variant.Filled"
-                               OnClick="PedirDemo">
-                        Pedir
-                    </MudButton>
-                    <MudButton Class="btn-ver"
-                               Variant="Variant.Outlined"
-                               OnClick="VerMasDemo">
-                        Ver más
-                    </MudButton>
+                     Style="height:75vh;"
+                         ShowArrows="@arrows"
+                         ShowBullets="@bullets"
+                         EnableSwipeGesture="@enableSwipeGesture"
+                         AutoCycle="false"
+                         TData="object">
+
+                <MudCarouselItem Transition="@transition">
+                <div class="reveal-slide" data-reveal>
+                <img class="reveal-img reveal-base"
+                     src="@buchanaAntes"
+                     alt="Buchanan's con piña"
+                 draggable="false" />
+        <img class="reveal-img reveal-top"
+                     src="@buchanaDespues"
+             alt=""
+                 aria-hidden="true"
+                     draggable="false" />
+                <div class="reveal-shade"></div>
+                <div class="reveal-ring"></div>
                 </div>
+                </MudCarouselItem>
+
+                <MudCarouselItem Transition="@transition">
+                <div class="reveal-slide" data-reveal>
+                <img class="reveal-img reveal-base"
+                     src="@cristalinoAntes"
+                     alt="Cristalino"
+                 draggable="false" />
+        <img class="reveal-img reveal-top"
+         src="@cristalinoDespues"
+                     alt=""
+         aria-hidden="true"
+                     draggable="false" />
+                <div class="reveal-shade"></div>
+                <div class="reveal-ring"></div>
             </div>
-        </MudCarouselItem>
-    </MudCarousel>
-    <CategoryProductCarousel Title="Cervezas"
-                             Products="@cervezas"
-                             IsLoading="@_loading" />
-    <CategoryProductCarousel Title="Rones"
-                             Products="@rones"
-                             IsLoading="@_loading" />
+    </MudCarouselItem>
+        </MudCarousel>
+
+        <!--
+        Precarga de las 4 imágenes: MudCarousel solo monta el slide activo,
+        así que sin esto la imagen "después" empezaría a descargarse recién
+        cuando aparece el slide y el primer hover se vería con retraso.
+    -->
+    <div class="reveal-preload" aria-hidden="true">
+    <img src="@buchanaAntes" alt="" />
+    <img src="@buchanaDespues" alt="" />
+    <img src="@cristalinoAntes" alt="" />
+    <img src="@cristalinoDespues" alt="" />
 </div>
 
-@code {
-    // ⚠️ SOLO PARA PROBAR el LoadingScreen — bórralo cuando ya lo veas.
-    private bool mostrarCargando = false;
-}
+<CategoryProductCarousel Title="Cervezas"
+                         Products="@cervezas"
+                         IsLoading="@_loading" />
+<CategoryProductCarousel Title="Rones"
+                         Products="@rones"
+                         IsLoading="@_loading" />
+</div>
