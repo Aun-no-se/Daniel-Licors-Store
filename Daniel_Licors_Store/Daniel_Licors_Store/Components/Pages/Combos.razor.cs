@@ -256,7 +256,7 @@ namespace Daniel_Licors_Store.Components.Pages
                 _comboBuilder.Add(new ComboProductTemp
                 {
                     ProductId = product.ProductId,
-                    ProductName = product.Name,
+                    ProductName = product.DisplayName,
                     Quantity = qty,
                     ImageUrl = product.ImageUrl ?? string.Empty
                 });

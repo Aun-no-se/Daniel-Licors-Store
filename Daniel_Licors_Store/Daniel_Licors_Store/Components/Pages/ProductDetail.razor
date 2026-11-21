@@ -70,10 +70,38 @@
                             {
                                 <span class="pd-brand-chip">@Product.Brand</span>
                             }
+                            @if (!string.IsNullOrWhiteSpace(Product.Size))
+                            {
+                                <span class="pd-size-chip">@Product.Size</span>
+                            }
                             <span class="pd-category-text">@Product.Category</span>
                         </div>
 
                         <MudText Typo="Typo.h3" Class="font-weight-black pd-title pd-fade-in" style="--pd-delay: 0.1s">@Product.Name</MudText>
+
+                        @if (Product.Variants.Count > 1)
+                        {
+                            <div class="pd-variants pd-fade-in" style="--pd-delay: 0.12s">
+                                <div class="pd-variants-label">Tamaños disponibles</div>
+                                <div class="pd-variants-row">
+                                    @foreach (var v in Product.Variants)
+                                    {
+                                        var variant = v;
+                                        <button type="button"
+                                                class="pd-variant @(variant.IsCurrent ? "is-current" : "") @(variant.Stock <= 0 ? "is-out" : "")"
+                                                aria-current="@(variant.IsCurrent ? "true" : null)"
+                                                @onclick="@(() => OpenVariant(variant))">
+                                            <span class="pd-variant-size">@(variant.Size ?? "Estándar")</span>
+                                            <span class="pd-variant-price">$@variant.Price.ToString("N0")</span>
+                                            @if (variant.Stock <= 0)
+                                            {
+                                                <span class="pd-variant-out">Agotado</span>
+                                            }
+                                        </button>
+                                    }
+                                </div>
+                            </div>
+                        }
 
                         <div class="pd-fade-in" style="--pd-delay: 0.15s">
                             @if (Product.Stock <= 0)

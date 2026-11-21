@@ -1107,3 +1107,95 @@
         height: auto;
     }
 }
+
+/* ══════════════════════════════════════════════
+   TAMAÑO de la bebida + selector de otros tamaños
+   (agregado con la función de tamaños; usa las variables de .pd-page-bg)
+   ══════════════════════════════════════════════ */
+.pd-size-chip {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.6px;
+    padding: 4px 12px;
+    border-radius: 20px;
+    white-space: nowrap;
+    color: var(--pd-gold-solid);
+    background: rgba(232, 196, 104, 0.1);
+    border: 1px solid rgba(232, 196, 104, 0.3);
+}
+
+.pd-variants {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.pd-variants-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--pd-text-muted);
+}
+
+.pd-variants-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.pd-variant {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    min-width: 92px;
+    padding: 10px 16px;
+    border-radius: 14px;
+    border: 1px solid var(--pd-border);
+    background: var(--pd-surface);
+    color: #f5f0e8;
+    font: inherit;
+    cursor: pointer;
+    transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+    -webkit-tap-highlight-color: transparent;
+}
+
+    .pd-variant:hover {
+        border-color: rgba(232, 196, 104, 0.55);
+        background: rgba(232, 196, 104, 0.08);
+        transform: translateY(-1px);
+    }
+
+    .pd-variant.is-current {
+        border-color: var(--pd-crimson);
+        background: rgba(255, 23, 68, 0.12);
+        box-shadow: 0 0 16px var(--pd-crimson-glow);
+        cursor: default;
+        transform: none;
+    }
+
+    .pd-variant.is-out {
+        opacity: 0.6;
+    }
+
+.pd-variant-size {
+    font-size: 0.95rem;
+    font-weight: 800;
+    line-height: 1.1;
+}
+
+.pd-variant-price {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--pd-gold-solid);
+}
+
+.pd-variant-out {
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #ff8a80;
+}
+

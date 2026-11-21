@@ -34,7 +34,7 @@ namespace Daniel_Licors_Store.Data.Services
                 .Select(p => new HiddenProductDto
                 {
                     ProductId = p.ProductId,
-                    Name = p.Name,
+                    Name = p.Name + (p.Size != null ? " (" + p.Size + ")" : ""),
                     ImageUrl = p.ImageUrl,
                     CategoryName = p.Category != null ? p.Category.Name : "Sin categoría",
                     Price = p.ProductStores

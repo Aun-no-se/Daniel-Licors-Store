@@ -32,9 +32,26 @@ namespace Daniel_Licors_Store.Components.Pages
         private const int StoreId = 1;
         private HashSet<int> _expandedPromoIds = new();
 
-        protected override async Task OnInitializedAsync()
+        private int _loadedProductId;
+
+        // OnParametersSetAsync (y no OnInitializedAsync): al cambiar de tamaño
+        // (/producto/5 → /producto/6) Blazor reutiliza la página, y así se recarga
+        // con la otra bebida.
+        protected override async Task OnParametersSetAsync()
         {
+            if (_loadedProductId == ProductId) return;
+
+            _loadedProductId = ProductId;
+            _quantity = 1;
+            _expandedPromoIds.Clear();
             await Load();
+        }
+
+        // ── Cambiar a otro tamaño de la misma bebida ─────────────────────────
+        protected void OpenVariant(ProductSizeVariantDto variant)
+        {
+            if (!variant.IsCurrent)
+                Nav.NavigateTo($"/producto/{variant.ProductId}");
         }
 
         private async Task Load()

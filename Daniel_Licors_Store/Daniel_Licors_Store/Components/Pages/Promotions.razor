@@ -275,7 +275,7 @@
                             </HeaderContent>
                             <RowTemplate>
                                 <MudTd>
-                                    <MudText Typo="Typo.body2" Class="font-weight-bold pr-picker-name">@context.Name</MudText>
+                                    <MudText Typo="Typo.body2" Class="font-weight-bold pr-picker-name">@context.DisplayName</MudText>
                                 </MudTd>
                                 <MudTd>
                                     <MudText Class="font-weight-bold pr-picker-price">$@context.Price.ToString("N2")</MudText>
@@ -328,7 +328,7 @@
             <div class="pr-linedialog-backdrop" @onclick="CloseLineDialog">
                 <div class="pr-linedialog-card" @onclick:stopPropagation>
 
-                    <div class="pr-linedialog-title">@_lineDialogProduct.Name</div>
+                    <div class="pr-linedialog-title">@_lineDialogProduct.DisplayName</div>
                     <div class="muted-text pr-linedialog-sub">
                         Precio normal: $@_lineDialogProduct.Price.ToString("N2")
                     </div>

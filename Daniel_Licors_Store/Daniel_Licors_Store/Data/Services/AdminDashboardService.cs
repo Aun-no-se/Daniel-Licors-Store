@@ -141,7 +141,7 @@ namespace Daniel_Licors_Store.Data.Services
                 .Select(oi => new
                 {
                     oi.ProductId,
-                    ProductName = oi.Product.Name,
+                    ProductName = oi.Product.Name + (oi.Product.Size != null ? " (" + oi.Product.Size + ")" : ""),
                     CategoryName = oi.Product.Category != null ? oi.Product.Category.Name : "Sin categoría",
                     oi.Quantity,
                     Revenue = oi.UnitPrice * oi.Quantity

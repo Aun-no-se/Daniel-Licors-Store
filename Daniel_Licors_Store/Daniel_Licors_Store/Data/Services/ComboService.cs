@@ -131,7 +131,7 @@ namespace Daniel_Licors_Store.Data.Services
                     Products = c.ComboProducts.Select(cp => new ComboProductDetailDto
                     {
                         ProductId = cp.ProductId,
-                        ProductName = cp.Product.Name,
+                        ProductName = cp.Product.Name + (cp.Product.Size != null ? " (" + cp.Product.Size + ")" : ""),
                         Description = cp.Product.Description ?? "",
                         ImageUrl = cp.Product.ImageUrl ?? "/images/default-product.png",
 
@@ -177,7 +177,7 @@ namespace Daniel_Licors_Store.Data.Services
 
                     ProductsSummary = string.Join(", ",
                         c.ComboProducts.Select(cp =>
-                            cp.Product.Name + " x" + cp.Quantity))
+                            cp.Product.Name + (cp.Product.Size != null ? " (" + cp.Product.Size + ")" : "") + " x" + cp.Quantity))
                 })
                 .ToListAsync();
         }
@@ -195,7 +195,7 @@ namespace Daniel_Licors_Store.Data.Services
                     .Include(ps => ps.Product)
                     .FirstOrDefaultAsync(ps => ps.ProductId == prod.ProductId && ps.StoreId == Components.Shared.AppStore.StoreId);
 
-                var nombre = productStore?.Product?.Name ?? $"Producto #{prod.ProductId}";
+                var nombre = productStore?.Product?.DisplayName ?? $"Producto #{prod.ProductId}";
 
                 if (productStore == null)
                     throw new Exception($"'{nombre}' no está disponible en esta tienda");

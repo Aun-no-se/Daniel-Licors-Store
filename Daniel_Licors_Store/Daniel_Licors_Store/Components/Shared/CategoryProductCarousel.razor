@@ -59,7 +59,7 @@
                                 <img src="@(string.IsNullOrEmpty(product.ImageUrl) ? "/images/placeholder.png" : product.ImageUrl)"
                                      class="dlc-img"
                                      loading="lazy"
-                                     alt="@product.Name" />
+                                     alt="@product.DisplayName" />
                                 @if (isCenter)
                                 {
                                     <div class="dlc-img-shine"></div>
@@ -67,10 +67,24 @@
                             </div>
 
                             <div class="dlc-info">
-                                <span class="dlc-cat-badge">
-                                    <MudIcon Icon="@GetCategoryIcon(product.Category)" Size="Size.Small" Class="dlc-cat-badge-icon" />
-                                    @product.Category
-                                </span>
+                                @if (string.IsNullOrWhiteSpace(product.Size))
+                                {
+                                    <span class="dlc-cat-badge">
+                                        <MudIcon Icon="@GetCategoryIcon(product.Category)" Size="Size.Small" Class="dlc-cat-badge-icon" />
+                                        @product.Category
+                                    </span>
+                                }
+                                else
+                                {
+                                    @* Bebida con tamaño: la etiqueta del tamaño va al lado de la categoría *@
+                                    <div class="dlc-badge-row">
+                                        <span class="dlc-cat-badge">
+                                            <MudIcon Icon="@GetCategoryIcon(product.Category)" Size="Size.Small" Class="dlc-cat-badge-icon" />
+                                            @product.Category
+                                        </span>
+                                        <span class="dlc-size-badge">@product.Size</span>
+                                    </div>
+                                }
                                 <p class="dlc-name">@product.Name</p>
 
                                 @if (!string.IsNullOrEmpty(product.Description))

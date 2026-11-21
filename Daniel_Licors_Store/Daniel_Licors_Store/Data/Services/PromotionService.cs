@@ -42,7 +42,7 @@ public class PromotionService : IPromotionService
             ImageUrl = p.ImageUrl,
             ProductCount = p.PromotionProducts.Count,
             ProductsSummary = string.Join(", ",
-                p.PromotionProducts.Select(pp => pp.Product?.Name ?? "").Where(n => n != ""))
+                p.PromotionProducts.Select(pp => pp.Product?.DisplayName ?? "").Where(n => n != ""))
         }).ToList();
     }
 
@@ -71,12 +71,12 @@ public class PromotionService : IPromotionService
             ImageUrl = p.ImageUrl,
             ProductCount = p.PromotionProducts.Count,
             ProductsSummary = string.Join(", ",
-                p.PromotionProducts.Select(pp => pp.Product?.Name ?? "")),
+                p.PromotionProducts.Select(pp => pp.Product?.DisplayName ?? "")),
 
             PromotionProducts = p.PromotionProducts.Select(pp => new PromotionProductLine
             {
                 ProductId = pp.ProductId,
-                ProductName = pp.Product?.Name ?? $"Producto #{pp.ProductId}",
+                ProductName = pp.Product?.DisplayName ?? $"Producto #{pp.ProductId}",
                 OriginalPrice = pp.Product?.ProductStores?.FirstOrDefault()?.Price ?? 0,
                 DiscountPercentage = pp.DiscountPercentage,
                 SpecialPrice = pp.SpecialPrice,
@@ -101,7 +101,7 @@ public class PromotionService : IPromotionService
                 .Include(ps => ps.Product)
                 .FirstOrDefaultAsync(ps => ps.ProductId == line.ProductId && ps.StoreId == Components.Shared.AppStore.StoreId);
 
-            var nombre = productStore?.Product?.Name ?? line.ProductName;
+            var nombre = productStore?.Product?.DisplayName ?? line.ProductName;
 
             if (productStore == null)
                 throw new Exception($"'{nombre}' no está disponible en esta tienda");

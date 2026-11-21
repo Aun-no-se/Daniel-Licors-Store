@@ -229,7 +229,7 @@ public partial class Promotions : AdminPageBase
                 _promoBuilder.Add(new PromotionProductLine
                 {
                     ProductId = pp.ProductId,
-                    ProductName = product?.Name ?? $"Producto #{pp.ProductId}",
+                    ProductName = product?.DisplayName ?? $"Producto #{pp.ProductId}",
                     OriginalPrice = product?.Price ?? 0,
                     DiscountPercentage = pp.DiscountPercentage,
                     SpecialPrice = pp.SpecialPrice,
@@ -282,7 +282,7 @@ public partial class Promotions : AdminPageBase
         var line = new PromotionProductLine
         {
             ProductId = _lineDialogProduct.ProductId,
-            ProductName = _lineDialogProduct.Name,
+            ProductName = _lineDialogProduct.DisplayName,
             OriginalPrice = _lineDialogProduct.Price
         };
         switch (_form.PromotionType)

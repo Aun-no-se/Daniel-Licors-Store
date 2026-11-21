@@ -113,7 +113,7 @@ public class CartService : ICartService
             var yaReservado = GetReservedQuantity(cart, productId);
             if (yaReservado + quantity > productStore.Stock)
                 throw new InvalidOperationException(
-                    $"No contamos con esa cantidad de '{product.Name}'. Disponible: {productStore.Stock}, " +
+                    $"No contamos con esa cantidad de '{product.DisplayName}'. Disponible: {productStore.Stock}, " +
                     $"ya tienes {yaReservado} en tu carrito.");
 
             var existingItem = cart.CartItems.FirstOrDefault(ci => ci.ProductId == productId);
@@ -191,13 +191,13 @@ public class CartService : ICartService
 
                 if (productStore == null)
                     throw new InvalidOperationException(
-                        $"'{comboProduct.Product?.Name ?? comboProduct.ProductId.ToString()}' no está disponible en esta tienda");
+                        $"'{comboProduct.Product?.DisplayName ?? comboProduct.ProductId.ToString()}' no está disponible en esta tienda");
 
                 var necesario = quantity * comboProduct.Quantity;
 
                 if (necesario > productStore.Stock)
                     throw new InvalidOperationException(
-                        $"No contamos con esa cantidad de '{comboProduct.Product?.Name ?? comboProduct.ProductId.ToString()}' " +
+                        $"No contamos con esa cantidad de '{comboProduct.Product?.DisplayName ?? comboProduct.ProductId.ToString()}' " +
                         $"para armar este combo. Disponible: {productStore.Stock}.");
             }
 
@@ -426,7 +426,7 @@ public class CartService : ICartService
 
                             if (productStore == null || necesario > productStore.Stock)
                                 throw new InvalidOperationException(
-                                    $"No contamos con esa cantidad de '{comboProduct.Product?.Name ?? comboProduct.ProductId.ToString()}' " +
+                                    $"No contamos con esa cantidad de '{comboProduct.Product?.DisplayName ?? comboProduct.ProductId.ToString()}' " +
                                     $"para este combo. Disponible: {productStore?.Stock ?? 0}.");
                         }
                     }
@@ -667,7 +667,7 @@ public class CartService : ICartService
                     // Validar stock suficiente (protección extra en checkout)
                     if (productStore.Stock < cartItem.Quantity)
                         throw new InvalidOperationException(
-                            $"Stock insuficiente para '{cartItem.Product?.Name ?? cartItem.ProductId.ToString()}'. " +
+                            $"Stock insuficiente para '{cartItem.Product?.DisplayName ?? cartItem.ProductId.ToString()}'. " +
                             $"Disponible: {productStore.Stock}, solicitado: {cartItem.Quantity}.");
 
                     productStore.Stock -= cartItem.Quantity;
@@ -838,7 +838,7 @@ public class CartService : ICartService
             {
                 CartItemId = item.CartItemId,
                 ProductId = item.ProductId,
-                ProductName = item.Product.Name,
+                ProductName = item.Product.DisplayName,
                 ProductImage = item.Product.ImageUrl,
                 Category = "Producto",
                 Quantity = item.Quantity,          // ← cantidad real, no siempre 1

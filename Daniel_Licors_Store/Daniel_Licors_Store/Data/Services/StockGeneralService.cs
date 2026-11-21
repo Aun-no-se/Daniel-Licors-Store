@@ -50,15 +50,17 @@ namespace Daniel_Licors_Store.Data.Services
 
             if (!string.IsNullOrWhiteSpace(searchTerm))
                 query = query.Where(ps => ps.Product.Name.Contains(searchTerm) ||
+                                          (ps.Product.Size != null && ps.Product.Size.Contains(searchTerm)) ||
                                           (ps.Product.Brand != null && ps.Product.Brand.Name.Contains(searchTerm)));
 
             return await query
                 .OrderBy(ps => ps.Product.Category.Name)
                 .ThenBy(ps => ps.Product.Name)
+                .ThenBy(ps => ps.Product.SizeMl)
                 .Select(ps => new StockProductRow
                 {
                     ProductId = ps.ProductId,
-                    Name = ps.Product.Name,
+                    Name = ps.Product.Name + (ps.Product.Size != null ? " (" + ps.Product.Size + ")" : ""),
                     ImageUrl = ps.Product.ImageUrl,
                     Category = ps.Product.Category.Name,
                     CategoryId = ps.Product.CategoryId,
@@ -93,7 +95,7 @@ namespace Daniel_Licors_Store.Data.Services
                 IsActive = p.IsActive,
                 Products = p.PromotionProducts.Select(pp => new StockPromoProductRow
                 {
-                    Name = pp.Product?.Name ?? "",
+                    Name = pp.Product?.DisplayName ?? "",
                     SpecialPrice = pp.SpecialPrice,
                     ImageUrl = pp.Product?.ImageUrl
                 }).ToList()
@@ -118,7 +120,7 @@ namespace Daniel_Licors_Store.Data.Services
                 ImageUrl = c.ImageUrl,
                 EndDate = c.EndDate,
                 IsActive = c.IsActive,
-                ProductNames = c.ComboProducts.Select(cp => cp.Product?.Name ?? "").ToList()
+                ProductNames = c.ComboProducts.Select(cp => cp.Product?.DisplayName ?? "").ToList()
             }).ToList();
         }
 

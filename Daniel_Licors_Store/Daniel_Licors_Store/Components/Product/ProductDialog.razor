@@ -107,7 +107,8 @@
                             <MudTextField @bind-Value="Model.Name"
                                           Label="Nombre del producto"
                                           Variant="Variant.Outlined"
-                                          Placeholder="Ej. Brugal Añejo 750ml"
+                                          Placeholder="Ej. Brugal Añejo"
+                                          HelperText="Sin el tamaño: se elige con los botones de abajo"
                                           Required="true"
                                           RequiredError="El nombre es obligatorio"
                                           Validation="@(new Func<string, string?>(ValidateName))"
@@ -118,6 +119,7 @@
                             <MudSelect T="int"
                                        Label="Categoría"
                                        @bind-Value="Model.CategoryId"
+                                       @bind-Value:after="OnCategoryChanged"
                                        Variant="Variant.Outlined"
                                        AnchorOrigin="Origin.BottomCenter"
                                        TransformOrigin="Origin.TopCenter"
@@ -146,6 +148,69 @@
                             </MudSelect>
                         </div>
                     </div>
+
+                    <!-- ── Tamaño (los botones dependen de la categoría) ── -->
+                    <div class="pd-section">
+                        <div class="pd-section-label">📏 Tamaño @(SizeRuleNow.Required ? "*" : "")</div>
+
+                        @if (Model.CategoryId <= 0)
+                        {
+                            <div class="pd-size-note">Elige primero la categoría para ver los tamaños de esa bebida.</div>
+                        }
+                        else
+                        {
+                            <div class="pd-size-group @(sizeError ? "has-error" : "")">
+                                @foreach (var option in SizeRuleNow.Options)
+                                {
+                                    var opt = option;
+                                    <button type="button"
+                                            class="pd-size-chip @(IsPresetSelected(opt) ? "active" : "")"
+                                            aria-pressed="@(IsPresetSelected(opt) ? "true" : "false")"
+                                            @onclick="() => SelectSize(opt)">
+                                        <span class="pd-size-main">@opt.Label</span>
+                                        @if (!string.IsNullOrEmpty(opt.Hint))
+                                        {
+                                            <span class="pd-size-sub">@opt.Hint</span>
+                                        }
+                                    </button>
+                                }
+
+                                <button type="button"
+                                        class="pd-size-chip pd-size-other @(customSizeOpen ? "active" : "")"
+                                        aria-pressed="@(customSizeOpen ? "true" : "false")"
+                                        @onclick="ToggleCustomSize">
+                                    <span class="pd-size-main">Otro…</span>
+                                    <span class="pd-size-sub">Escribir tamaño</span>
+                                </button>
+                            </div>
+
+                            @if (customSizeOpen)
+                            {
+                                <div class="pd-field-row cols-1">
+                                    <MudTextField T="string"
+                                                  @bind-Value="customSize"
+                                                  @bind-Value:after="OnCustomSizeChanged"
+                                                  Label="Tamaño"
+                                                  Variant="Variant.Outlined"
+                                                  Placeholder="Ej. 1.14 L"
+                                                  MaxLength="40"
+                                                  Immediate="true"
+                                                  FullWidth />
+                                </div>
+                            }
+
+                            @if (sizeError)
+                            {
+                                <div class="pd-image-error-text">Selecciona el tamaño de la bebida.</div>
+                            }
+
+                            @if (!ProductId.HasValue)
+                            {
+                                <div class="pd-size-note">Cada tamaño se guarda como una bebida aparte, con su propio precio y stock. Para agregar otro tamaño, activa «Otro tamaño» en Opciones o crea la bebida otra vez.</div>
+                            }
+                        }
+                    </div>
+
 
                     <!-- ── Precio & Stock ── -->
                     <div class="pd-section">
@@ -205,6 +270,20 @@
                                     <div class="pd-toggle-hint">@(Model.IsPremium ? "Activo" : "No activo")</div>
                                 </div>
                             </div>
+
+                            <!-- Otro tamaño (solo al crear): deja el formulario abierto para el siguiente tamaño -->
+                            @if (!ProductId.HasValue)
+                            {
+                                <div class="pd-toggle-card @(keepAddingSizes ? "active-chain" : "")"
+                                     @onclick="() => keepAddingSizes = !keepAddingSizes">
+                                    <div class="pd-toggle-dot @(keepAddingSizes ? "chain" : "off")"></div>
+                                    <div>
+                                        <div class="pd-toggle-label">Otro tamaño</div>
+                                        <div class="pd-toggle-hint">@(keepAddingSizes ? "Seguir al guardar" : "Cerrar al guardar")</div>
+                                    </div>
+                                </div>
+                            }
+
 
                             <!-- Activo toggle (solo en edición) -->
                             @if (ProductId.HasValue)

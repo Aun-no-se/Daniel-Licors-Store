@@ -22,6 +22,11 @@ public class ProductService : IProductService
 
     public async Task<int> CreateProductAsync(ProductCreateModel model, string? userId = null)
     {
+        // Tamaño limpio + que no exista ya la misma bebida con el mismo tamaño
+        var size = ProductSizeCatalog.NormalizeLabel(model.Size);
+        var sizeMl = model.SizeMl ?? ProductSizeCatalog.TryParseMl(size);
+        await EnsureNoDuplicateAsync(model.Name, model.CategoryId, model.BrandId, size, excludeProductId: null);
+
         using var transaction = await _context.Database.BeginTransactionAsync();
 
         try
@@ -41,7 +46,9 @@ public class ProductService : IProductService
                 IsPremium = model.IsPremium,
                 IsActive = model.IsActive,
                 CreatedAt = DateTime.Now,
-                AgingYears = model.AgingYears
+                AgingYears = model.AgingYears,
+                Size = size,
+                SizeMl = sizeMl
             };
 
             _context.Products.Add(product);
@@ -113,6 +120,8 @@ public class ProductService : IProductService
             CategoryId = product.CategoryId,
             BrandId = product.BrandId,
             AgingYears = product.AgingYears,
+            Size = product.Size,
+            SizeMl = product.SizeMl,
             Price = store?.Price ?? 0,
             Stock = store?.Stock ?? 0,
             IsPremium = product.IsPremium,
@@ -123,6 +132,10 @@ public class ProductService : IProductService
 
     public async Task UpdateProductAsync(ProductEditModel model, string? userId = null)
     {
+        var size = ProductSizeCatalog.NormalizeLabel(model.Size);
+        var sizeMl = model.SizeMl ?? ProductSizeCatalog.TryParseMl(size);
+        await EnsureNoDuplicateAsync(model.Name, model.CategoryId, model.BrandId, size, excludeProductId: model.ProductId);
+
         using var transaction = await _context.Database.BeginTransactionAsync();
 
         try
@@ -142,6 +155,8 @@ public class ProductService : IProductService
             product.CategoryId = model.CategoryId;
             product.BrandId = model.BrandId;
             product.AgingYears = model.AgingYears;
+            product.Size = size;
+            product.SizeMl = sizeMl;
             product.IsPremium = model.IsPremium;
             product.IsActive = model.IsActive;
             product.ImageUrl = model.ImageUrl;
@@ -240,6 +255,34 @@ public class ProductService : IProductService
     public async Task DeleteProductAsync(int productId)
         => await DeleteProductAsync(productId, null);
 
+    // Cada tamaño es una bebida aparte, pero no puede haber dos iguales: mismo nombre,
+    // misma categoría, misma marca y el mismo tamaño (ej. dos "Corona 355 ml").
+    // Corona 355 ml y Corona 710 ml sí pueden convivir, cada una con su precio y stock.
+    private async Task EnsureNoDuplicateAsync(string name, int categoryId, int? brandId, string? size, int? excludeProductId)
+    {
+        var cleanName = (name ?? string.Empty).Trim();
+
+        var candidates = await _context.Products
+            .AsNoTracking()
+            .Where(p => p.CategoryId == categoryId
+                        && p.BrandId == brandId
+                        && p.Name == cleanName
+                        && (excludeProductId == null || p.ProductId != excludeProductId))
+            .Select(p => new { p.ProductId, p.Size, p.IsActive })
+            .ToListAsync();
+
+        var duplicate = candidates.FirstOrDefault(p =>
+            string.Equals(p.Size ?? string.Empty, size ?? string.Empty, StringComparison.OrdinalIgnoreCase));
+
+        if (duplicate == null) return;
+
+        var sizeText = string.IsNullOrWhiteSpace(size) ? string.Empty : $" de {size}";
+
+        throw new InvalidOperationException(duplicate.IsActive
+            ? $"Ya existe «{cleanName}»{sizeText} en el catálogo. Si es otro tamaño, elígelo en los botones de tamaño."
+            : $"Ya existe «{cleanName}»{sizeText}, pero está oculta. Reactívala desde «Elementos ocultos» en vez de crearla otra vez.");
+    }
+
     public async Task<List<ProductDetailDto>> GetProductDetailsAsync()
     {
         return await _context.Products
@@ -249,6 +292,7 @@ public class ProductService : IProductService
             {
                 ProductId = p.ProductId,
                 Name = p.Name,
+                Size = p.Size,
                 Price = p.ProductStores
                     .Where(ps => ps.StoreId == AppStore.StoreId)
                     .Select(ps => ps.Price)

@@ -125,7 +125,42 @@ namespace Daniel_Licors_Store.Data.Services
                 .Include(x => x.Brand)
                 .Include(x => x.ProductStores)
                 .FirstOrDefaultAsync(x => x.ProductId == productId && x.IsActive);
-            return p == null ? null : MapDetail(p);
+            if (p == null) return null;
+
+            var detail = MapDetail(p);
+
+            // Otros tamaños de esta misma bebida (mismo nombre, categoría y marca)
+            var sameDrink = await ctx.Products
+                .AsNoTracking()
+                .Include(x => x.ProductStores)
+                .Where(x => x.IsActive
+                            && x.CategoryId == p.CategoryId
+                            && x.BrandId == p.BrandId
+                            && x.Name == p.Name)
+                .ToListAsync();
+
+            if (sameDrink.Count > 1)
+            {
+                detail.Variants = sameDrink
+                    .OrderBy(x => x.SizeMl ?? int.MaxValue)
+                    .ThenBy(x => x.Size)
+                    .Select(x =>
+                    {
+                        var vs = x.ProductStores?.FirstOrDefault(ps => ps.StoreId == 1)
+                              ?? x.ProductStores?.FirstOrDefault();
+                        return new ProductSizeVariantDto
+                        {
+                            ProductId = x.ProductId,
+                            Size = x.Size,
+                            Price = vs?.Price ?? 0,
+                            Stock = vs?.Stock ?? 0,
+                            IsCurrent = x.ProductId == p.ProductId
+                        };
+                    })
+                    .ToList();
+            }
+
+            return detail;
         }
 
         public async Task<List<ComboDto>> GetCombosByProductAsync(int productId)
@@ -192,6 +227,7 @@ namespace Daniel_Licors_Store.Data.Services
                 Brand = p.Brand?.Name,
                 ImageUrl = p.ImageUrl,
                 IsPremium = p.IsPremium,
+                Size = p.Size,
                 IsActive = p.IsActive,
                 Price = store?.Price ?? 0
             };
@@ -210,6 +246,7 @@ namespace Daniel_Licors_Store.Data.Services
                 Brand = p.Brand?.Name,
                 ImageUrl = p.ImageUrl,
                 IsPremium = p.IsPremium,
+                Size = p.Size,
                 IsActive = p.IsActive,
                 Price = store?.Price ?? 0,
                 Stock = store?.Stock ?? 0

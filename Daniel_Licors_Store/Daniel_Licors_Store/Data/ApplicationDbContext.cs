@@ -129,6 +129,11 @@ public class ApplicationDbContext : DbContext
 
             entity.Property(e => e.AgingYears);
 
+            entity.Property(e => e.Size)
+                  .HasMaxLength(40);
+
+            entity.Property(e => e.SizeMl);
+
             entity.Property(e => e.ImageUrl)
                   .HasMaxLength(500);
 
