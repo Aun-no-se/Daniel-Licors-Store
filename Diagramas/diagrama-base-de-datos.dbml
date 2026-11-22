@@ -1,0 +1,314 @@
+// ═══════════════════════════════════════════════════════════════
+// Daniel Liquor Store — DanielLicorsStoreDB (SQL Server)
+// Generado a partir de 01-crear-base-de-datos.sql · 24 tablas · 27 relaciones
+// Pégalo en https://dbdiagram.io/d para verlo y editarlo.
+// ═══════════════════════════════════════════════════════════════
+
+Project DanielLicorsStoreDB {
+  database_type: 'SQL Server'
+  Note: 'Daniel Liquor Store — actualizado 21 nov 2026'
+}
+
+Table Categories {
+  CategoryId int [pk, increment]
+  Name nvarchar(100) [not null]
+  IsActive bit [not null, default: 1]
+}
+
+Table Brands {
+  BrandId int [pk, increment]
+  Name nvarchar(100) [not null]
+  IsActive bit [not null, default: 1]
+}
+
+Table Products {
+  ProductId int [pk, increment]
+  Name nvarchar(150) [not null]
+  Description nvarchar(500) [null]
+  BrandId int [null]
+  CategoryId int [not null]
+  IsPremium bit [not null, default: 0]
+  ImageUrl nvarchar(500) [null]
+  IsActive bit [not null, default: 1]
+  CreatedAt datetime [not null, default: `GETDATE()`]
+  AgingYears int [null]
+  Size nvarchar(40) [null]
+  SizeMl int [null]
+}
+
+Table Stores {
+  StoreId int [pk, increment]
+  Name nvarchar(150) [not null]
+  Address nvarchar(250) [not null]
+  Phone nvarchar(20) [null]
+  WhatsApp nvarchar(20) [null]
+  OpenTime time [null]
+  CloseTime time [null]
+  IsActive bit [not null, default: 1]
+}
+
+Table ProductStores {
+  ProductStoreId int [pk, increment]
+  ProductId int [not null]
+  StoreId int [not null]
+  Price decimal(10,2) [not null]
+  Stock int [not null, default: 0]
+  IsAvailable bit [not null, default: 1]
+  RowVersion rowversion [not null]
+  Indexes {
+    (ProductId, StoreId) [unique]
+  }
+}
+
+Table BestSellers {
+  BestSellerId int [pk, increment]
+  ProductId int [not null]
+  OrderPriority int [not null, default: 1]
+  IsActive bit [not null, default: 1]
+  Note: 'Existe en la base de datos, pero el código aún no la usa'
+}
+
+Table Promotions {
+  PromotionId int [pk, increment]
+  Title nvarchar(150) [not null]
+  Description nvarchar(500) [null]
+  StartDate datetime [not null]
+  EndDate datetime [not null]
+  PromotionType nvarchar(50) [null]
+  ImageUrl nvarchar(max) [null]
+  IsActive bit [not null, default: 1]
+}
+
+Table PromotionProducts {
+  PromotionProductId int [pk, increment]
+  PromotionId int [not null]
+  ProductId int [not null]
+  SpecialPrice decimal(10,2) [null]
+  DiscountPercentage decimal(18,2) [null]
+  RequiredQuantity int [null]
+  PayQuantity int [null]
+}
+
+Table Combos {
+  ComboId int [pk, increment]
+  Name nvarchar(150) [not null]
+  Description nvarchar(500) [null]
+  ComboPrice decimal(10,2) [not null]
+  StartDate datetime [null]
+  EndDate datetime [null]
+  ImageUrl nvarchar(500) [null]
+  IsActive bit [not null, default: 1]
+}
+
+Table ComboProducts {
+  ComboProductId int [pk, increment]
+  ComboId int [not null]
+  ProductId int [not null]
+  Quantity int [not null]
+}
+
+Table Users {
+  UserId nvarchar(450) [pk]
+  FullName nvarchar(150) [null]
+  LastName nvarchar(150) [null]
+  Email nvarchar(150) [null]
+  Phone nvarchar(20) [null]
+  Age int [not null, default: 0]
+  PasswordHash nvarchar(500) [null]
+  IsActive bit [not null, default: 1]
+  CreatedAt datetime [not null, default: `GETDATE()`]
+  FailedLoginAttempts int [not null, default: 0]
+  LockoutEnd datetime2 [null]
+}
+
+Table Roles {
+  RoleId int [pk, increment]
+  Name nvarchar(50) [not null, unique]
+  Description nvarchar(200) [null]
+  IsActive bit [not null, default: 1]
+}
+
+Table UserRoles {
+  UserRoleId int [pk, increment]
+  UserId nvarchar(450) [not null]
+  RoleId int [not null]
+  AssignedAt datetime [not null, default: `GETDATE()`]
+  Indexes {
+    (UserId, RoleId) [unique]
+  }
+}
+
+Table Carts {
+  CartId int [pk, increment]
+  UserId nvarchar(450) [null]
+  SessionId nvarchar(100) [null]
+  StoreId int [not null]
+  CartStatus nvarchar(20) [not null, default: 'ACTIVE']
+  CreatedAt datetime [not null, default: `GETDATE()`]
+  UpdatedAt datetime [not null, default: `GETDATE()`]
+}
+
+Table CartItems {
+  CartItemId int [pk, increment]
+  CartId int [not null]
+  ProductId int [not null]
+  Quantity int [not null]
+  UnitPrice decimal(10,2) [not null]
+  SubTotal decimal(10,2) [not null]
+}
+
+Table CartCombos {
+  CartComboId int [pk, increment]
+  CartId int [not null]
+  ComboId int [not null]
+  Quantity int [not null]
+  UnitPrice decimal(10,2) [not null]
+  SubTotal decimal(10,2) [not null]
+}
+
+Table CartPromotions {
+  CartPromotionId int [pk, increment]
+  CartId int [not null]
+  PromotionId int [not null]
+  Quantity int [not null]
+  UnitPrice decimal(10,2) [not null]
+  SubTotal decimal(10,2) [not null]
+}
+
+Table Orders {
+  OrderId int [pk, increment]
+  UserId nvarchar(450) [null]
+  StoreId int [not null]
+  OrderStatus nvarchar(30) [not null]
+  PaymentMethod nvarchar(20) [null]
+  TotalAmount decimal(10,2) [not null]
+  CreatedAt datetime [not null, default: `GETDATE()`]
+}
+
+Table OrderItems {
+  OrderItemId int [pk, increment]
+  OrderId int [not null]
+  ProductId int [not null]
+  Quantity int [not null]
+  UnitPrice decimal(10,2) [not null]
+  SubTotal decimal(10,2) [note: 'columna calculada: Quantity * UnitPrice']
+}
+
+Table StockMovements {
+  StockMovementId int [pk, increment]
+  ProductId int [not null]
+  StoreId int [not null]
+  Quantity int [not null]
+  MovementType nvarchar(20) [not null]
+  UserId nvarchar(450) [null]
+  CreatedAt datetime [not null, default: `GETDATE()`]
+}
+
+Table Events {
+  EventId int [pk, increment]
+  Title nvarchar(150) [not null]
+  Description nvarchar(500) [null]
+  ImageUrl nvarchar(500) [null]
+  StartDate datetime [null]
+  EndDate datetime [null]
+  IsActive bit [not null, default: 1]
+  Note: 'Existe en la base de datos, pero el código aún no la usa'
+}
+
+Table Testimonials {
+  TestimonialId int [pk, increment]
+  CustomerName nvarchar(150) [null]
+  Comment nvarchar(500) [null]
+  Rating int [null]
+  IsActive bit [not null, default: 1]
+  Note: 'Existe en la base de datos, pero el código aún no la usa'
+}
+
+Table SiteConfigs {
+  SiteConfigId int [pk, increment]
+  ConfigKey nvarchar(100) [not null]
+  ConfigValue nvarchar(max) [not null]
+  Note: 'Existe en la base de datos, pero el código aún no la usa'
+}
+
+Table AuditLogs {
+  AuditLogId int [pk, increment]
+  UserId nvarchar(450) [null]
+  Action nvarchar(200) [null]
+  Entity nvarchar(100) [null]
+  EntityId nvarchar(100) [null]
+  CreatedAt datetime [not null, default: `GETDATE()`]
+}
+
+TableGroup Catalogo {
+  Categories
+  Brands
+  Products
+}
+
+TableGroup Inventario {
+  Stores
+  ProductStores
+  StockMovements
+  BestSellers
+}
+
+TableGroup Combos_y_promociones {
+  Combos
+  ComboProducts
+  Promotions
+  PromotionProducts
+}
+
+TableGroup Usuarios_y_auditoria {
+  Users
+  Roles
+  UserRoles
+  AuditLogs
+}
+
+TableGroup Carrito {
+  Carts
+  CartItems
+  CartCombos
+  CartPromotions
+}
+
+TableGroup Pedidos {
+  Orders
+  OrderItems
+}
+
+TableGroup Contenido_del_sitio {
+  Events
+  Testimonials
+  SiteConfigs
+}
+
+Ref: Products.CategoryId > Categories.CategoryId
+Ref: Products.BrandId > Brands.BrandId
+Ref: ProductStores.ProductId > Products.ProductId
+Ref: ProductStores.StoreId > Stores.StoreId
+Ref: BestSellers.ProductId > Products.ProductId
+Ref: PromotionProducts.PromotionId > Promotions.PromotionId
+Ref: PromotionProducts.ProductId > Products.ProductId
+Ref: ComboProducts.ComboId > Combos.ComboId [delete: cascade]
+Ref: ComboProducts.ProductId > Products.ProductId
+Ref: UserRoles.UserId > Users.UserId [delete: cascade]
+Ref: UserRoles.RoleId > Roles.RoleId
+Ref: Carts.UserId > Users.UserId
+Ref: Carts.StoreId > Stores.StoreId
+Ref: CartItems.CartId > Carts.CartId
+Ref: CartItems.ProductId > Products.ProductId
+Ref: CartCombos.CartId > Carts.CartId
+Ref: CartCombos.ComboId > Combos.ComboId
+Ref: CartPromotions.CartId > Carts.CartId [delete: cascade]
+Ref: CartPromotions.PromotionId > Promotions.PromotionId
+Ref: Orders.UserId > Users.UserId
+Ref: Orders.StoreId > Stores.StoreId
+Ref: OrderItems.OrderId > Orders.OrderId
+Ref: OrderItems.ProductId > Products.ProductId
+Ref: StockMovements.ProductId > Products.ProductId
+Ref: StockMovements.StoreId > Stores.StoreId
+Ref: StockMovements.UserId > Users.UserId
+Ref: AuditLogs.UserId > Users.UserId
