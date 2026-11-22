@@ -141,7 +141,7 @@ public partial class ProductDialog
         => stock < 0 ? "El stock no puede ser negativo" : null;
 
     private string? ValidateAging(int? aging)
-        => (!aging.HasValue || aging.Value <= 0) ? "Ingresa los años de añejamiento" : null;
+        => (!aging.HasValue || aging.Value < 0) ? "Ingresa los años de añejamiento (0 si no se añeja)" : null;
 
     // ── Tamaño: acciones de los botones ─────────────────────────────
     private bool IsPresetSelected(SizeOption option)
