@@ -80,6 +80,36 @@ public partial class Cart
         }
     }
 
+    // Qué artículos tiene marcados el cliente ahora mismo (la selección vive solo en pantalla).
+    private CheckoutSelectionDto CaptureSelection()
+    {
+        var selection = new CheckoutSelectionDto();
+        if (_cartView == null) return selection;
+
+        foreach (var p in _cartView.Products.Where(p => p.IsSelected)) selection.ProductItemIds.Add(p.CartItemId);
+        foreach (var c in _cartView.Combos.Where(c => c.IsSelected)) selection.ComboItemIds.Add(c.CartComboId);
+        foreach (var pr in _cartView.Promotions.Where(pr => pr.IsSelected)) selection.PromotionItemIds.Add(pr.CartPromotionId);
+        return selection;
+    }
+
+    // Cada vez que el servidor devuelve el carrito, las marcas vienen en blanco:
+    // se vuelven a poner para que el cliente no pierda lo que había seleccionado.
+    private void ApplySelection(CheckoutSelectionDto selection)
+    {
+        if (_cartView == null) return;
+
+        _cartView.Products.ForEach(p => p.IsSelected = selection.ProductItemIds.Contains(p.CartItemId));
+        _cartView.Combos.ForEach(c => c.IsSelected = selection.ComboItemIds.Contains(c.CartComboId));
+        _cartView.Promotions.ForEach(pr => pr.IsSelected = selection.PromotionItemIds.Contains(pr.CartPromotionId));
+    }
+
+    private void ShowAdjustments(CartViewDto? view)
+    {
+        if (view == null) return;
+        foreach (var message in view.Adjustments)
+            Snackbar.Add(message, Severity.Warning);
+    }
+
     private async Task LoadCart()
     {
         try
@@ -92,10 +122,16 @@ public partial class Cart
                 return;
             }
 
-            _cartView = await CartService.GetCartAsync(_currentUserId, _storeId);
+            var selection = CaptureSelection();
+
+            // Reconcile = leer el carrito Y ponerlo al día con el stock real
+            // (algo se agotó, bajó el stock, cambió un precio...).
+            _cartView = await CartService.ReconcileCartAsync(_currentUserId, _storeId);
             _cartView ??= new CartViewDto();
+            ApplySelection(selection);
             RecalcSelected();
             FilterItems();
+            ShowAdjustments(_cartView);
         }
         catch (Exception ex)
         {
@@ -163,7 +199,9 @@ public partial class Cart
 
         try
         {
+            var selection = CaptureSelection();
             _cartView = await CartService.RemoveItemAsync(_currentUserId, itemId, itemType);
+            ApplySelection(selection);
             RecalcSelected();
             FilterItems();
             Snackbar.Add("Artículo eliminado", Severity.Info);
@@ -192,19 +230,20 @@ public partial class Cart
                 return;
             }
 
+            var selection = CaptureSelection();
             _cartView = await CartService.UpdateItemQuantityAsync(_currentUserId, itemId, newQuantity, itemType);
+            ApplySelection(selection);
             RecalcSelected();
             FilterItems();
         }
         catch (Exception ex)
         {
             Logger.LogError(ex, "Error al actualizar cantidad item {ItemId}", itemId);
-            Snackbar.Add($"Error al actualizar cantidad: {ex.Message}", Severity.Error);
+            Snackbar.Add(ex.Message, Severity.Warning);
 
-            // El contador (+) del item ya se había incrementado visualmente
-            // antes de llamar al servicio; si el servidor lo rechazó (p.ej.
-            // por stock insuficiente), recargamos el carrito para que la
-            // cantidad mostrada vuelva a coincidir con la real.
+            // Si el servidor rechazó el cambio (p.ej. por stock insuficiente),
+            // recargamos el carrito para que la cantidad mostrada vuelva a
+            // coincidir con la real.
             await LoadCart();
         }
     }
@@ -310,39 +349,32 @@ public partial class Cart
 
         try
         {
-            // El servicio ahora devuelve siempre el recibo completo (todos los items)
-            var receipt = await CartService.GenerateReceiptAsync(_currentUserId, false);
+            // 1. Antes de armar el recibo se pone el carrito al día con el stock real.
+            //    Si algo cambió (se agotó, bajó el stock, cambió un precio) el cliente
+            //    lo ve primero y decide, en vez de comprar algo que ya no es lo que vio.
+            await LoadCart();
+
+            if (_cartView != null && _cartView.Adjustments.Count > 0)
+            {
+                Snackbar.Add("Tu carrito cambió. Revísalo y vuelve a intentar la compra.", Severity.Warning);
+                return;
+            }
+
+            // null = todo el carrito; si no, exactamente lo que el cliente marcó.
+            CheckoutSelectionDto? selection = selectedOnly ? CaptureSelection() : null;
+
+            if (selectedOnly && (selection == null || selection.IsEmpty))
+            {
+                Snackbar.Add("No hay artículos seleccionados para comprar.", Severity.Warning);
+                return;
+            }
+
+            // 2. El recibo lo arma el servidor con lo mismo que se va a comprar.
+            var receipt = await CartService.GenerateReceiptAsync(_currentUserId, selection);
 
             if (receipt == null || !receipt.Items.Any())
             {
                 Snackbar.Add("No hay artículos para comprar.", Severity.Warning);
-                return;
-            }
-
-            // FIX: si es selectedOnly, filtramos aquí en el frontend usando IsSelected del _cartView
-            if (selectedOnly && _cartView != null)
-            {
-                var selectedProductIds = _cartView.Products
-                    .Where(p => p.IsSelected)
-                    .Select(p => p.CartItemId)
-                    .ToHashSet();
-
-                var selectedComboIds = _cartView.Combos
-                    .Where(c => c.IsSelected)
-                    .Select(c => c.CartComboId)
-                    .ToHashSet();
-
-                receipt.Items = receipt.Items
-                    .Where(i => (i.ItemType == "product" && selectedProductIds.Contains(i.ItemId)) ||
-                                (i.ItemType == "combo" && selectedComboIds.Contains(i.ItemId)))
-                    .ToList();
-
-                receipt.TotalAmount = receipt.Items.Sum(i => i.SubTotal);
-            }
-
-            if (!receipt.Items.Any())
-            {
-                Snackbar.Add("No hay artículos seleccionados para comprar.", Severity.Warning);
                 return;
             }
 
@@ -361,8 +393,14 @@ public partial class Cart
 
             if (!result.Canceled && result.Data != null)
             {
-                await CartService.CheckoutAsync(_currentUserId, new List<int>(), "");
-                Snackbar.Add("¡Compra completada! Revisa WhatsApp para el recibo.", Severity.Success);
+                // 3. Compra definitiva: descuenta stock y crea el pedido en una sola
+                //    transacción. Si algo no alcanza, no se compra nada y se explica por qué.
+                var completed = await CartService.CheckoutAsync(_currentUserId, selection);
+
+                if (completed)
+                    Snackbar.Add("¡Compra completada! Revisa WhatsApp para el recibo.", Severity.Success);
+                else
+                    Snackbar.Add("No había artículos para comprar. Tu carrito ya estaba actualizado.", Severity.Info);
             }
             else
             {
@@ -376,7 +414,10 @@ public partial class Cart
         catch (Exception ex)
         {
             Logger.LogError(ex, "Error en PerformCheckout para usuario {UserId}", _currentUserId);
-            Snackbar.Add($"Error en la compra: {ex.Message}", Severity.Error);
+            Snackbar.Add(ex.Message, Severity.Error);
+
+            // La compra no se hizo; se recarga el carrito con lo que realmente hay.
+            await LoadCart();
         }
     }
 }

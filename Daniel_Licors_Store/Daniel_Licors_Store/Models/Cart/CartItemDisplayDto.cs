@@ -1,4 +1,4 @@
-namespace Daniel_Licors_Store.Models.Cart;
+﻿namespace Daniel_Licors_Store.Models.Cart;
 
 /// <summary>
 /// Representa UN ITEM de producto en el carrito
@@ -14,6 +14,9 @@ public class CartItemDisplayDto
     public decimal UnitPrice { get; set; }
     public decimal SubTotal { get; set; }
     public bool IsSelected { get; set; } = false;
+
+    /// <summary>Unidades que el negocio tiene hoy disponibles de este producto (informativo para la UI).</summary>
+    public int AvailableStock { get; set; }
 }
 
 /// <summary>
@@ -30,6 +33,9 @@ public class CartComboDisplayDto
     public decimal UnitPrice { get; set; }
     public decimal SubTotal { get; set; }
     public bool IsSelected { get; set; } = false;
+
+    /// <summary>Cuántos combos completos se pueden armar hoy con el stock real.</summary>
+    public int AvailableStock { get; set; }
 }
 
 /// <summary>
@@ -46,6 +52,9 @@ public class CartPromotionDisplayDto
     public decimal UnitPrice { get; set; }
     public decimal SubTotal { get; set; }
     public bool IsSelected { get; set; } = false;
+
+    /// <summary>Máximo de unidades de esta promoción que el stock real permite hoy.</summary>
+    public int AvailableStock { get; set; }
 }
 
 /// <summary>
@@ -57,6 +66,12 @@ public class CartViewDto
     public List<CartItemDisplayDto> Products { get; set; } = new();
     public List<CartComboDisplayDto> Combos { get; set; } = new();
     public List<CartPromotionDisplayDto> Promotions { get; set; } = new();
+
+    /// <summary>
+    /// Avisos para el cliente cuando el carrito se corrigió solo (se agotó algo,
+    /// bajó el stock, cambió un precio, etc.). La UI los muestra y listo.
+    /// </summary>
+    public List<string> Adjustments { get; set; } = new();
 
     public int TotalProductsCount =>
         Products.Sum(p => p.Quantity) + Combos.Sum(c => c.Quantity) + Promotions.Sum(pr => pr.Quantity);
@@ -103,6 +118,19 @@ public class ReceiptItemDto
     public int Quantity { get; set; }
     public decimal UnitPrice { get; set; }
     public decimal SubTotal { get; set; }
+}
+
+/// <summary>
+/// Qué líneas del carrito se van a comprar. Se identifican por el Id de cada línea
+/// (CartItemId / CartComboId / CartPromotionId). Si se pasa null, se compra todo el carrito.
+/// </summary>
+public class CheckoutSelectionDto
+{
+    public HashSet<int> ProductItemIds { get; set; } = new();
+    public HashSet<int> ComboItemIds { get; set; } = new();
+    public HashSet<int> PromotionItemIds { get; set; } = new();
+
+    public bool IsEmpty => ProductItemIds.Count == 0 && ComboItemIds.Count == 0 && PromotionItemIds.Count == 0;
 }
 
 // ── Modelos de creación — no se modificaron ──
