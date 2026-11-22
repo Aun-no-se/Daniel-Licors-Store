@@ -25,11 +25,18 @@ namespace Daniel_Licors_Store.Data.Services
             _brandRepo = brandRepo;
         }
 
+        // Mismas listas (y mismo orden A→Z) que ve el admin en "Categorías y Marcas":
+        // lo que se registra en el panel de control es lo que aparece en los
+        // desplegables del formulario de bebidas.
         public async Task<List<Category>> GetCategoriesAsync()
-            => (await _categoryRepo.FindAsync(c => c.IsActive)).ToList();
+            => (await _categoryRepo.FindAsync(c => c.IsActive))
+                .OrderBy(c => c.Name)
+                .ToList();
 
         public async Task<List<Brand>> GetBrandsAsync()
-            => (await _brandRepo.FindAsync(b => b.IsActive)).ToList();
+            => (await _brandRepo.FindAsync(b => b.IsActive))
+                .OrderBy(b => b.Name)
+                .ToList();
 
         public async Task<List<ProductResponseModel>> GetProductsAsync()
         {
@@ -57,10 +64,10 @@ namespace Daniel_Licors_Store.Data.Services
             return products.Select(Map).ToList();
         }
 
-        // Arma las secciones del index directamente desde la base de datos: una por
-        // cada categoría y marca ACTIVA, aunque todavía no tenga productos. Así, cuando
-        // un empleado registra una categoría o marca nueva, su sección (y su chip en la
-        // barra infinita) aparece sola, sin tocar código.
+        // Arma las secciones del index directamente desde la base de datos: UNA por
+        // cada categoría ACTIVA, aunque todavía no tenga productos. Las marcas NO
+        // generan sección (cada bebida ya aparece en la de su categoría; si no, se
+        // vería repetida). Las marcas quedan para filtrar más adelante.
         public async Task<List<CatalogSectionModel>> GetCatalogSectionsAsync()
         {
             await using var ctx = await _factory.CreateDbContextAsync();
@@ -68,11 +75,6 @@ namespace Daniel_Licors_Store.Data.Services
             var categories = await ctx.Categories.AsNoTracking()
                 .Where(c => c.IsActive)
                 .OrderBy(c => c.Name)
-                .ToListAsync();
-
-            var brands = await ctx.Brands.AsNoTracking()
-                .Where(b => b.IsActive)
-                .OrderBy(b => b.Name)
                 .ToListAsync();
 
             var products = await ctx.Products.AsNoTracking()
@@ -93,24 +95,6 @@ namespace Daniel_Licors_Store.Data.Services
                     Id = c.CategoryId,
                     Title = c.Name,
                     Products = products.Where(p => p.CategoryId == c.CategoryId).Select(Map).ToList()
-                });
-            }
-
-            foreach (var b in brands)
-            {
-                var brandProducts = products.Where(p => p.BrandId == b.BrandId).ToList();
-
-                sections.Add(new CatalogSectionModel
-                {
-                    Kind = "marca",
-                    Id = b.BrandId,
-                    Title = b.Name,
-                    IconHint = brandProducts
-                        .GroupBy(p => p.Category?.Name)
-                        .OrderByDescending(g => g.Count())
-                        .Select(g => g.Key)
-                        .FirstOrDefault(),
-                    Products = brandProducts.Select(Map).ToList()
                 });
             }
 

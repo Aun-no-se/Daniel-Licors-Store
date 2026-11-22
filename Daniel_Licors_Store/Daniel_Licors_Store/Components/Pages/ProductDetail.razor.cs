@@ -28,6 +28,7 @@ namespace Daniel_Licors_Store.Components.Pages
         protected bool _loading = true;
         protected bool _adding = false;
         protected int _quantity = 1;
+        protected int _qtyVersion;   // repinta la casilla cuando se corrige lo escrito
 
         private const int StoreId = 1;
         private HashSet<int> _expandedPromoIds = new();
@@ -77,6 +78,26 @@ namespace Daniel_Licors_Store.Components.Pages
         {
             if (Product != null && _quantity < Product.Stock)
                 _quantity++;
+        }
+
+        // Número escrito directamente en la casilla (ej. 25 botellas de una vez)
+        protected void OnQuantityTyped(ChangeEventArgs e)
+        {
+            if (Product == null) return;
+
+            var digits = new string((e.Value?.ToString() ?? string.Empty).Where(char.IsDigit).ToArray());
+            var qty = int.TryParse(digits, out var parsed) ? parsed : _quantity;
+
+            if (qty < 1) qty = 1;
+
+            if (Product.Stock > 0 && qty > Product.Stock)
+            {
+                qty = Product.Stock;
+                Snackbar.Add($"Solo hay {Product.Stock} disponible(s).", Severity.Warning);
+            }
+
+            _quantity = qty;
+            _qtyVersion++;
         }
 
         protected void DecreaseQuantity()

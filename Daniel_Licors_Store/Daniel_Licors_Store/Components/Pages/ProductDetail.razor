@@ -154,7 +154,10 @@
                                                 <button class="pd-qty-btn" @onclick="DecreaseQuantity" disabled="@(_quantity <= 1)">
                                                     <MudIcon Icon="@Icons.Material.Filled.Remove" Size="Size.Small" />
                                                 </button>
-                                                <span class="pd-qty-value">@_quantity</span>
+                                                <input class="pd-qty-input" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="4"
+                                                       aria-label="Cantidad" onfocus="this.select()"
+                                                       value="@_quantity" @key="_qtyVersion"
+                                                       @onchange="OnQuantityTyped" />
                                                 <button class="pd-qty-btn" @onclick="IncreaseQuantity" disabled="@(_quantity >= Product.Stock)">
                                                     <MudIcon Icon="@Icons.Material.Filled.Add" Size="Size.Small" />
                                                 </button>

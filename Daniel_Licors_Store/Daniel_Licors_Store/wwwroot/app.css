@@ -45,3 +45,15 @@ body {
     ::-webkit-scrollbar-thumb:hover {
         background: #FF1744;
     }
+
+/* ===== MÓVIL: SIN ZOOM POR DOBLE TOQUE ===== */
+/* "manipulation" quita el zoom que se activaba al darle rápido al + o al −,
+   pero deja el pellizco con dos dedos por accesibilidad. */
+html, body {
+    touch-action: manipulation;
+}
+
+button, a, input, select, label, [role="button"] {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+}

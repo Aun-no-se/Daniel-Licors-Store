@@ -463,6 +463,51 @@
     color: #fff;
 }
 
+/* Casilla de cantidad editable (se puede escribir 25 directo) */
+.pd-qty-input {
+    width: 64px;
+    height: 40px;
+    padding: 0;
+    border-radius: 12px;
+    border: 1px solid var(--pd-border);
+    outline: 0;
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--pd-gold-solid);
+    font-family: inherit;
+    font-size: 16px; /* 16px evita el zoom de iPhone al enfocar */
+    font-weight: 800;
+    text-align: center;
+    -moz-appearance: textfield;
+    appearance: textfield;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+    .pd-qty-input:focus {
+        border-color: rgba(232, 196, 104, 0.65);
+        box-shadow: 0 0 0 3px rgba(232, 196, 104, 0.14);
+    }
+
+.pd-qty-btn {
+    width: 40px;
+    height: 40px;
+}
+
+@media (max-width: 768px) {
+    .pd-quantity-stepper {
+        gap: 10px;
+    }
+
+    .pd-qty-btn {
+        width: 46px;
+        height: 46px;
+    }
+
+    .pd-qty-input {
+        width: 76px;
+        height: 46px;
+    }
+}
+
 .pd-btn-add-cart {
     background: linear-gradient(135deg, var(--pd-crimson), var(--pd-crimson-dark)) !important;
     color: #fff !important;
@@ -1198,4 +1243,3 @@
     text-transform: uppercase;
     color: #ff8a80;
 }
-

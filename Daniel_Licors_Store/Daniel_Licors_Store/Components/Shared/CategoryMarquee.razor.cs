@@ -9,9 +9,9 @@ using MudBlazor;
 namespace Daniel_Licors_Store.Components.Shared
 {
     /// <summary>
-    /// Barra infinita (marquee) con las categorías y marcas activas.
+    /// Barra infinita (marquee) con las categorías activas (una por sección del index).
     /// Se llena sola desde la base de datos: lo que el admin agrega en
-    /// "Categorías y Marcas" aparece aquí. El movimiento, el arrastre y el
+    /// "Categorías y Marcas" aparece aquí. Las marcas no tienen sección, así que no van. El movimiento, el arrastre y el
     /// clic-para-ir-a-la-sección viven en wwwroot/js/category-marquee.js;
     /// Blazor solo pinta el HTML (nada de JS interop, nada de nodos
     /// insertados por JS dentro del DOM de Blazor).
@@ -67,31 +67,6 @@ namespace Daniel_Licors_Store.Components.Shared
                     .Select(c => new { c.CategoryId, c.Name })
                     .ToListAsync();
 
-                var brands = await ctx.Brands.AsNoTracking()
-                    .Where(b => b.IsActive)
-                    .OrderBy(b => b.Name)
-                    .Select(b => new { b.BrandId, b.Name })
-                    .ToListAsync();
-
-                // Solo para escoger el ícono de cada marca: la categoría donde
-                // esa marca tiene más productos (una marca de cerveza → vaso
-                // con espuma, una de ron → botella, etc.).
-                var categoryNames = await ctx.Categories.AsNoTracking()
-                    .ToDictionaryAsync(c => c.CategoryId, c => c.Name);
-
-                var brandUsage = await ctx.Products.AsNoTracking()
-                    .Where(p => p.IsActive && p.BrandId != null)
-                    .GroupBy(p => new { p.BrandId, p.CategoryId })
-                    .Select(g => new { g.Key.BrandId, g.Key.CategoryId, Total = g.Count() })
-                    .ToListAsync();
-
-                var dominantCategory = brandUsage
-                    .Where(u => u.BrandId.HasValue && categoryNames.ContainsKey(u.CategoryId))
-                    .GroupBy(u => u.BrandId!.Value)
-                    .ToDictionary(
-                        g => g.Key,
-                        g => categoryNames[g.OrderByDescending(u => u.Total).First().CategoryId]);
-
                 var items = new List<MarqueeItem>();
 
                 foreach (var c in categories)
@@ -101,17 +76,6 @@ namespace Daniel_Licors_Store.Components.Shared
                         $"categoria-{c.CategoryId}", glyph, accent));
                 }
                 if (categories.Count > 0)
-                    items.Add(Separator());
-
-                foreach (var b in brands)
-                {
-                    var (glyph, accent) = dominantCategory.TryGetValue(b.BrandId, out var catName)
-                        ? ResolveVisual(catName)
-                        : (Icons.Material.Filled.LocalOffer, "#E8C468");
-                    items.Add(new MarqueeItem("marca", "Marca", b.Name,
-                        $"marca-{b.BrandId}", glyph, accent));
-                }
-                if (brands.Count > 0)
                     items.Add(Separator());
 
                 // Cuántas veces repetir el grupo para que SIEMPRE llene una

@@ -8,7 +8,7 @@ using MudBlazor;
 
 namespace Daniel_Licors_Store.Components.Pages;
 
-public partial class Cart
+public partial class Cart : IDisposable
 {
     [Inject] private ICartService CartService { get; set; } = default!;
     [Inject] private IWhatsAppService WhatsAppService { get; set; } = default!;
@@ -30,6 +30,207 @@ public partial class Cart
 
     private int _selectedCount = 0;
     private decimal _selectedPrice = 0;
+
+    // ── Cantidades rápidas ──────────────────────────────────────────────
+    // Los cambios de cantidad se ven al instante en pantalla y al servidor
+    // se manda UNA sola actualización cuando el cliente deja de tocar (o de
+    // escribir). Así 25 botellas no son 25 viajes al servidor.
+    private const int QuantitySyncDelayMs = 400;
+    private readonly Dictionary<string, int> _pendingQty = new();
+    private readonly Dictionary<string, CancellationTokenSource> _qtyTimers = new();
+    private int _qtyVersion;     // fuerza a repintar la casilla cuando se corrige lo escrito
+    private bool _disposed;
+
+    public void Dispose()
+    {
+        _disposed = true;
+        foreach (var cts in _qtyTimers.Values)
+        {
+            cts.Cancel();
+            cts.Dispose();
+        }
+        _qtyTimers.Clear();
+    }
+
+    private bool TryGetLine(string type, int id, out int quantity, out int available, out string name)
+    {
+        quantity = 0; available = 0; name = string.Empty;
+        if (_cartView == null) return false;
+
+        switch (type)
+        {
+            case "product":
+                var p = _cartView.Products.FirstOrDefault(x => x.CartItemId == id);
+                if (p == null) return false;
+                quantity = p.Quantity; available = p.AvailableStock; name = p.ProductName;
+                return true;
+            case "combo":
+                var c = _cartView.Combos.FirstOrDefault(x => x.CartComboId == id);
+                if (c == null) return false;
+                quantity = c.Quantity; available = c.AvailableStock; name = c.ComboName;
+                return true;
+            case "promotion":
+                var pr = _cartView.Promotions.FirstOrDefault(x => x.CartPromotionId == id);
+                if (pr == null) return false;
+                quantity = pr.Quantity; available = pr.AvailableStock; name = pr.PromotionName;
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    private void SetLocalQuantity(string type, int id, int qty)
+    {
+        if (_cartView == null) return;
+
+        switch (type)
+        {
+            case "product":
+                var p = _cartView.Products.FirstOrDefault(x => x.CartItemId == id);
+                if (p != null) { p.Quantity = qty; p.SubTotal = qty * p.UnitPrice; }
+                break;
+            case "combo":
+                var c = _cartView.Combos.FirstOrDefault(x => x.CartComboId == id);
+                if (c != null) { c.Quantity = qty; c.SubTotal = qty * c.UnitPrice; }
+                break;
+            case "promotion":
+                var pr = _cartView.Promotions.FirstOrDefault(x => x.CartPromotionId == id);
+                if (pr != null) { pr.Quantity = qty; pr.SubTotal = qty * pr.UnitPrice; }
+                break;
+        }
+    }
+
+    // Botones + y −
+    private void StepQuantity(string type, int id, int delta)
+    {
+        if (!TryGetLine(type, id, out var current, out _, out _)) return;
+        SetQuantity(type, id, current + delta);
+    }
+
+    // Número escrito directamente en la casilla
+    private void OnQuantityTyped(string type, int id, ChangeEventArgs e)
+    {
+        if (!TryGetLine(type, id, out var current, out _, out _)) return;
+
+        var digits = new string((e.Value?.ToString() ?? string.Empty).Where(char.IsDigit).ToArray());
+        var requested = int.TryParse(digits, out var parsed) ? parsed : current;
+        SetQuantity(type, id, requested);
+    }
+
+    private void SetQuantity(string type, int id, int requested)
+    {
+        if (!TryGetLine(type, id, out var current, out var available, out var name)) return;
+
+        var qty = Math.Max(requested, 1);
+
+        // El tope que se ve en pantalla es el stock real; el servidor lo vuelve a validar.
+        if (available > 0 && qty > available)
+        {
+            qty = available;
+            Snackbar.Add($"Solo hay {available} disponible(s) de «{name}».", Severity.Warning);
+        }
+
+        _qtyVersion++;   // repinta la casilla aunque el número final no haya cambiado
+
+        if (qty != current)
+        {
+            SetLocalQuantity(type, id, qty);
+            var key = $"{type}:{id}";
+            _pendingQty[key] = qty;
+            ScheduleQuantitySync(key);
+        }
+
+        RecalcSelected();
+        FilterItems();
+    }
+
+    private void ScheduleQuantitySync(string key)
+    {
+        if (_qtyTimers.TryGetValue(key, out var previous))
+        {
+            previous.Cancel();
+            previous.Dispose();
+        }
+
+        var cts = new CancellationTokenSource();
+        _qtyTimers[key] = cts;
+        _ = SyncQuantityAfterDelayAsync(key, cts);
+    }
+
+    private async Task SyncQuantityAfterDelayAsync(string key, CancellationTokenSource cts)
+    {
+        try
+        {
+            await Task.Delay(QuantitySyncDelayMs, cts.Token);
+        }
+        catch (OperationCanceledException)
+        {
+            return;
+        }
+
+        await InvokeAsync(async () =>
+        {
+            if (_disposed || cts.IsCancellationRequested) return;
+            if (!_pendingQty.Remove(key, out var qty)) return;
+
+            _qtyTimers.Remove(key);
+            var parts = key.Split(':');
+            await UpdateQuantity(int.Parse(parts[1]), qty, parts[0]);
+        });
+    }
+
+    // Antes de comprar o vaciar, lo que el cliente ya cambió en pantalla se manda al servidor.
+    private async Task FlushPendingQuantitiesAsync()
+    {
+        foreach (var cts in _qtyTimers.Values)
+        {
+            cts.Cancel();
+            cts.Dispose();
+        }
+        _qtyTimers.Clear();
+
+        var pending = _pendingQty.ToList();
+        _pendingQty.Clear();
+
+        foreach (var (key, qty) in pending)
+        {
+            var parts = key.Split(':');
+            await UpdateQuantity(int.Parse(parts[1]), qty, parts[0]);
+        }
+    }
+
+    private void CancelPending(string type, int id)
+    {
+        var key = $"{type}:{id}";
+        _pendingQty.Remove(key);
+        if (_qtyTimers.Remove(key, out var cts))
+        {
+            cts.Cancel();
+            cts.Dispose();
+        }
+    }
+
+    private void CancelAllPending()
+    {
+        foreach (var cts in _qtyTimers.Values)
+        {
+            cts.Cancel();
+            cts.Dispose();
+        }
+        _qtyTimers.Clear();
+        _pendingQty.Clear();
+    }
+
+    // Si el servidor devuelve el carrito mientras otro artículo tiene un cambio sin enviar,
+    // ese cambio se vuelve a poner para que no "rebote" a la cantidad vieja.
+    private void ReapplyPending()
+    {
+        foreach (var (key, qty) in _pendingQty)
+        {
+            var parts = key.Split(':');
+            SetLocalQuantity(parts[0], int.Parse(parts[1]), qty);
+        }
+    }
 
     private void RecalcSelected()
     {
@@ -199,9 +400,11 @@ public partial class Cart
 
         try
         {
+            CancelPending(itemType, itemId);
             var selection = CaptureSelection();
             _cartView = await CartService.RemoveItemAsync(_currentUserId, itemId, itemType);
             ApplySelection(selection);
+            ReapplyPending();
             RecalcSelected();
             FilterItems();
             Snackbar.Add("Artículo eliminado", Severity.Info);
@@ -233,6 +436,7 @@ public partial class Cart
             var selection = CaptureSelection();
             _cartView = await CartService.UpdateItemQuantityAsync(_currentUserId, itemId, newQuantity, itemType);
             ApplySelection(selection);
+            ReapplyPending();
             RecalcSelected();
             FilterItems();
         }
@@ -308,6 +512,7 @@ public partial class Cart
 
             if (confirm == true)
             {
+                CancelAllPending();
                 await CartService.ClearCartAsync(_currentUserId);
                 _cartView = await CartService.GetCartAsync(_currentUserId, _storeId);
                 RecalcSelected();
@@ -349,6 +554,9 @@ public partial class Cart
 
         try
         {
+            // 0. Lo que el cliente cambió hace un instante en pantalla se envía primero.
+            await FlushPendingQuantitiesAsync();
+
             // 1. Antes de armar el recibo se pone el carrito al día con el stock real.
             //    Si algo cambió (se agotó, bajó el stock, cambió un precio) el cliente
             //    lo ve primero y decide, en vez de comprar algo que ya no es lo que vio.

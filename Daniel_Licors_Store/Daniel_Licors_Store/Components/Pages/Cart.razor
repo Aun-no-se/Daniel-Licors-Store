@@ -149,9 +149,12 @@
                                             <div class="pcard-subtotal">Sub: $@product.SubTotal.ToString("N2")</div>
                                             <div class="pcard-footer" @onclick:stopPropagation="true">
                                                 <div class="qty-mini">
-                                                    <button @onclick='() => UpdateQuantity(product.CartItemId, product.Quantity - 1, "product")'>−</button>
-                                                    <span>@product.Quantity</span>
-                                                    <button @onclick='() => UpdateQuantity(product.CartItemId, product.Quantity + 1, "product")'>+</button>
+                                                    <button type="button" aria-label="Quitar uno" @onclick='() => StepQuantity("product", product.CartItemId, -1)'>−</button>
+                                                    <input class="qty-input" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="4" aria-label="Cantidad"
+                                                           onfocus="this.select()" value="@product.Quantity"
+                                                           @key='("q-product-" + product.CartItemId + "-" + _qtyVersion)'
+                                                           @onchange='e => OnQuantityTyped("product", product.CartItemId, e)' />
+                                                    <button type="button" aria-label="Agregar uno" @onclick='() => StepQuantity("product", product.CartItemId, 1)'>+</button>
                                                 </div>
                                                 <button class="del-mini"
                                                         @onclick="@(() => RemoveItem(product.CartItemId, "product"))"
@@ -205,9 +208,12 @@
                                             <div class="pcard-subtotal">Sub: $@promo.SubTotal.ToString("N2")</div>
                                             <div class="pcard-footer" @onclick:stopPropagation="true">
                                                 <div class="qty-mini">
-                                                    <button @onclick="@(() => UpdateQuantity(promo.CartPromotionId, promo.Quantity - 1, "promotion"))">−</button>
-                                                    <span>@promo.Quantity</span>
-                                                    <button @onclick="@(() => UpdateQuantity(promo.CartPromotionId, promo.Quantity + 1, "promotion"))">+</button>
+                                                    <button type="button" aria-label="Quitar uno" @onclick='() => StepQuantity("promotion", promo.CartPromotionId, -1)'>−</button>
+                                                    <input class="qty-input" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="4" aria-label="Cantidad"
+                                                           onfocus="this.select()" value="@promo.Quantity"
+                                                           @key='("q-promotion-" + promo.CartPromotionId + "-" + _qtyVersion)'
+                                                           @onchange='e => OnQuantityTyped("promotion", promo.CartPromotionId, e)' />
+                                                    <button type="button" aria-label="Agregar uno" @onclick='() => StepQuantity("promotion", promo.CartPromotionId, 1)'>+</button>
                                                 </div>
                                                 <button class="del-mini"
                                                         @onclick="@(() => RemoveItem(promo.CartPromotionId, "promotion"))"
@@ -403,9 +409,12 @@
         <div class="pcard-subtotal">Sub: $@combo.SubTotal.ToString("N2")</div>
         <div class="pcard-footer" @onclick:stopPropagation="true">
             <div class="qty-mini">
-                <button @onclick="@(() => UpdateQuantity(combo.CartComboId, combo.Quantity - 1, "combo"))">−</button>
-                <span>@combo.Quantity</span>
-                <button @onclick="@(() => UpdateQuantity(combo.CartComboId, combo.Quantity + 1, "combo"))">+</button>
+                <button type="button" aria-label="Quitar uno" @onclick='() => StepQuantity("combo", combo.CartComboId, -1)'>−</button>
+                <input class="qty-input" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="4" aria-label="Cantidad"
+                       onfocus="this.select()" value="@combo.Quantity"
+                       @key='("q-combo-" + combo.CartComboId + "-" + _qtyVersion)'
+                       @onchange='e => OnQuantityTyped("combo", combo.CartComboId, e)' />
+                <button type="button" aria-label="Agregar uno" @onclick='() => StepQuantity("combo", combo.CartComboId, 1)'>+</button>
             </div>
             <button class="del-mini"
                     @onclick="@(() => RemoveItem(combo.CartComboId, "combo"))"
