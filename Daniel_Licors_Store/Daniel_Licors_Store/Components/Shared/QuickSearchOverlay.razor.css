@@ -1,0 +1,341 @@
+﻿/* ======================================================================
+   BUSCADOR RÁPIDO — mismo lenguaje que la tienda: cristal oscuro,
+   oro #E8C468, crimson #FF1744. Pensado primero para el celular.
+   z-index 1450: sobre la topbar (1300) y los diálogos (1400), bajo el
+   snackbar de MudBlazor (1500) para que "Añadido al carrito" se vea.
+   ====================================================================== */
+
+.qs-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 1450;
+    background: rgba(5, 5, 5, 0.72);
+    -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(6px);
+    animation: qs-fade 0.18s ease-out;
+}
+
+.qs-panel {
+    position: fixed;
+    z-index: 1451;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    color: #F3EFE7;
+    font-family: inherit;
+    background: linear-gradient(165deg, rgba(24, 9, 11, 0.985) 0%, rgba(11, 6, 7, 0.99) 55%, #050505 100%);
+    border: 1px solid rgba(232, 196, 104, 0.35);
+    box-shadow: 0 28px 70px rgba(0, 0, 0, 0.65), 0 0 40px rgba(255, 23, 68, 0.08);
+
+    /* Desktop: tarjeta centrada bajo la barra */
+    top: 84px;
+    left: 50%;
+    width: min(680px, 92vw);
+    max-height: calc(100vh - 116px);
+    border-radius: 22px;
+    transform: translateX(-50%);
+    animation: qs-drop 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ── Campo ── */
+.qs-head {
+    flex: none;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 14px 10px;
+}
+
+.qs-field {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    height: 50px;
+    padding: 0 12px 0 14px;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(232, 196, 104, 0.35);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+    .qs-field:focus-within {
+        border-color: #FF1744;
+        box-shadow: 0 0 0 3px rgba(255, 23, 68, 0.16);
+    }
+
+.qs-field-ico {
+    flex: none;
+    color: #E8C468;
+}
+
+.qs-input {
+    flex: 1;
+    min-width: 0;
+    height: 100%;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    color: #FAFAFA;
+    font-family: inherit;
+    font-size: 16px; /* 16px: iPhone no hace zoom al enfocar */
+    font-weight: 500;
+    caret-color: #FF1744;
+}
+
+    .qs-input::placeholder {
+        color: #8b8387;
+    }
+
+.qs-clear {
+    flex: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border: 0;
+    border-radius: 50%;
+    color: #d8d0cf;
+    background: rgba(255, 255, 255, 0.1);
+    cursor: pointer;
+    touch-action: manipulation;
+}
+
+.qs-cancel {
+    flex: none;
+    border: 0;
+    background: transparent;
+    color: #E8C468;
+    font-family: inherit;
+    font-size: 15px;
+    font-weight: 700;
+    padding: 10px 4px;
+    cursor: pointer;
+    touch-action: manipulation;
+}
+
+/* ── Cuerpo con scroll propio ── */
+.qs-body {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
+    padding: 2px 12px 18px;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(232, 196, 104, 0.35) transparent;
+}
+
+.qs-section {
+    margin-top: 14px;
+}
+
+.qs-section-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+    margin: 0 2px 8px;
+}
+
+.qs-title {
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 1.6px;
+    color: #E8C468;
+}
+
+.qs-sub {
+    font-size: 12px;
+    color: #8b8387;
+}
+
+.qs-link {
+    border: 0;
+    background: transparent;
+    padding: 4px 2px;
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 700;
+    color: #a39a98;
+    cursor: pointer;
+}
+
+/* ── Chips (búsquedas recientes y categorías) ── */
+.qs-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.qs-chip {
+    display: inline-flex;
+    align-items: stretch;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.11);
+    max-width: 100%;
+}
+
+.qs-chip-main {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    min-height: 38px;
+    padding: 0 6px 0 13px;
+    border: 0;
+    background: transparent;
+    color: #F3EFE7;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    min-width: 0;
+    touch-action: manipulation;
+}
+
+    .qs-chip-main span {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        max-width: 42vw;
+    }
+
+    .qs-chip-main svg {
+        flex: none;
+        color: #8b8387;
+    }
+
+.qs-chip-x {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    border: 0;
+    border-radius: 0 999px 999px 0;
+    background: transparent;
+    color: #8b8387;
+    cursor: pointer;
+    touch-action: manipulation;
+}
+
+    .qs-chip-x:hover {
+        color: #FF1744;
+    }
+
+.qs-cat {
+    min-height: 38px;
+    padding: 0 15px;
+    border-radius: 999px;
+    border: 1px solid rgba(232, 196, 104, 0.3);
+    background: rgba(232, 196, 104, 0.07);
+    color: #F5DFA0;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    touch-action: manipulation;
+}
+
+    .qs-cat:hover {
+        border-color: #FF1744;
+        background: rgba(255, 23, 68, 0.1);
+    }
+
+/* ── Estados ── */
+.qs-empty {
+    padding: 26px 8px 4px;
+    text-align: center;
+}
+
+.qs-empty-title {
+    font-size: 16px;
+    font-weight: 800;
+    color: #FAFAFA;
+    word-break: break-word;
+}
+
+.qs-empty-sub {
+    margin-top: 6px;
+    font-size: 13px;
+    color: #a39a98;
+}
+
+.qs-skel {
+    height: 68px;
+    margin-bottom: 6px;
+    border-radius: 14px;
+    background: linear-gradient(90deg, rgba(255, 255, 255, 0.04) 25%, rgba(255, 255, 255, 0.09) 50%, rgba(255, 255, 255, 0.04) 75%);
+    background-size: 200% 100%;
+    animation: qs-shimmer 1.3s linear infinite;
+}
+
+.qs-foot {
+    flex: none;
+    padding: 9px 16px;
+    text-align: center;
+    font-size: 11.5px;
+    letter-spacing: 0.3px;
+    color: #7d7578;
+    border-top: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+/* ── Animaciones ── */
+@keyframes qs-fade {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes qs-drop {
+    from { opacity: 0; transform: translateX(-50%) translateY(-10px) scale(0.985); }
+    to { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+}
+
+@keyframes qs-sheet {
+    from { opacity: 0; transform: translateY(-14px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes qs-shimmer {
+    from { background-position: 200% 0; }
+    to { background-position: -200% 0; }
+}
+
+/* ── Móvil: pantalla completa. Alto = visualViewport (lo ajusta quick-search.js),
+      así la lista no queda tapada por el teclado. ── */
+@media (max-width: 900px) {
+    .qs-panel {
+        top: var(--qs-top, 0px);
+        left: 0;
+        width: 100%;
+        height: var(--qs-vh, 100dvh);
+        max-height: none;
+        border: 0;
+        border-radius: 0;
+        transform: none;
+        padding-top: env(safe-area-inset-top);
+        animation: qs-sheet 0.2s ease-out;
+    }
+
+    .qs-body {
+        padding-bottom: calc(18px + env(safe-area-inset-bottom));
+    }
+}
+
+/* Sin teclado físico no se muestran los atajos */
+@media (hover: none), (max-width: 900px) {
+    .qs-foot {
+        display: none;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .qs-backdrop,
+    .qs-panel,
+    .qs-skel {
+        animation: none;
+    }
+}

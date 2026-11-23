@@ -1,0 +1,79 @@
+﻿/* Mismo lenguaje visual que la topbar: cristal oscuro, borde dorado, crimson al pasar el cursor */
+.qs-trigger {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    height: 42px;
+    min-width: 42px;
+    padding: 0 12px;
+    border-radius: 999px;
+    border: 1px solid rgba(232, 196, 104, 0.35);
+    background: rgba(232, 196, 104, 0.06);
+    color: #F5DFA0;
+    font-family: inherit;
+    cursor: pointer;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    transition: border-color 0.25s ease, background 0.25s ease, transform 0.1s ease;
+}
+
+    .qs-trigger:hover {
+        border-color: #FF1744;
+        background: rgba(255, 23, 68, 0.12);
+    }
+
+    .qs-trigger:active {
+        transform: scale(0.96);
+    }
+
+    .qs-trigger:focus-visible {
+        outline: 2px solid #E8C468;
+        outline-offset: 2px;
+    }
+
+.qs-trigger-ico {
+    flex: none;
+}
+
+.qs-trigger-label {
+    min-width: 150px;
+    text-align: left;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: #B9AFAE;
+    white-space: nowrap;
+}
+
+.qs-trigger-kbd {
+    flex: none;
+    min-width: 22px;
+    padding: 1px 6px;
+    border-radius: 6px;
+    text-align: center;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #B9AFAE;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+}
+
+/* Debajo de 1180 px (tablet y móvil) queda solo la lupa en círculo,
+   igual de grande que el botón de menú, para no apretar los botones de la barra. */
+@media (max-width: 1180px) {
+    .qs-trigger {
+        width: 42px;
+        padding: 0;
+        justify-content: center;
+    }
+
+    .qs-trigger-label,
+    .qs-trigger-kbd {
+        display: none;
+    }
+}
+
+/* En pantallas táctiles no tiene sentido mostrar el atajo del teclado */
+@media (hover: none) {
+    .qs-trigger-kbd {
+        display: none;
+    }
+}

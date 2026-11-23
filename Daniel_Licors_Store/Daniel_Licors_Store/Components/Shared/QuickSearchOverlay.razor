@@ -1,0 +1,187 @@
+﻿@if (SearchState.IsOpen)
+{
+    <div class="qs-backdrop" @onclick="CloseSearch"></div>
+
+    <div class="qs-panel" role="dialog" aria-modal="true" aria-label="Buscar bebida">
+
+        @* ── Campo de búsqueda ── *@
+        <div class="qs-head">
+            <div class="qs-field">
+                <svg class="qs-field-ico" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <circle cx="11" cy="11" r="7"></circle>
+                    <line x1="20" y1="20" x2="16.2" y2="16.2"></line>
+                </svg>
+
+                @* Sin "value": el input es de quien escribe, Blazor no lo pisa a mitad de una letra.
+                   font-size 16px en el CSS evita el zoom automático de iPhone. *@
+                <input id="qs-input"
+                       class="qs-input"
+                       type="text"
+                       inputmode="search"
+                       enterkeyhint="search"
+                       autocomplete="off"
+                       autocorrect="off"
+                       autocapitalize="off"
+                       spellcheck="false"
+                       maxlength="60"
+                       placeholder="Busca tu bebida: corona, ron, whisky…"
+                       aria-label="Buscar bebida"
+                       @oninput="OnInput"
+                       @onkeydown="OnKeyDown" />
+
+                @if (_hasText)
+                {
+                    <button type="button" class="qs-clear" aria-label="Borrar búsqueda" @onclick="ClearQuery">
+                        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><line x1="6" y1="6" x2="18" y2="18"></line><line x1="18" y1="6" x2="6" y2="18"></line></svg>
+                    </button>
+                }
+            </div>
+
+            <button type="button" class="qs-cancel" @onclick="CloseSearch">Cancelar</button>
+        </div>
+
+        @* ── Contenido ── *@
+        <div class="qs-body" role="listbox" aria-label="Resultados">
+
+            @if (!IsSearching)
+            {
+                @* ═══ Sin escribir todavía: memoria + atajos ═══ *@
+
+                @if (_recents.Count > 0)
+                {
+                    <div class="qs-section">
+                        <div class="qs-section-head">
+                            <span class="qs-title">BÚSQUEDAS RECIENTES</span>
+                            <button type="button" class="qs-link" @onclick="ClearRecents">Borrar todo</button>
+                        </div>
+                        <div class="qs-chips">
+                            @foreach (var term in _recents)
+                            {
+                                var t = term;
+                                <div class="qs-chip">
+                                    <button type="button" class="qs-chip-main" @onclick="() => UseTerm(t)">
+                                        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><polyline points="12 7 12 12 15.5 14"></polyline></svg>
+                                        <span>@t</span>
+                                    </button>
+                                    <button type="button" class="qs-chip-x" aria-label="Quitar @t" @onclick="() => RemoveRecent(t)">
+                                        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><line x1="6" y1="6" x2="18" y2="18"></line><line x1="18" y1="6" x2="6" y2="18"></line></svg>
+                                    </button>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                }
+
+                @if (!_loaded)
+                {
+                    <div class="qs-section">
+                        <div class="qs-skel"></div>
+                        <div class="qs-skel"></div>
+                        <div class="qs-skel"></div>
+                    </div>
+                }
+                else if (_purchased.Count > 0)
+                {
+                    <div class="qs-section">
+                        <div class="qs-section-head">
+                            <span class="qs-title">PÍDELO OTRA VEZ</span>
+                            <span class="qs-sub">Lo que ya compraste</span>
+                        </div>
+                        @foreach (var p in _purchased)
+                        {
+                            <QuickSearchRow @key="p.ProductId" Product="p" CanAdd="@CanAdd"
+                                            Added="@_added.Contains(p.ProductId)" Busy="@_adding.Contains(p.ProductId)"
+                                            OnOpen="OpenProductAsync" OnAdd="AddAsync" />
+                        }
+                    </div>
+                }
+                else if (_popular.Count > 0)
+                {
+                    <div class="qs-section">
+                        <div class="qs-section-head">
+                            <span class="qs-title">LOS MÁS PEDIDOS</span>
+                        </div>
+                        @foreach (var p in _popular)
+                        {
+                            <QuickSearchRow @key="p.ProductId" Product="p" CanAdd="@CanAdd"
+                                            Added="@_added.Contains(p.ProductId)" Busy="@_adding.Contains(p.ProductId)"
+                                            OnOpen="OpenProductAsync" OnAdd="AddAsync" />
+                        }
+                    </div>
+                }
+
+                @if (_categories.Count > 0)
+                {
+                    <div class="qs-section">
+                        <div class="qs-section-head">
+                            <span class="qs-title">EXPLORAR POR CATEGORÍA</span>
+                        </div>
+                        <div class="qs-chips">
+                            @foreach (var cat in _categories)
+                            {
+                                var c = cat;
+                                <button type="button" class="qs-cat" @onclick="() => UseTerm(c)">@c</button>
+                            }
+                        </div>
+                    </div>
+                }
+            }
+            else if (_results.Count > 0)
+            {
+                @* ═══ Resultados ═══ *@
+                <div class="qs-section">
+                    <div class="qs-section-head">
+                        <span class="qs-title">@(_results.Count == 1 ? "1 BEBIDA" : $"{_results.Count} BEBIDAS")</span>
+                    </div>
+
+                    @for (var i = 0; i < _results.Count; i++)
+                    {
+                        var idx = i;
+                        var p = _results[i];
+                        <QuickSearchRow @key="p.ProductId" Product="p" Query="@_query" Active="@(idx == _active)"
+                                        CanAdd="@CanAdd" Added="@_added.Contains(p.ProductId)" Busy="@_adding.Contains(p.ProductId)"
+                                        OnOpen="OpenProductAsync" OnAdd="AddAsync" />
+                    }
+                </div>
+            }
+            else
+            {
+                @* ═══ Sin resultados ═══ *@
+                <div class="qs-empty">
+                    <div class="qs-empty-title">No encontramos “@_query.Trim()”</div>
+                    <div class="qs-empty-sub">Revisa cómo está escrito o prueba con la marca o la categoría.</div>
+                </div>
+
+                @if (_popular.Count > 0)
+                {
+                    <div class="qs-section">
+                        <div class="qs-section-head">
+                            <span class="qs-title">TAL VEZ TE INTERESE</span>
+                        </div>
+                        @foreach (var p in _popular)
+                        {
+                            <QuickSearchRow @key="p.ProductId" Product="p" CanAdd="@CanAdd"
+                                            Added="@_added.Contains(p.ProductId)" Busy="@_adding.Contains(p.ProductId)"
+                                            OnOpen="OpenProductAsync" OnAdd="AddAsync" />
+                        }
+                    </div>
+                }
+
+                @if (_categories.Count > 0)
+                {
+                    <div class="qs-section">
+                        <div class="qs-chips">
+                            @foreach (var cat in _categories)
+                            {
+                                var c = cat;
+                                <button type="button" class="qs-cat" @onclick="() => UseTerm(c)">@c</button>
+                            }
+                        </div>
+                    </div>
+                }
+            }
+        </div>
+
+        <div class="qs-foot" aria-hidden="true">↑ ↓ moverte · Enter abrir · Esc cerrar</div>
+    </div>
+}

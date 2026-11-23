@@ -1,0 +1,33 @@
+﻿@using Daniel_Licors_Store.Data.Services
+@inject QuickSearchState SearchState
+@inject IProductSearchService SearchService
+
+@* Desktop ancho: pastilla "Buscar bebida…". Pantallas medianas y móvil: círculo con la lupa
+   (mismo tamaño y borde dorado que el botón de menú). El atributo data-qs-open lo usa
+   quick-search.js para activar el teclado del teléfono en el mismo toque. *@
+<button type="button"
+        class="qs-trigger"
+        data-qs-open
+        aria-label="Buscar bebida"
+        aria-haspopup="dialog"
+        @onclick="OpenSearch">
+    <svg class="qs-trigger-ico" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="11" cy="11" r="7"></circle>
+        <line x1="20" y1="20" x2="16.2" y2="16.2"></line>
+    </svg>
+    <span class="qs-trigger-label">Buscar bebida…</span>
+    <span class="qs-trigger-kbd" aria-hidden="true">/</span>
+</button>
+
+@code {
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+
+        // Deja el índice listo para que la primera búsqueda del cliente sea instantánea.
+        try { await SearchService.WarmUpAsync(); }
+        catch { /* si falla, se reintenta al abrir el buscador */ }
+    }
+
+    private void OpenSearch() => SearchState.Open();
+}

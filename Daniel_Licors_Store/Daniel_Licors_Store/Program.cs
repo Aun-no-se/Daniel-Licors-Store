@@ -105,6 +105,10 @@ builder.Services.AddScoped<UserManagementService>();
 builder.Services.AddScoped<CategoryBrandService>();
 builder.Services.AddScoped<HiddenItemsService>();
 
+// Buscador rápido de bebidas
+builder.Services.AddScoped<IProductSearchService, ProductSearchService>();
+builder.Services.AddScoped<Daniel_Licors_Store.Components.Shared.QuickSearchState>();
+
 // ── APP ───────────────────────────────────────────────────────────────────────
 var app = builder.Build();
 
