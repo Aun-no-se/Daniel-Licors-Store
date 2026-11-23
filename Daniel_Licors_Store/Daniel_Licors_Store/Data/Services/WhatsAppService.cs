@@ -1,3 +1,5 @@
+﻿using System.Globalization;
+using System.Text;
 using Daniel_Licors_Store.Models.Cart;
 
 namespace Daniel_Licors_Store.Data.Services;
@@ -7,102 +9,103 @@ public interface IWhatsAppService
     string GenerateReceiptMessage(ReceiptDto receipt);
     Task<bool> SendReceiptAsync(string phoneNumber, ReceiptDto receipt);
     string GenerateWhatsAppLink(string phoneNumber, string message);
+
+    /// <summary>
+    /// Valida y normaliza el número del cliente. Acepta "809 555 1234", "(829) 555-1234",
+    /// "+1 849 555 1234" o un número internacional con "+". Devuelve solo dígitos con código de país.
+    /// </summary>
+    bool TryNormalizePhone(string? input, out string digits);
+
+    /// <summary>Link de WhatsApp al número del cliente con su recibo ya escrito.</summary>
+    string GenerateCustomerReceiptLink(string normalizedDigits, ReceiptDto receipt);
 }
 
 public class WhatsAppService : IWhatsAppService
 {
     private readonly ILogger<WhatsAppService> _logger;
-    private readonly IConfiguration _configuration;
 
-    public WhatsAppService(ILogger<WhatsAppService> logger, IConfiguration configuration)
+    public WhatsAppService(ILogger<WhatsAppService> logger)
     {
         _logger = logger;
-        _configuration = configuration;
     }
 
+    private static string Money(decimal value) =>
+        "RD$" + value.ToString("N2", CultureInfo.InvariantCulture);
+
+    // Mensaje limpio, pensado para leerse en el celular:
+    //   • Corona Extra (355 ml)
+    //     3 × RD$50.00 = *RD$150.00*
     public string GenerateReceiptMessage(ReceiptDto receipt)
     {
-        var message = new System.Text.StringBuilder();
+        var sb = new StringBuilder();
 
-        message.AppendLine("🛍️ *RECIBO DE COMPRA*");
-        message.AppendLine($"━━━━━━━━━━━━━━━━━━━━━");
-        message.AppendLine($"*Nro. Recibo:* {receipt.ReceiptNumber}");
-        message.AppendLine($"*Cliente:* {receipt.CustomerName}");
-        message.AppendLine($"*Tienda:* {receipt.StoreLocation}");
-        message.AppendLine($"*Fecha:* {receipt.CreatedAt:dd/MM/yyyy HH:mm}");
-        message.AppendLine($"");
-        message.AppendLine($"*DETALLE DE COMPRA*");
-        message.AppendLine($"━━━━━━━━━━━━━━━━━━━━━");
-
-        var productCount = 0;
-        var comboCount = 0;
-        var promotionCount = 0;
+        sb.AppendLine("🧾 *RECIBO DE COMPRA*");
+        sb.AppendLine("*Daniel Liquor Store*");
+        if (!string.IsNullOrWhiteSpace(receipt.StoreLocation))
+            sb.AppendLine(receipt.StoreLocation);
+        sb.AppendLine();
+        sb.AppendLine($"Recibo: {receipt.ReceiptNumber}");
+        sb.AppendLine($"Fecha: {receipt.CreatedAt.ToString("dd/MM/yyyy hh:mm tt", CultureInfo.InvariantCulture)}");
+        sb.AppendLine();
+        sb.AppendLine("*TU COMPRA*");
 
         foreach (var item in receipt.Items)
         {
-            var formattedItem = $"• {item.ItemName}";
-            formattedItem += $"\n  Cantidad: {item.Quantity}";
-            formattedItem += $"\n  Precio: ${item.UnitPrice:N2} x {item.Quantity}";
-            formattedItem += $"\n  Subtotal: ${item.SubTotal:N2}\n";
-
-            message.AppendLine(formattedItem);
-
-            if (item.Category == "Producto") productCount++;
-            else if (item.Category == "Combo") comboCount++;
-            else if (item.Category == "Promoción") promotionCount++;
+            sb.AppendLine($"• {item.ItemName}");
+            sb.AppendLine($"   {item.Quantity} × {Money(item.UnitPrice)} = *{Money(item.SubTotal)}*");
         }
 
-        message.AppendLine($"━━━━━━━━━━━━━━━━━━━━━");
-        message.AppendLine($"*TOTAL A PAGAR: ${receipt.TotalAmount:N2}*");
-        message.AppendLine($"━━━━━━━━━━━━━━━━━━━━━");
-        message.AppendLine($"");
-        message.AppendLine($"📊 *Resumen:*");
-        if (productCount > 0) message.AppendLine($"  • Productos: {productCount}");
-        if (comboCount > 0) message.AppendLine($"  • Combos: {comboCount}");
-        if (promotionCount > 0) message.AppendLine($"  • Promociones: {promotionCount}");
-        message.AppendLine($"");
-        message.AppendLine($"✅ *Compra completada exitosamente*");
-        message.AppendLine($"");
-        message.AppendLine($"¡Gracias por tu compra en Daniel Licors Store! 🍷");
+        sb.AppendLine();
+        sb.AppendLine($"*TOTAL ({receipt.TotalUnits} artículo{(receipt.TotalUnits == 1 ? "" : "s")}): {Money(receipt.TotalAmount)}*");
+        sb.AppendLine();
+        sb.AppendLine("¡Gracias por tu compra! 🍷");
 
-        return message.ToString();
+        return sb.ToString();
     }
+
+    public bool TryNormalizePhone(string? input, out string digits)
+    {
+        digits = string.Empty;
+        if (string.IsNullOrWhiteSpace(input))
+            return false;
+
+        var raw = input.Trim();
+        var international = raw.StartsWith("+");
+        var onlyDigits = new string(raw.Where(char.IsDigit).ToArray());
+
+        if (onlyDigits.Length < 10 || onlyDigits.Length > 15)
+            return false;
+
+        // 10 dígitos sin "+" = número de República Dominicana / EE. UU. (809, 829, 849...)
+        if (!international && onlyDigits.Length == 10)
+            onlyDigits = "1" + onlyDigits;
+
+        digits = onlyDigits;
+        return true;
+    }
+
+    public string GenerateCustomerReceiptLink(string normalizedDigits, ReceiptDto receipt) =>
+        GenerateWhatsAppLink(normalizedDigits, GenerateReceiptMessage(receipt));
 
     public Task<bool> SendReceiptAsync(string phoneNumber, ReceiptDto receipt)
     {
         try
         {
-            var message = GenerateReceiptMessage(receipt);
-            var whatsappLink = GenerateWhatsAppLink(phoneNumber, message);
-            
-            _logger.LogInformation($"WhatsApp link generado para {phoneNumber}");
-            _logger.LogInformation($"Link: {whatsappLink}");
-
-            // En una implementación real, aquí usarías una API de WhatsApp
-            // Por ahora, solo generamos el link para que el usuario pueda hacer clic
-
+            var link = GenerateWhatsAppLink(phoneNumber, GenerateReceiptMessage(receipt));
+            _logger.LogInformation("Link de WhatsApp generado para {Phone}: {Link}", phoneNumber, link);
             return Task.FromResult(true);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error sending WhatsApp receipt");
+            _logger.LogError(ex, "Error generando el recibo para WhatsApp");
             return Task.FromResult(false);
         }
     }
 
     public string GenerateWhatsAppLink(string phoneNumber, string message)
     {
-        // Formato internacional: +1234567890 (sin caracteres especiales)
-        var cleanPhone = System.Text.RegularExpressions.Regex.Replace(phoneNumber, @"[^\d+]", "");
-        
-        // Si no tiene +, agregarlo
-        if (!cleanPhone.StartsWith("+"))
-            cleanPhone = "+" + cleanPhone;
-
-        // Codificar mensaje para URL
-        var encodedMessage = System.Uri.EscapeDataString(message);
-
-        // Retornar link directo de WhatsApp
-        return $"https://wa.me/{cleanPhone}?text={encodedMessage}";
+        // wa.me exige solo dígitos (sin "+", espacios ni guiones).
+        var clean = new string((phoneNumber ?? string.Empty).Where(char.IsDigit).ToArray());
+        return $"https://wa.me/{clean}?text={Uri.EscapeDataString(message)}";
     }
 }

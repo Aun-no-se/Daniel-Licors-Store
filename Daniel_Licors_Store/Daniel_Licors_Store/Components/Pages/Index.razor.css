@@ -6,7 +6,13 @@
    por eso necesita ".padre ::deep .hijo" para que el aislamiento de CSS la alcance. */
     .index-page ::deep .promo-carousel {
         width: 100%;
+        /* El dedo en vertical siempre scrollea la página; solo el horizontal lo maneja hero-swipe.js */
+        touch-action: pan-y;
     }
+
+        .index-page ::deep .promo-carousel * {
+            touch-action: pan-y;
+        }
 
 /* ===========================
    HERO: LOTTIE + IMAGEN + OVERLAY

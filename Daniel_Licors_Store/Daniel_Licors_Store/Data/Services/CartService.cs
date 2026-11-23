@@ -693,11 +693,15 @@ public class CartService : ICartService
         {
             await using var db = await _factory.CreateDbContextAsync();
 
-            var userEmail = await db.Users
+            var user = await db.Users
                 .AsNoTracking()
                 .Where(u => u.UserId == userId)
-                .Select(u => u.Email)
+                .Select(u => new { u.FullName, u.LastName, u.Email })
                 .FirstOrDefaultAsync();
+
+            var customerName = user == null ? string.Empty : $"{user.FullName} {user.LastName}".Trim();
+            if (string.IsNullOrWhiteSpace(customerName))
+                customerName = user?.Email ?? "Cliente Registrado";
 
             var (cartView, storeName) = await BuildViewAsync(userId, null);
             if (cartView.CartId == 0)
@@ -710,7 +714,8 @@ public class CartService : ICartService
             {
                 ReceiptNumber = $"REC-{localDateTime:yyyyMMddHHmmss}-{shortId}",
                 CreatedAt = localDateTime,
-                CustomerName = userEmail ?? "Cliente Registrado",
+                CustomerName = customerName,
+                CustomerEmail = user?.Email ?? string.Empty,
                 StoreLocation = storeName
             };
 

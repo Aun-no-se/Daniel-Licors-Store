@@ -1,143 +1,207 @@
 @using Daniel_Licors_Store.Models.Cart
-@using System.Net.Http
-@using Microsoft.AspNetCore.Components
-@using Microsoft.AspNetCore.Components.Authorization
-@using Microsoft.AspNetCore.Components.Forms
 @using MudBlazor
 
 <MudDialog>
     <TitleContent>
-        <div class="d-flex justify-space-between align-center px-2">
-            <div class="d-flex align-center gap-2">
-                <div class="receipt-logo-dot"></div>
-                <MudText Typo="Typo.h6" Class="font-weight-black receipt-title-text">
-                    Daniel Licors Store
-                </MudText>
+        <div class="rc-title">
+            <div class="rc-brand">
+                <div class="rc-brand-ring">🍷</div>
+                <div>
+                    <div class="rc-brand-name">DANIEL LICORS STORE</div>
+                    <div class="rc-brand-sub">@(_purchased ? "Compra confirmada" : "Revisa tu recibo")</div>
+                </div>
             </div>
             <MudIconButton Icon="@Icons.Material.Filled.Close"
-                           Color="Color.Default"
                            Size="Size.Small"
-                           OnClick="@CloseDialog"
-                           Style="color:#555;" />
+                           Disabled="@_processing"
+                           OnClick="@CloseDialog" />
         </div>
     </TitleContent>
 
     <DialogContent>
-        @if (Receipt != null)
-        {
-            <div class="receipt-container">
-
-                <!-- Cabecera del recibo -->
-                <div class="receipt-header text-center mb-3">
-                    <MudText Typo="Typo.h5" Class="font-weight-black receipt-store-name">
-                        🧾 RECIBO DE COMPRA
-                    </MudText>
-                    <MudText Typo="Typo.body2" Class="receipt-location mt-1">
-                        📍 @Receipt.StoreLocation
-                    </MudText>
-                    <div class="receipt-dashed-line my-3"></div>
-                </div>
-
-                <!-- Info del recibo -->
-                <div class="receipt-info-grid mb-3">
-                    <div class="receipt-row">
-                        <span class="receipt-label">Recibo #</span>
-                        <span class="receipt-value font-weight-bold">@Receipt.ReceiptNumber</span>
-                    </div>
-                    <div class="receipt-row">
-                        <span class="receipt-label">Cliente</span>
-                        <span class="receipt-value font-weight-bold">@Receipt.CustomerName</span>
-                    </div>
-                    <div class="receipt-row">
-                        <span class="receipt-label">Fecha</span>
-                        <span class="receipt-value">@Receipt.CreatedAt.ToString("dd/MM/yyyy hh:mm tt")</span>
-                    </div>
-                </div>
-
-                <div class="receipt-dashed-line my-3"></div>
-
-                <!-- Detalle de items -->
-                <div class="receipt-items-section mb-3">
-                    <MudText Typo="Typo.body2" Class="font-weight-black receipt-section-title mb-2">
-                        ARTÍCULOS
-                    </MudText>
-
-                    @if (Receipt.Items == null || !Receipt.Items.Any())
-                    {
-                        <div class="text-center py-3" style="color:#999;">
-                            <MudText Typo="Typo.body2">No hay artículos en este recibo.</MudText>
-                        </div>
-                    }
-                    else
-                    {
-                        @foreach (var item in Receipt.Items)
-                        {
-                            <div class="receipt-item-row">
-                                <div class="item-left">
-                                    <div class="item-name">@item.ItemName</div>
-                                    <div class="item-meta">@item.Category · Cant: @item.Quantity · $@item.UnitPrice.ToString("N2") c/u</div>
-                                </div>
-                                <div class="item-subtotal">$@item.SubTotal.ToString("N2")</div>
-                            </div>
-                        }
-                    }
-                </div>
-
-                <div class="receipt-dashed-line my-3"></div>
-
-                <!-- Total -->
-                <div class="receipt-total-row mb-2">
-                    <span class="total-label">TOTAL NETO</span>
-                    <span class="total-amount">$@Receipt.TotalAmount.ToString("N2")</span>
-                </div>
-
-                <div class="receipt-dashed-line my-3"></div>
-
-                <!-- Pie del recibo -->
-                <div class="receipt-footer text-center mt-3">
-                    <MudText Typo="Typo.body2" Class="font-weight-bold receipt-thanks">
-                        ¡Gracias por tu preferencia! 🙏
-                    </MudText>
-                    <MudText Typo="Typo.caption" Style="color:#999;" Class="d-block mt-1">
-                        El detalle completo será enviado por WhatsApp.
-                    </MudText>
-                </div>
-
-            </div>
-        }
-        else
+        @if (Receipt == null)
         {
             <MudAlert Severity="Severity.Error" Variant="Variant.Filled" Class="rounded-lg">
                 Error: No se pudo procesar la información del recibo.
             </MudAlert>
         }
+        else if (_purchased)
+        {
+            @* ═══ Compra confirmada ═══ *@
+            <div class="rc-success">
+                <div class="rc-check">✓</div>
+                <div class="rc-success-title">¡Gracias por tu compra!</div>
+                <div class="rc-success-total">@Money(Receipt.TotalAmount)</div>
+                <div class="rc-success-sub">Recibo @Receipt.ReceiptNumber</div>
+
+                @if (_outcome.EmailSent)
+                {
+                    <div class="rc-note rc-note-ok">
+                        <span>✉️</span>
+                        <span>Te enviamos el recibo a <b>@_outcome.EmailAddress</b>.</span>
+                    </div>
+                }
+                else
+                {
+                    <div class="rc-note rc-note-warn">
+                        <span>⚠️</span>
+                        <span>La compra se hizo, pero no pudimos enviar el correo. Guarda este recibo.</span>
+                    </div>
+                }
+
+                @if (!string.IsNullOrWhiteSpace(_outcome.WhatsAppLink))
+                {
+                    <a class="rc-wa-btn" href="@_outcome.WhatsAppLink" target="_blank" rel="noopener noreferrer">
+                        <MudIcon Icon="@Icons.Custom.Brands.WhatsApp" Size="Size.Small" />
+                        Abrir WhatsApp con mi recibo
+                    </a>
+                    <div class="rc-wa-hint">Se abre con el recibo ya escrito; solo toca enviar.</div>
+                }
+            </div>
+        }
+        else
+        {
+            @* ═══ Recibo antes de confirmar ═══ *@
+            <div class="rc-ticket">
+                <div class="rc-meta">
+                    <div class="rc-meta-row"><span>Recibo</span><b>@Receipt.ReceiptNumber</b></div>
+                    <div class="rc-meta-row"><span>Cliente</span><b>@Receipt.CustomerName</b></div>
+                    <div class="rc-meta-row"><span>Fecha</span><b>@Receipt.CreatedAt.ToString("dd/MM/yyyy hh:mm tt")</b></div>
+                    @if (!string.IsNullOrWhiteSpace(Receipt.StoreLocation))
+                    {
+                        <div class="rc-meta-row"><span>Tienda</span><b>@Receipt.StoreLocation</b></div>
+                    }
+                </div>
+
+                <div class="rc-section-label">TU COMPRA</div>
+
+                @if (Receipt.Items == null || !Receipt.Items.Any())
+                {
+                    <div class="rc-empty">No hay artículos en este recibo.</div>
+                }
+                else
+                {
+                    <ul class="rc-items">
+                        @foreach (var item in Receipt.Items)
+                        {
+                            <li class="rc-item">
+                                <div class="rc-item-main">
+                                    <div class="rc-item-name">@item.ItemName</div>
+                                    <div class="rc-item-calc">
+                                        <span class="rc-qty">@item.Quantity</span>
+                                        <span class="rc-x">×</span>
+                                        <span>@Money(item.UnitPrice)</span>
+                                        @if (item.ItemType == "combo")
+                                        {
+                                            <span class="rc-tag">COMBO</span>
+                                        }
+                                    </div>
+                                </div>
+                                <div class="rc-item-total">@Money(item.SubTotal)</div>
+                            </li>
+                        }
+                    </ul>
+                }
+            </div>
+
+            <div class="rc-total">
+                <div class="rc-total-label">
+                    TOTAL
+                    <small>@Receipt.TotalUnits artículo@(Receipt.TotalUnits == 1 ? "" : "s")</small>
+                </div>
+                <div class="rc-total-amount">@Money(Receipt.TotalAmount)</div>
+            </div>
+
+            @* ═══ Dónde recibir el recibo ═══ *@
+            <div class="rc-delivery">
+                <div class="rc-section-label">RECIBIRÁS TU RECIBO POR</div>
+
+                <div class="rc-deliver-row">
+                    <div class="rc-deliver-ico">✉️</div>
+                    <div class="rc-deliver-grow">
+                        <div class="rc-deliver-title">Correo</div>
+                        <div class="rc-deliver-text">
+                            @if (string.IsNullOrWhiteSpace(Receipt.CustomerEmail))
+                            {
+                                <span>Se enviará al correo de tu cuenta.</span>
+                            }
+                            else
+                            {
+                                <span>Se enviará a <b>@Receipt.CustomerEmail</b></span>
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                <div class="rc-deliver-row @(_sendWhatsApp ? "rc-deliver-on" : "")">
+                    <div class="rc-deliver-ico rc-ico-wa">
+                        <MudIcon Icon="@Icons.Custom.Brands.WhatsApp" Size="Size.Small" />
+                    </div>
+                    <div class="rc-deliver-grow">
+                        <div class="rc-deliver-title">WhatsApp <span class="rc-opt">(opcional)</span></div>
+                        <div class="rc-deliver-text">Te dejamos el recibo listo para enviarlo a tu número.</div>
+                    </div>
+                    <MudSwitch T="bool"
+                               @bind-Value="_sendWhatsApp"
+                               Color="Color.Success"
+                               Disabled="@_processing" />
+                </div>
+
+                @if (_sendWhatsApp)
+                {
+                    <div class="rc-phone">
+                        <MudTextField T="string"
+                                      @bind-Value="_phone"
+                                      Label="Tu número de WhatsApp"
+                                      Placeholder="809 555 1234"
+                                      Variant="Variant.Outlined"
+                                      InputType="InputType.Telephone"
+                                      Error="@(_phoneError != null)"
+                                      ErrorText="@_phoneError"
+                                      Disabled="@_processing" />
+                    </div>
+                }
+            </div>
+
+            @if (_error != null)
+            {
+                <div class="rc-error">
+                    <span>⚠️</span>
+                    <span>@_error</span>
+                </div>
+            }
+        }
     </DialogContent>
 
     <DialogActions>
-        <div class="d-flex justify-center gap-3 px-4 pb-4 w-100 flex-wrap">
-
-            <MudButton Variant="Variant.Filled"
-                       Style="background:linear-gradient(135deg,#25D366,#128C7E); color:white; font-weight:700; border-radius:10px; min-width:160px;"
-                       StartIcon="@Icons.Custom.Brands.WhatsApp"
-                       Href="@WhatsAppLink"
-                       Target="_blank"
-                       Class="py-2">
-                Enviar por WhatsApp
-            </MudButton>
-
-            <MudButton Variant="Variant.Outlined"
-                       Style="border-color:#667eea; color:#667eea; font-weight:700; border-radius:10px; min-width:120px;"
-                       OnClick="@ConfirmAndClose"
-                       Class="py-2">
-                Confirmar Compra
-            </MudButton>
-
-            <MudButton Variant="Variant.Text"
-                       Style="color:#999; font-weight:600; border-radius:10px;"
-                       OnClick="@CloseDialog"
-                       Class="py-2">
-                Cancelar
-            </MudButton>
+        <div class="rc-actions">
+            @if (_purchased)
+            {
+                <button type="button" class="rc-btn rc-btn-primary" @onclick="CloseDialog">
+                    Listo
+                </button>
+            }
+            else if (Receipt != null)
+            {
+                <button type="button" class="rc-btn rc-btn-primary" disabled="@_processing" @onclick="ConfirmAsync">
+                    @if (_processing)
+                    {
+                        <MudProgressCircular Size="Size.Small" Indeterminate="true" Color="Color.Dark" />
+                        <span>Procesando...</span>
+                    }
+                    else
+                    {
+                        <span>Confirmar compra · @Money(Receipt.TotalAmount)</span>
+                    }
+                </button>
+                <button type="button" class="rc-btn rc-btn-ghost" disabled="@_processing" @onclick="CloseDialog">
+                    Cancelar
+                </button>
+            }
+            else
+            {
+                <button type="button" class="rc-btn rc-btn-ghost" @onclick="CloseDialog">Cerrar</button>
+            }
         </div>
     </DialogActions>
 </MudDialog>

@@ -12,6 +12,7 @@ public partial class Cart : IDisposable
 {
     [Inject] private ICartService CartService { get; set; } = default!;
     [Inject] private IWhatsAppService WhatsAppService { get; set; } = default!;
+    [Inject] private IEmailService EmailService { get; set; } = default!;
     [Inject] private AuthenticationStateProvider AuthStateProvider { get; set; } = default!;
     [Inject] private IDialogService DialogService { get; set; } = default!;
     [Inject] private ISnackbar Snackbar { get; set; } = default!;
@@ -543,6 +544,48 @@ public partial class Cart : IDisposable
         await PerformCheckout(true);
     }
 
+    // Compra definitiva + correo + (opcional) link de WhatsApp.
+    // El correo nunca puede tumbar una compra ya hecha: si falla, solo se avisa.
+    private async Task<PurchaseOutcomeDto> ExecutePurchaseAsync(ReceiptDto receipt, CheckoutSelectionDto? selection, ReceiptOptionsDto options)
+    {
+        var outcome = new PurchaseOutcomeDto();
+
+        try
+        {
+            var completed = await CartService.CheckoutAsync(_currentUserId, selection);
+            if (!completed)
+            {
+                outcome.Message = "No había artículos para comprar. Tu carrito ya estaba actualizado.";
+                return outcome;
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogWarning(ex, "Compra rechazada para {UserId}", _currentUserId);
+            outcome.Message = ex.Message;
+            return outcome;
+        }
+
+        outcome.Success = true;
+        outcome.EmailAddress = receipt.CustomerEmail;
+
+        try
+        {
+            outcome.EmailSent = !string.IsNullOrWhiteSpace(receipt.CustomerEmail)
+                                && await EmailService.SendReceiptAsync(receipt.CustomerEmail, receipt);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error enviando el recibo por correo a {Email}", receipt.CustomerEmail);
+            outcome.EmailSent = false;
+        }
+
+        if (options.SendWhatsApp && WhatsAppService.TryNormalizePhone(options.Phone, out var digits))
+            outcome.WhatsAppLink = WhatsAppService.GenerateCustomerReceiptLink(digits, receipt);
+
+        return outcome;
+    }
+
     private async Task PerformCheckout(bool selectedOnly)
     {
         if (string.IsNullOrWhiteSpace(_currentUserId))
@@ -586,38 +629,40 @@ public partial class Cart : IDisposable
                 return;
             }
 
-            var defaultPhone = "+1234567890";
-            var whatsappLink = WhatsAppService.GenerateWhatsAppLink(defaultPhone,
-                WhatsAppService.GenerateReceiptMessage(receipt));
-
+            // 3. El recibo se muestra para revisar. La compra se hace SOLO cuando el cliente
+            //    pulsa "Confirmar compra"; el recibo muestra el resultado ahí mismo.
             var parameters = new DialogParameters
             {
                 { "Receipt", receipt },
-                { "WhatsAppLink", whatsappLink }
+                { "ConfirmPurchase", (Func<ReceiptOptionsDto, Task<PurchaseOutcomeDto>>)(options => ExecutePurchaseAsync(receipt, selection, options)) }
             };
 
-            var dialogResult = await DialogService.ShowAsync<ReceiptDialog>("Tu Recibo", parameters);
+            var dialogOptions = new DialogOptions
+            {
+                MaxWidth = MaxWidth.Small,
+                FullWidth = true,
+                CloseButton = false,
+                BackdropClick = false
+            };
+
+            var dialogResult = await DialogService.ShowAsync<ReceiptDialog>("Tu recibo", parameters, dialogOptions);
             var result = await dialogResult.Result;
 
-            if (!result.Canceled && result.Data != null)
+            if (result != null && !result.Canceled)
             {
-                // 3. Compra definitiva: descuenta stock y crea el pedido en una sola
-                //    transacción. Si algo no alcanza, no se compra nada y se explica por qué.
-                var completed = await CartService.CheckoutAsync(_currentUserId, selection);
+                Snackbar.Add("¡Compra completada!", Severity.Success);
 
-                if (completed)
-                    Snackbar.Add("¡Compra completada! Revisa WhatsApp para el recibo.", Severity.Success);
-                else
-                    Snackbar.Add("No había artículos para comprar. Tu carrito ya estaba actualizado.", Severity.Info);
+                _cartView = await CartService.GetCartAsync(_currentUserId, _storeId);
+                RecalcSelected();
+                FilterItems();
             }
             else
             {
-                Snackbar.Add("Pedido cancelado. Tu carrito sigue igual.", Severity.Info);
+                // Sin compra: se revisa el carrito por si el stock cambió mientras tanto.
+                await LoadCart();
+                if (_cartView == null || _cartView.Adjustments.Count == 0)
+                    Snackbar.Add("No se realizó ninguna compra. Tu carrito sigue igual.", Severity.Info);
             }
-
-            _cartView = await CartService.GetCartAsync(_currentUserId, _storeId);
-            RecalcSelected();
-            FilterItems();
         }
         catch (Exception ex)
         {

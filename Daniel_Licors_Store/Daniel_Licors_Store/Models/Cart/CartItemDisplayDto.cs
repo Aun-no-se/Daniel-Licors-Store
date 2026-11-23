@@ -97,7 +97,33 @@ public class ReceiptDto
     public List<ReceiptItemDto> Items { get; set; } = new();
     public decimal TotalAmount { get; set; }
     public string CustomerName { get; set; } = "Cliente";
+
+    /// <summary>Correo con el que el cliente se registró; ahí llega el recibo.</summary>
+    public string CustomerEmail { get; set; } = string.Empty;
+
     public string StoreLocation { get; set; } = "";
+
+    /// <summary>Total de unidades compradas (suma de las cantidades).</summary>
+    public int TotalUnits => Items?.Sum(i => i.Quantity) ?? 0;
+}
+
+/// <summary>Lo que el cliente eligió en el recibo antes de confirmar.</summary>
+public class ReceiptOptionsDto
+{
+    public bool SendWhatsApp { get; set; }
+    public string Phone { get; set; } = string.Empty;
+}
+
+/// <summary>Resultado de confirmar la compra (lo muestra el recibo).</summary>
+public class PurchaseOutcomeDto
+{
+    public bool Success { get; set; }
+    public string Message { get; set; } = string.Empty;
+    public bool EmailSent { get; set; }
+    public string EmailAddress { get; set; } = string.Empty;
+
+    /// <summary>Link de WhatsApp con el recibo listo (solo si el cliente lo pidió).</summary>
+    public string? WhatsAppLink { get; set; }
 }
 
 /// <summary>

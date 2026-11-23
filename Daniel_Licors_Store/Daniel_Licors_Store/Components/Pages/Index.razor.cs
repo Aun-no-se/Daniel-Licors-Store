@@ -2,6 +2,7 @@
 using Daniel_Licors_Store.Models.Product;
 using Daniel_Licors_Store.Services;
 using Microsoft.AspNetCore.Components;
+using Microsoft.JSInterop;
 using MudBlazor;
 
 namespace Daniel_Licors_Store.Components.Pages
@@ -11,13 +12,18 @@ namespace Daniel_Licors_Store.Components.Pages
         [Inject] private ICatalogService CatalogService { get; set; } = default!;
         [Inject] private ProductStateService State { get; set; } = default!;
         [Inject] private IWebHostEnvironment Env { get; set; } = default!;
+        [Inject] private IJSRuntime JS { get; set; } = default!;
+
+        private DotNetObjectReference<Index>? _selfRef;
 
         // Secciones del index (una por categoría y marca registrada), armadas desde la BD.
         private List<CatalogSectionModel> _sections = new();
 
         private bool arrows = true;
         private bool bullets = true;
-        private bool enableSwipeGesture = true;
+        // Se desactiva el swipe interno de MudCarousel: captura el dedo y bloquea el scroll vertical.
+        // El swipe horizontal lo hace wwwroot/js/hero-swipe.js sin bloquear el scroll.
+        private bool enableSwipeGesture = false;
         private Transition transition = Transition.Fade;
         private bool _loading = true;
 
@@ -48,7 +54,7 @@ namespace Daniel_Licors_Store.Components.Pages
             _loading = false;
         }
 
-        protected override Task OnAfterRenderAsync(bool firstRender)
+        protected override async Task OnAfterRenderAsync(bool firstRender)
         {
             if (firstRender && !_disposed)
             {
@@ -62,8 +68,27 @@ namespace Daniel_Licors_Store.Components.Pages
                     dueTime: TimeSpan.FromSeconds(16),
                     period: TimeSpan.FromSeconds(16)
                 );
+
+                // Swipe horizontal del hero (listeners pasivos: no tocan el scroll vertical)
+                try
+                {
+                    _selfRef = DotNetObjectReference.Create(this);
+                    await JS.InvokeVoidAsync("heroSwipe.init", ".promo-carousel", _selfRef);
+                }
+                catch { /* circuito cerrado o JS aún no cargado: el carrusel sigue con flechas y bullets */ }
             }
-            return Task.CompletedTask;
+        }
+
+        [JSInvokable]
+        public Task SwipeNext()
+        {
+            return InvokeAsync(() => { _heroCarousel?.Next(); StateHasChanged(); });
+        }
+
+        [JSInvokable]
+        public Task SwipePrevious()
+        {
+            return InvokeAsync(() => { _heroCarousel?.Previous(); StateHasChanged(); });
         }
 
         private void AdvanceSlide()
@@ -133,6 +158,7 @@ namespace Daniel_Licors_Store.Components.Pages
             _disposed = true;
             _cycleTimer?.Dispose();
             _cycleTimer = null;
+            _selfRef?.Dispose();
             State.OnChange -= OnStateChanged;
         }
     }
