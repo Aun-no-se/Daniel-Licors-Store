@@ -1,4 +1,4 @@
-using Daniel_Licors_Store.Models.Promotion;
+﻿using Daniel_Licors_Store.Models.Promotion;
 
 namespace Daniel_Licors_Store.Data.Repositories.Interfaces;
 
@@ -12,4 +12,7 @@ public interface IPromotionService
     Task DeletePromotionAsync(int promotionId);
     Task DeletePromotionAsync(int promotionId, string? userId);
     Task<PromotionAdminDto?> GetPromotionByIdAsync(int promotionId);
+
+    /// <summary>Todo lo de una promoción para la vista de detalle (imágenes, precios, stock, reglas).</summary>
+    Task<PromotionDetailDto?> GetPromotionDetailAsync(int promotionId);
 }

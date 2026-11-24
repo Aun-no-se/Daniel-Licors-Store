@@ -1,0 +1,294 @@
+﻿@page "/promocion/{PromotionId:int}"
+
+@using Daniel_Licors_Store.Models.Promotion
+@using Microsoft.AspNetCore.Components.Authorization
+@inject NavigationManager Nav
+
+<PageTitle>@(Promo?.Title ?? "Promoción")</PageTitle>
+
+<div class="pm-page-bg">
+    <div class="pm-glow pm-glow-crimson"></div>
+    <div class="pm-glow pm-glow-gold"></div>
+    <div class="pm-noise"></div>
+
+    <MudContainer MaxWidth="MaxWidth.Large" Class="mt-4 mb-8 pm-content">
+
+        <button type="button" class="pm-back" @onclick="GoBack">
+            <MudIcon Icon="@Icons.Material.Filled.ArrowBack" Size="Size.Small" />
+            <span>@(_isStaff ? "Volver a promociones" : "Volver al catálogo")</span>
+        </button>
+
+        @if (_loading)
+        {
+            <div class="pm-skeleton-wrap">
+                <div class="pm-skeleton pm-skeleton-image"></div>
+                <div class="pm-skeleton-info">
+                    <div class="pm-skeleton pm-skeleton-line" style="width:70%;height:34px"></div>
+                    <div class="pm-skeleton pm-skeleton-line"></div>
+                    <div class="pm-skeleton pm-skeleton-line" style="width:70%"></div>
+                    <div class="pm-skeleton pm-skeleton-line" style="width:45%;height:44px"></div>
+                    <div class="pm-skeleton pm-skeleton-line" style="height:90px"></div>
+                </div>
+            </div>
+        }
+        else if (Promo != null)
+        {
+            @* ═══════════════ HERO ═══════════════ *@
+            <div class="pm-hero">
+
+                <div class="pm-image-frame">
+                    <div class="pm-image-shimmer"></div>
+                    <span class="pm-badge-type">
+                        <MudIcon Icon="@Icons.Material.Filled.LocalOffer" Size="Size.Small" />
+                        @Promo.TypeLabel
+                    </span>
+
+                    @if (!string.IsNullOrWhiteSpace(PromoImage))
+                    {
+                        <img src="@PromoImage" alt="@Promo.Title" class="pm-image" />
+                    }
+                    else
+                    {
+                        <div class="pm-image-empty">
+                            <MudIcon Icon="@Icons.Material.Filled.LocalOffer" Class="pm-image-empty-ico" />
+                        </div>
+                    }
+                </div>
+
+                <div class="pm-info">
+
+                    <div class="pm-chip-row pm-fade" style="--pm-delay:0s">
+                        <span class="pm-status @StatusClass">
+                            <span class="pm-status-dot"></span>
+                            @Promo.StatusLabel
+                        </span>
+                        @if (_isStaff)
+                        {
+                            <span class="pm-chip @(Promo.IsActive ? "pm-chip-on" : "pm-chip-off")">
+                                @(Promo.IsActive ? "Activada" : "Desactivada")
+                            </span>
+                        }
+                    </div>
+
+                    <h1 class="pm-title pm-fade" style="--pm-delay:.05s">@Promo.Title</h1>
+
+                    @if (!string.IsNullOrWhiteSpace(Promo.Description))
+                    {
+                        <p class="pm-description pm-fade" style="--pm-delay:.1s">@Promo.Description</p>
+                    }
+
+                    <div class="pm-divider pm-fade" style="--pm-delay:.12s"></div>
+
+                    @* La oferta en grande *@
+                    <div class="pm-offer pm-fade" style="--pm-delay:.15s">
+                        <span class="pm-offer-label">La oferta</span>
+                        <span class="pm-offer-value">@Promo.OfferHeadline</span>
+                        @if (TotalSavingText != null)
+                        {
+                            <span class="pm-savings-chip">
+                                <MudIcon Icon="@Icons.Material.Filled.Savings" Size="Size.Small" />
+                                @TotalSavingText
+                            </span>
+                        }
+                    </div>
+
+                    @* Cuándo empieza, cuándo termina y cuánto falta *@
+                    <div class="pm-facts pm-fade" style="--pm-delay:.2s">
+                        <div class="pm-fact">
+                            <span class="pm-fact-label">Inicio</span>
+                            <span class="pm-fact-value">@Fmt(Promo.StartDate)</span>
+                        </div>
+                        <div class="pm-fact">
+                            <span class="pm-fact-label">Fin</span>
+                            <span class="pm-fact-value">@Fmt(Promo.EndDate)</span>
+                        </div>
+                        <div class="pm-fact">
+                            <span class="pm-fact-label">Tiempo</span>
+                            <span class="pm-fact-value">@TimeText</span>
+                        </div>
+                        <div class="pm-fact">
+                            <span class="pm-fact-label">Incluye</span>
+                            <span class="pm-fact-value">@Promo.Lines.Count producto@(Promo.Lines.Count != 1 ? "s" : "")</span>
+                        </div>
+                    </div>
+
+                    @* Acción *@
+                    <div class="pm-actions pm-fade" style="--pm-delay:.25s">
+                        <AuthorizeView Roles="Admin, Empleado, Cliente">
+                            <Authorized>
+                                @if (Promo.IsVigente)
+                                {
+                                    <button type="button" class="pm-btn pm-btn-primary" disabled="@_adding" @onclick="AddPromotionToCart">
+                                        <MudIcon Icon="@Icons.Material.Filled.ShoppingCart" Size="Size.Small" />
+                                        <span>@(_adding ? "Agregando..." : "Agregar promoción al carrito")</span>
+                                    </button>
+                                }
+                                else
+                                {
+                                    <div class="pm-notice">
+                                        <MudIcon Icon="@Icons.Material.Filled.Info" Size="Size.Small" />
+                                        <span>Esta promoción no está disponible para comprar ahora (@Promo.StatusLabel.ToLowerInvariant()).</span>
+                                    </div>
+                                }
+                            </Authorized>
+                            <NotAuthorized>
+                                <button type="button" class="pm-btn pm-btn-outline" @onclick="@(() => Nav.NavigateTo("/login"))">
+                                    <MudIcon Icon="@Icons.Material.Filled.Login" Size="Size.Small" />
+                                    <span>Inicia sesión para comprar</span>
+                                </button>
+                            </NotAuthorized>
+                        </AuthorizeView>
+                    </div>
+                </div>
+            </div>
+
+            @* ═══════════════ PRODUCTOS ═══════════════ *@
+            <div class="pm-section pm-fade" style="--pm-delay:.3s">
+                <div class="pm-section-header">
+                    <div class="pm-section-icon">
+                        <MudIcon Icon="@Icons.Material.Filled.LocalBar" Class="pm-section-icon-svg" />
+                    </div>
+                    <div>
+                        <div class="pm-section-title">¿Qué incluye esta promoción?</div>
+                        <div class="pm-section-sub">Cada bebida con su precio normal y su precio en promoción</div>
+                    </div>
+                </div>
+
+                @if (Promo.Lines.Count == 0)
+                {
+                    <div class="pm-notice">
+                        <MudIcon Icon="@Icons.Material.Filled.Info" Size="Size.Small" />
+                        <span>Esta promoción todavía no tiene productos.</span>
+                    </div>
+                }
+                else
+                {
+                    <div class="pm-grid">
+                        @foreach (var line in Promo.Lines)
+                        {
+                            var item = line;
+                            <div class="pm-card" @onclick="@(() => GoToProduct(item.ProductId))">
+
+                                <div class="pm-card-img-wrap">
+                                    <img src="@(string.IsNullOrEmpty(item.ImageUrl) ? "/images/placeholder.png" : item.ImageUrl)"
+                                         alt="@item.Name" class="pm-card-img" loading="lazy" />
+
+                                    @if (item.SavingPerUnit > 0 || item.IsPayXGetY)
+                                    {
+                                        <span class="pm-card-badge">@CardBadge(item)</span>
+                                    }
+                                </div>
+
+                                <div class="pm-card-body">
+                                    <div class="pm-card-meta">
+                                        @if (!string.IsNullOrWhiteSpace(item.Category))
+                                        {
+                                            <span class="pm-tag">@item.Category</span>
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(item.Size))
+                                        {
+                                            <span class="pm-tag pm-tag-gold">@item.Size</span>
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(item.Brand))
+                                        {
+                                            <span class="pm-tag pm-tag-dim">@item.Brand</span>
+                                        }
+                                    </div>
+
+                                    <div class="pm-card-name">@item.Name</div>
+
+                                    @if (!string.IsNullOrWhiteSpace(item.Description))
+                                    {
+                                        <div class="pm-card-desc">@item.Description</div>
+                                    }
+
+                                    <div class="pm-card-rule">
+                                        <MudIcon Icon="@Icons.Material.Filled.Sell" Size="Size.Small" />
+                                        <span>@item.RuleLabel</span>
+                                    </div>
+
+                                    <div class="pm-card-divider"></div>
+
+                                    @* ── Precios ── *@
+                                    @if (item.IsPayXGetY && !item.SpecialPrice.HasValue && !item.DiscountPercentage.HasValue)
+                                    {
+                                        <div class="pm-price-row">
+                                            <div>
+                                                <div class="pm-price-label">Normal (@item.RequiredQuantity uds.)</div>
+                                                <div class="pm-price-old">$@item.PackNormalPrice.ToString("N2")</div>
+                                            </div>
+                                            <div class="pm-right">
+                                                <div class="pm-price-label">Pagas (@item.PayQuantity uds.)</div>
+                                                <div class="pm-price-new">$@item.PackPromoPrice.ToString("N2")</div>
+                                            </div>
+                                        </div>
+                                        <div class="pm-price-foot">
+                                            Ahorras <b>$@item.PackSaving.ToString("N2")</b> · $@item.OriginalPrice.ToString("N2") c/u
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div class="pm-price-row">
+                                            <div>
+                                                <div class="pm-price-label">Precio normal</div>
+                                                <div class="@(item.SavingPerUnit > 0 ? "pm-price-old" : "pm-price-plain")">$@item.OriginalPrice.ToString("N2")</div>
+                                            </div>
+                                            <div class="pm-right">
+                                                <div class="pm-price-label">En promoción</div>
+                                                <div class="pm-price-new">$@item.PromoUnitPrice.ToString("N2")</div>
+                                            </div>
+                                        </div>
+                                        @if (item.SavingPerUnit > 0)
+                                        {
+                                            <div class="pm-price-foot">
+                                                Ahorras <b>$@item.SavingPerUnit.ToString("N2")</b> por unidad (@item.SavingPercent.ToString("0.##")%)
+                                            </div>
+                                        }
+                                    }
+
+                                    @* ── Disponibilidad ── *@
+                                    <div class="pm-stock-row">
+                                        @if (!item.IsProductActive)
+                                        {
+                                            <span class="pm-stock pm-stock-out">No disponible</span>
+                                        }
+                                        else if (item.Stock <= 0)
+                                        {
+                                            <span class="pm-stock pm-stock-out">Agotado</span>
+                                        }
+                                        else if (_isStaff)
+                                        {
+                                            <span class="pm-stock @(item.Stock <= 5 ? "pm-stock-low" : "pm-stock-ok")">Stock: @item.Stock</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="pm-stock pm-stock-ok">Disponible</span>
+                                        }
+                                    </div>
+
+                                    <button type="button" class="pm-btn-view"
+                                            @onclick:stopPropagation="true"
+                                            @onclick="@(() => GoToProduct(item.ProductId))">
+                                        Ver producto
+                                        <MudIcon Icon="@Icons.Material.Filled.OpenInNew" Size="Size.Small" />
+                                    </button>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <div class="pm-notfound pm-fade">
+                <MudIcon Icon="@Icons.Material.Filled.HeartBroken" Class="pm-notfound-ico" />
+                <div class="pm-notfound-title">Esta promoción no existe</div>
+                <button type="button" class="pm-btn pm-btn-primary" @onclick="GoBack">
+                    @(_isStaff ? "Volver a promociones" : "Regresar al inicio")
+                </button>
+            </div>
+        }
+
+    </MudContainer>
+</div>

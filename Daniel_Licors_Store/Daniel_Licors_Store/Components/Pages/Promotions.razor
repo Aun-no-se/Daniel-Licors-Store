@@ -1,4 +1,4 @@
-@page "/admin/promociones"
+﻿@page "/admin/promociones"
 @inherits AdminPageBase
 @using Microsoft.AspNetCore.Components.Forms
 @using Daniel_Licors_Store.Models.Promotion
@@ -113,6 +113,11 @@
                                     </td>
                                     <td>
                                         <div class="pr-actions">
+                                            <MudIconButton Icon="@Icons.Material.Filled.Visibility"
+                                                           Color="Color.Info" Size="Size.Small"
+                                                           Class="pr-action-btn"
+                                                           Title="Ver detalle"
+                                                           OnClick="@(() => Nav.NavigateTo($"/promocion/{promo.PromotionId}", true))" />
                                             <MudIconButton Icon="@Icons.Material.Filled.Edit"
                                                            Color="Color.Warning" Size="Size.Small"
                                                            Class="pr-action-btn"

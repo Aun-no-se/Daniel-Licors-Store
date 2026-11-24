@@ -1,4 +1,4 @@
-using Daniel_Licors_Store.Data;
+﻿using Daniel_Licors_Store.Data;
 using Daniel_Licors_Store.Data.Entities;
 using Daniel_Licors_Store.Data.Repositories.Interfaces;
 using Daniel_Licors_Store.Data.Services;
@@ -83,6 +83,61 @@ public class PromotionService : IPromotionService
                 RequiredQuantity = pp.RequiredQuantity,
                 PayQuantity = pp.PayQuantity
             }).ToList()
+        };
+    }
+
+    // ============================================================
+    // DETALLE COMPLETO (vista /promocion/{id})
+    // Solo lectura: trae cada bebida con su imagen, categoría, marca,
+    // precio y stock de la tienda, y las reglas de la promoción.
+    // ============================================================
+    public async Task<PromotionDetailDto?> GetPromotionDetailAsync(int promotionId)
+    {
+        var p = await _context.Promotions
+            .AsNoTracking()
+            .Include(x => x.PromotionProducts).ThenInclude(pp => pp.Product).ThenInclude(prod => prod.Category)
+            .Include(x => x.PromotionProducts).ThenInclude(pp => pp.Product).ThenInclude(prod => prod.Brand)
+            .Include(x => x.PromotionProducts).ThenInclude(pp => pp.Product).ThenInclude(prod => prod.ProductStores)
+            .FirstOrDefaultAsync(x => x.PromotionId == promotionId);
+
+        if (p == null) return null;
+
+        return new PromotionDetailDto
+        {
+            PromotionId = p.PromotionId,
+            Title = p.Title,
+            Description = p.Description,
+            PromotionType = p.PromotionType,
+            ImageUrl = p.ImageUrl,
+            StartDate = p.StartDate,
+            EndDate = p.EndDate,
+            IsActive = p.IsActive,
+            Lines = p.PromotionProducts
+                .OrderBy(pp => pp.PromotionProductId)
+                .Select(pp =>
+                {
+                    var prod = pp.Product;
+                    var store = prod?.ProductStores?.FirstOrDefault(ps => ps.StoreId == Components.Shared.AppStore.StoreId)
+                             ?? prod?.ProductStores?.FirstOrDefault();
+
+                    return new PromotionDetailLine
+                    {
+                        ProductId = pp.ProductId,
+                        Name = prod?.Name ?? $"Producto #{pp.ProductId}",
+                        Brand = prod?.Brand?.Name,
+                        Category = prod?.Category?.Name,
+                        Size = prod?.Size,
+                        Description = prod?.Description,
+                        ImageUrl = prod?.ImageUrl,
+                        OriginalPrice = store?.Price ?? 0,
+                        Stock = store?.Stock ?? 0,
+                        IsProductActive = prod?.IsActive ?? false,
+                        DiscountPercentage = pp.DiscountPercentage,
+                        SpecialPrice = pp.SpecialPrice,
+                        RequiredQuantity = pp.RequiredQuantity,
+                        PayQuantity = pp.PayQuantity
+                    };
+                }).ToList()
         };
     }
 
