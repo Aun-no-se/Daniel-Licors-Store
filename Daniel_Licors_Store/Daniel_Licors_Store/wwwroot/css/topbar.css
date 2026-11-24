@@ -272,19 +272,17 @@
     border: 1px solid var(--liq-gold-dim) !important;
     border-radius: 16px !important;
     box-shadow: 0 20px 48px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(0,0,0,0.3), 0 0 30px rgba(255,23,68,0.08) !important;
-    /* Scroll propio: antes era overflow:hidden y eso anulaba el overflow-y:auto
-       de MudBlazor, así que la lista de los selects (Categoría / Marca) no se
-       podía bajar con la rueda y se movía la pantalla de atrás. */
     overflow-y: auto !important;
-    overflow-x: hidden;
-    overscroll-behavior: contain; /* la rueda se queda en la lista, no pasa a la página */
-    max-height: min(360px, 60vh) !important;
+    overflow-x: hidden !important;
+    overscroll-behavior: contain; /* la rueda/dedo se queda en la lista, no pasa a la página */
     padding: 8px !important;
     min-width: 240px;
+    box-sizing: border-box;
     animation: liq-menu-reveal 0.28s cubic-bezier(0.16, 1, 0.3, 1);
     /* Barra delgada en tono dorado, en vez de la gris por defecto */
     scrollbar-width: thin;
     scrollbar-color: var(--liq-gold-dim) transparent;
+    -webkit-overflow-scrolling: touch;
 }
 
     .mud-menu-paper::-webkit-scrollbar,
@@ -297,6 +295,60 @@
         background: var(--liq-gold-dim);
         border-radius: 10px;
     }
+
+/* =====================================================================
+   LISTAS EN POPOVER (Categoría / Marca / buscadores): UN SOLO scroll.
+   MudBlazor le pone al popover max-height + overflow-y-auto. La lista
+   NUNCA debe ser más alta que su popover: si lo es (como cuando tenía
+   360px dentro de un popover de 300px) quedan DOS scrolls anidados, el
+   popover corta las últimas opciones y hay que "sobre-jalar" para verlas.
+   Aquí la lista hereda el alto del popover (max-height: inherit) y el
+   popover nunca pasa de ~46% de la pantalla para que en móvil siempre
+   entre completo.
+   ===================================================================== */
+.mud-popover.overflow-y-auto .mud-list {
+    max-height: inherit !important;
+    scroll-padding-bottom: 8px;
+}
+
+.mud-popover.overflow-y-auto:has(.mud-list) {
+    max-height: min(300px, 46vh) !important;
+    max-height: min(300px, 46dvh) !important;
+    overflow: hidden !important; /* el único scroll es el de la lista */
+}
+
+/* ---------------------------------------------------------------------
+   MÓVIL: el marco (borde dorado, esquinas redondas, fondo) lo lleva el
+   POPOVER y la lista va dentro, rellenando el espacio que le toque.
+   En el celular MudBlazor ajusta el alto del popover según la pantalla
+   disponible; si la lista llevaba su propio marco con un alto distinto,
+   el popover le cortaba la parte de abajo (sin borde ni esquinas). Así el
+   cuadro SIEMPRE termina completo, con sus esquinas redondas, sea cual sea
+   su alto, y la lista scrollea por dentro hasta la última opción.
+   El diseño de escritorio no cambia.
+   --------------------------------------------------------------------- */
+@media (max-width: 900px) {
+    .mud-popover.mud-popover-open.overflow-y-auto:has(.mud-list) {
+        display: flex !important;
+        flex-direction: column;
+        background: linear-gradient(165deg, rgba(20, 8, 9, 0.97) 0%, rgba(10, 6, 6, 0.98) 55%, rgba(5, 5, 5, 0.99) 100%) !important;
+        border: 1px solid var(--liq-gold-dim) !important;
+        border-radius: 16px !important;
+        box-shadow: 0 20px 48px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(0,0,0,0.3), 0 0 30px rgba(255,23,68,0.08) !important;
+    }
+
+        .mud-popover.mud-popover-open.overflow-y-auto:has(.mud-list) .mud-list {
+            flex: 1 1 auto;
+            min-height: 0;
+            max-height: none !important; /* manda el alto del popover, no un px puesto por JS */
+            background: transparent !important;
+            border: 0 !important;
+            border-radius: 0 !important;
+            box-shadow: none !important;
+            animation: none;
+            padding: 8px 8px calc(8px + env(safe-area-inset-bottom)) !important;
+        }
+}
 
 @keyframes liq-menu-reveal {
     from {

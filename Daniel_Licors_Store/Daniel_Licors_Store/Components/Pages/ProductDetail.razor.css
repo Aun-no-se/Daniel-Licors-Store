@@ -1011,6 +1011,10 @@
 @media (max-width: 768px) {
     .pd-lower-wrapper {
         flex-direction: column;
+        /* Apilado en columna, cada .pd-lower-col debe ocupar TODO el ancho.
+           Con align-items: flex-start (heredado de escritorio) la columna se
+           encogia al ancho de su encabezado y el carrusel quedaba corrido. */
+        align-items: stretch;
         border-radius: 18px;
     }
 

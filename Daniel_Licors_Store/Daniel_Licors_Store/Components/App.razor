@@ -1,5 +1,5 @@
 ﻿<!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
@@ -10,9 +10,9 @@
     <link rel="stylesheet" href="app.css" />
     <link rel="stylesheet" href="css/layout.css" />
     <link href="_content/MudBlazor/MudBlazor.min.css" rel="stylesheet" />
-    <link rel="stylesheet" href="css/topbar.css" />
+    <link rel="stylesheet" href="css/topbar.css?v=3" />
     <link rel="icon" type="image/png" href="favicon.png" />
-    <link rel="stylesheet" href="Daniel_Licors_Store.styles.css" />
+    <link rel="stylesheet" href="Daniel_Licors_Store.styles.css?v=@AssetVersion" />
     <HeadOutlet @rendermode="InteractiveServer" />
     <script src="_content/MudBlazor/MudBlazor.min.js"></script>
 </head>
@@ -98,3 +98,22 @@
     </script>
 </body>
 </html>
+
+@code {
+    // Cambia solo cuando publicas una versión nueva, así el celular
+    // descarga el CSS nuevo en vez de usar el guardado.
+    private static readonly string AssetVersion = GetAssetVersion();
+
+    private static string GetAssetVersion()
+    {
+        try
+        {
+            var path = typeof(App).Assembly.Location;
+            return System.IO.File.GetLastWriteTimeUtc(path).Ticks.ToString();
+        }
+        catch
+        {
+            return "1";
+        }
+    }
+}
