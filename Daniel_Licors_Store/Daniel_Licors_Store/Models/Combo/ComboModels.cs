@@ -94,8 +94,11 @@ public class PromotionDto
     // Lleva X paga Y
     public int? RequiredQuantity { get; set; }
     public int? PayQuantity { get; set; }
+    // Unidades de ESTE producto dentro de cada unidad de la promoción (tipo "Bundle")
+    public int Quantity { get; set; } = 1;
 
     // ── Helpers para la UI ──
+    public bool IsBundle => PromotionType == "Bundle";
     public bool HasDiscount => DiscountPercentage.HasValue && DiscountPercentage > 0;
     public bool HasSpecialPrice => SpecialPrice.HasValue && SpecialPrice > 0;
     public bool IsPayXGetY => RequiredQuantity.HasValue && PayQuantity.HasValue;
@@ -104,10 +107,25 @@ public class PromotionDto
     {
         get
         {
+            if (IsBundle) return "Compra y llévate";
             if (IsPayXGetY) return $"Lleva {RequiredQuantity} Paga {PayQuantity}";
             if (HasDiscount) return $"{DiscountPercentage:0.##}% OFF";
             if (HasSpecialPrice) return "Precio Especial";
             return PromotionType ?? "Promo";
+        }
+    }
+
+    /// <summary>Qué trae este producto dentro de la promoción "Compra y llévate".</summary>
+    public string BundleLineText
+    {
+        get
+        {
+            var qty = Quantity > 1 ? $"{Quantity} uds." : "1 ud.";
+            if (SpecialPrice.HasValue)
+                return SpecialPrice.Value == 0 ? $"Incluye {qty} GRATIS" : $"Incluye {qty} a ${SpecialPrice.Value:N2} c/u";
+            if (DiscountPercentage.HasValue && DiscountPercentage > 0)
+                return $"Incluye {qty} con {DiscountPercentage:0.##}% OFF";
+            return $"Incluye {qty} a precio normal";
         }
     }
 }

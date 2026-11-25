@@ -102,7 +102,10 @@ public class ProductService : IProductService
 
     public async Task<ProductEditModel?> GetProductForEditAsync(int productId)
     {
+        // AsNoTracking: este contexto vive toda la sesión y las ventas descuentan el stock
+        // por fuera de él; sin esto el formulario mostraría un stock viejo.
         var product = await _context.Products
+            .AsNoTracking()
             .Include(p => p.ProductStores)
             .FirstOrDefaultAsync(p => p.ProductId == productId);
 
@@ -124,6 +127,7 @@ public class ProductService : IProductService
             SizeMl = product.SizeMl,
             Price = store?.Price ?? 0,
             Stock = store?.Stock ?? 0,
+            OriginalStock = store?.Stock ?? 0,
             IsPremium = product.IsPremium,
             IsActive = product.IsActive,
             ImageUrl = product.ImageUrl
@@ -167,6 +171,8 @@ public class ProductService : IProductService
             var store = product.ProductStores?
                 .FirstOrDefault(ps => ps.StoreId == AppStore.StoreId);
 
+            var targetStock = model.Stock;
+
             if (store == null)
             {
                 store = new ProductStore
@@ -180,12 +186,35 @@ public class ProductService : IProductService
 
                 _context.ProductStores.Add(store);
             }
+            else
+            {
+                // Las ventas descuentan el stock con SQL directo, fuera de este contexto, así que
+                // la fila que tenemos en memoria puede estar vieja (stock y RowVersion). La
+                // refrescamos con lo que hay de verdad en la base antes de calcular nada.
+                await _context.Entry(store).ReloadAsync();
 
-            var stockDiff = model.Stock - store.Stock;
+                if (model.OriginalStock.HasValue)
+                {
+                    if (model.Stock == model.OriginalStock.Value)
+                    {
+                        // No tocó el stock: se respeta el actual para no devolver bebidas ya vendidas.
+                        targetStock = store.Stock;
+                    }
+                    else if (store.Stock != model.OriginalStock.Value)
+                    {
+                        // Cambió el stock a mano, pero mientras tanto se vendió (o repuso) algo.
+                        throw new InvalidOperationException(
+                            $"El stock de esta bebida cambió mientras la editabas (ahora hay {store.Stock}, antes veías {model.OriginalStock.Value}). " +
+                            "Cierra y vuelve a abrir la edición para ver el stock real.");
+                    }
+                }
+            }
+
+            var stockDiff = targetStock - store.Stock;
 
             store.Price = model.Price;
-            store.Stock = model.Stock;
-            store.IsAvailable = model.Stock > 0;
+            store.Stock = targetStock;
+            store.IsAvailable = targetStock > 0;
 
             // =========================
             // 3. STOCK MOVEMENT
@@ -207,9 +236,24 @@ public class ProductService : IProductService
 
             await _audit.LogAsync(userId, "Editó producto", "Product", model.ProductId.ToString());
         }
+        catch (InvalidOperationException)
+        {
+            await transaction.RollbackAsync();
+            _context.ChangeTracker.Clear();
+            throw;
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            // Alguien compró justo entre que leímos el stock y guardamos.
+            await transaction.RollbackAsync();
+            _context.ChangeTracker.Clear();
+            throw new InvalidOperationException(
+                "Justo se registró una venta de esta bebida y el stock cambió. Vuelve a abrir la edición e inténtalo de nuevo.");
+        }
         catch (Exception ex)
         {
             await transaction.RollbackAsync();
+            _context.ChangeTracker.Clear();
             throw new Exception("Error actualizando producto: " + (ex.InnerException?.Message ?? ex.Message));
         }
     }

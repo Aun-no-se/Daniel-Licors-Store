@@ -317,7 +317,12 @@
                                         }
 
                                         <div class="pd-promo-offer-box">
-                                            @if (promo.HasDiscount && Product != null)
+                                            @if (promo.IsBundle)
+                                            {
+                                                <MudIcon Icon="@Icons.Material.Filled.CardGiftcard" Class="pd-pxgy-icon" />
+                                                <span class="pd-pxgy-text">@promo.BundleLineText</span>
+                                            }
+                                            else if (promo.HasDiscount && Product != null)
                                             {
                                                 var discounted = Product.Price * (1 - promo.DiscountPercentage!.Value / 100);
                                                 <span class="pd-promo-price-original">$@Product.Price.ToString("N2")</span>

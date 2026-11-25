@@ -7,6 +7,10 @@ public class PromotionProduct
     public int PromotionId { get; set; }
     public int ProductId { get; set; }
 
+    // Unidades de esta bebida que incluye CADA unidad de la promoción
+    // (ej: "llévate 2 jugos" -> 2). Por defecto 1.
+    public int Quantity { get; set; } = 1;
+
     // Precio especial directo (ej: $350 en vez de $400)
     public decimal? SpecialPrice { get; set; }
 

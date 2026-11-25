@@ -229,7 +229,7 @@ public class CartService : ICartService
                 var valid = promo != null
                             && promo.IsActive
                             && promo.StartDate <= now
-                            && promo.EndDate >= now
+                            && promo.EndDate.Date >= now.Date
                             && perUnit.Count > 0
                             && promo.PromotionProducts.All(pp => pp.Product != null
                                                                  && pp.Product.IsActive
@@ -262,7 +262,12 @@ public class CartService : ICartService
                 foreach (var kv in perUnit)
                     remaining[kv.Key] -= allowed * kv.Value;
 
-                cp.SubTotal = cp.Quantity * cp.UnitPrice;
+                // Precio real de hoy (incluye "Lleva X Paga Y").
+                var (promoUnit, promoSub) = PriceOfPromo(promo!, stock, cp.Quantity);
+                if (promoUnit != cp.UnitPrice)
+                    list.Add($"El precio de la promoción «{name}» cambió a ${promoUnit:N2} por unidad.");
+                cp.UnitPrice = promoUnit;
+                cp.SubTotal = promoSub;
             }
 
             if (db.ChangeTracker.HasChanges())
@@ -436,7 +441,7 @@ public class CartService : ICartService
             var now = DateTime.Now;
             if (promotion == null || !promotion.IsActive)
                 throw new InvalidOperationException("Promoción no encontrada o inactiva.");
-            if (promotion.EndDate < now)
+            if (promotion.EndDate.Date < now.Date)
                 throw new InvalidOperationException($"La promoción «{promotion.Title}» ya expiró.");
             if (promotion.StartDate > now)
                 throw new InvalidOperationException($"La promoción «{promotion.Title}» todavía no está vigente.");
@@ -466,26 +471,17 @@ public class CartService : ICartService
             foreach (var pp in promotion.PromotionProducts)
                 names[pp.ProductId] = pp.Product.DisplayName;
 
-            // Precio representativo de la promoción (misma lógica que ya tenías).
-            decimal unitPrice = 0m;
-            var first = promotion.PromotionProducts.OrderBy(pp => pp.PromotionProductId).FirstOrDefault();
-            if (first != null)
-            {
-                var basePrice = stock[first.ProductId].Price;
-                if (first.SpecialPrice.HasValue)
-                    unitPrice = first.SpecialPrice.Value;
-                else if (first.DiscountPercentage.HasValue)
-                    unitPrice = basePrice * (1 - first.DiscountPercentage.Value / 100m);
-                else
-                    unitPrice = basePrice;
-            }
-
+            // Precio real según la regla de la promoción (precio especial, descuento
+            // o "Lleva X Paga Y") para la cantidad final que quedará en el carrito.
             var existing = cart.CartPromotions.FirstOrDefault(cp => cp.PromotionId == promotionId);
+            var finalQuantity = (existing?.Quantity ?? 0) + quantity;
+            var (unitPrice, subTotal) = PriceOfPromo(promotion, stock, finalQuantity);
+
             if (existing != null)
             {
-                existing.Quantity += quantity;
+                existing.Quantity = finalQuantity;
                 existing.UnitPrice = unitPrice;
-                existing.SubTotal = existing.Quantity * existing.UnitPrice;
+                existing.SubTotal = subTotal;
             }
             else
             {
@@ -496,7 +492,7 @@ public class CartService : ICartService
                     Promotion = promotion,
                     Quantity = quantity,
                     UnitPrice = unitPrice,
-                    SubTotal = quantity * unitPrice
+                    SubTotal = subTotal
                 });
             }
 
@@ -603,7 +599,9 @@ public class CartService : ICartService
                     var promo = cart.CartPromotions.FirstOrDefault(cp => cp.CartPromotionId == cartItemId)
                                 ?? throw new InvalidOperationException("Esa promoción ya no está en tu carrito.");
                     promo.Quantity = newQuantity;
-                    promo.SubTotal = newQuantity * promo.UnitPrice;
+                    var (promoUnit, promoSub) = PriceOfPromo(promo.Promotion, stock, newQuantity);
+                    promo.UnitPrice = promoUnit;
+                    promo.SubTotal = promoSub;
                     affected = PerUnitOfPromo(promo).Keys.ToList();
                     break;
 
@@ -859,7 +857,7 @@ public class CartService : ICartService
             if (cp.Quantity < 1)
                 throw new InvalidOperationException("Hay una cantidad no válida en tu carrito. Revísalo e intenta de nuevo.");
             var promo = cp.Promotion;
-            if (promo == null || !promo.IsActive || promo.StartDate > now || promo.EndDate < now || promo.PromotionProducts.Count == 0)
+            if (promo == null || !promo.IsActive || promo.StartDate > now || promo.EndDate.Date < now.Date || promo.PromotionProducts.Count == 0)
                 throw new InvalidOperationException($"La promoción «{promo?.Title ?? "seleccionada"}» ya no está disponible. Revisa tu carrito.");
             var inactive = promo.PromotionProducts.FirstOrDefault(pp => pp.Product == null || !pp.Product.IsActive);
             if (inactive != null)
@@ -884,6 +882,12 @@ public class CartService : ICartService
         {
             if (cc.UnitPrice != cc.Combo.ComboPrice)
                 throw new InvalidOperationException($"El precio del combo «{cc.Combo.Name}» cambió. Revisa tu carrito antes de comprar.");
+        }
+        foreach (var cp in promos)
+        {
+            var (_, expectedSub) = PriceOfPromo(cp.Promotion, stock, cp.Quantity);
+            if (expectedSub != cp.SubTotal)
+                throw new InvalidOperationException($"El precio de la promoción «{cp.Promotion.Title}» cambió. Revisa tu carrito antes de comprar.");
         }
 
         // ── 3. DESCUENTO ATÓMICO DE STOCK ──
@@ -932,7 +936,7 @@ public class CartService : ICartService
         // ── 4. Pedido ──
         var total = items.Sum(i => i.Quantity * i.UnitPrice)
                   + combos.Sum(c => c.Quantity * c.UnitPrice)
-                  + promos.Sum(p => p.Quantity * p.UnitPrice);
+                  + promos.Sum(p => p.SubTotal);
 
         var order = new Order
         {
@@ -1032,8 +1036,9 @@ public class CartService : ICartService
             throw new InvalidOperationException("La cantidad no es válida.");
     }
 
+    // La fecha fin cuenta completa: vale hasta el final de ese día.
     private static bool InDateRange(DateTime? start, DateTime? end, DateTime now) =>
-        (!start.HasValue || start.Value <= now) && (!end.HasValue || end.Value >= now);
+        (!start.HasValue || start.Value <= now) && (!end.HasValue || end.Value.Date >= now.Date);
 
     // Candado por cliente que vive lo que dure la transacción.
     private static async Task AcquireCartLockAsync(ApplicationDbContext db, string userId)
@@ -1152,12 +1157,67 @@ public class CartService : ICartService
             .GroupBy(cp => cp.ProductId)
             .ToDictionary(g => g.Key, g => Math.Max(g.Sum(x => x.Quantity), 1));
 
-    // Una promoción consume 1 unidad por cada unidad de promoción de cada producto que incluye.
+    // Cada unidad de promoción consume, de cada bebida que incluye, la cantidad que
+    // trae la promoción (1 por defecto; ej: "llévate 2 jugos" consume 2).
     private static Dictionary<int, int> PerUnitOfPromo(CartPromotion cp) =>
         (cp.Promotion?.PromotionProducts ?? Enumerable.Empty<PromotionProduct>())
-            .Select(pp => pp.ProductId)
-            .Distinct()
-            .ToDictionary(id => id, _ => 1);
+            .GroupBy(pp => pp.ProductId)
+            .ToDictionary(g => g.Key, g => Math.Max(g.Sum(x => x.Quantity), 1));
+
+    // Precio real de una línea de promoción para una cantidad dada.
+    //
+    // · "Lleva X Paga Y": de cada X unidades se cobran Y; las que sobran (menos de X) se
+    //   cobran completas. Usa la bebida de la primera línea (promoción de una sola bebida).
+    // · Precio especial / descuento % / normal: cada unidad de la promoción cuesta la SUMA de
+    //   todas las bebidas que incluye (cantidad × precio de cada una). Una bebida con precio
+    //   especial 0 va gratis; una sin regla va a precio normal. Así funciona "compra un Brugal
+    //   y llévate 2 jugos gratis".
+    //
+    // UnitPrice es el promedio real por unidad (SubTotal / Quantity) para que el carrito, el
+    // recibo y el correo muestren "cantidad × precio" cuadrando con el total.
+    private static (decimal UnitPrice, decimal SubTotal) PriceOfPromo(Promotion promo, IReadOnlyDictionary<int, ProductStore> stock, int quantity)
+    {
+        var lines = promo.PromotionProducts.OrderBy(pp => pp.PromotionProductId).ToList();
+        if (lines.Count == 0 || quantity < 1)
+            return (0m, 0m);
+
+        decimal BasePriceOf(PromotionProduct pp)
+        {
+            if (!stock.TryGetValue(pp.ProductId, out var row))
+                throw new InvalidOperationException(
+                    $"'{pp.Product?.DisplayName ?? "Un producto de la promoción"}' no está disponible en esta tienda.");
+            return row.Price;
+        }
+
+        var first = lines[0];
+
+        if (!first.SpecialPrice.HasValue && !first.DiscountPercentage.HasValue
+            && first.RequiredQuantity is > 0 && first.PayQuantity is > 0 && first.PayQuantity <= first.RequiredQuantity)
+        {
+            var x = first.RequiredQuantity!.Value;
+            var y = first.PayQuantity!.Value;
+            var paidUnits = (quantity / x) * y + (quantity % x);
+            var sub = Math.Round(paidUnits * BasePriceOf(first), 2, MidpointRounding.AwayFromZero);
+            var unit = Math.Round(sub / quantity, 2, MidpointRounding.AwayFromZero);
+            return (unit, sub);
+        }
+
+        decimal perPromoUnit = 0m;
+        foreach (var pp in lines)
+        {
+            var basePrice = BasePriceOf(pp);
+            decimal linePrice = pp.SpecialPrice.HasValue
+                ? pp.SpecialPrice.Value
+                : pp.DiscountPercentage.HasValue
+                    ? basePrice * (1 - pp.DiscountPercentage.Value / 100m)
+                    : basePrice;
+
+            perPromoUnit += Math.Max(pp.Quantity, 1) * linePrice;
+        }
+
+        return (Math.Round(perPromoUnit, 2, MidpointRounding.AwayFromZero),
+                Math.Round(quantity * perPromoUnit, 2, MidpointRounding.AwayFromZero));
+    }
 
     private static IEnumerable<int> ProductIdsOf(Cart cart)
     {

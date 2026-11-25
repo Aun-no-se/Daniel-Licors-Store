@@ -227,6 +227,7 @@
                                 <option value="Discount">% Descuento</option>
                                 <option value="SpecialPrice">Precio Especial</option>
                                 <option value="PayXGetY">Lleva X Paga Y</option>
+                                <option value="Bundle">Compra X y llévate Y</option>
                             </select>
                         </div>
 
@@ -372,6 +373,43 @@
                         </div>
                         <div class="text-success-custom">
                             Ejemplo: Lleva @_lineReqQty, paga @_linePayQty
+                        </div>
+                    }
+                    else if (_form.PromotionType == "Bundle")
+                    {
+                        <MudNumericField @bind-Value="_lineQty" T="int"
+                                         Label="Cantidad de esta bebida en la promoción" Min="1"
+                                         Variant="Variant.Outlined" />
+
+                        <div class="pr-select-field">
+                            <label class="pr-select-label">Precio de esta bebida</label>
+                            <select class="pr-native-select"
+                                    value="@_lineMode"
+                                    @onchange="@(e => _lineMode = e.Value?.ToString() ?? "normal")">
+                                <option value="normal">Precio normal</option>
+                                <option value="free">Gratis</option>
+                                <option value="special">Precio especial</option>
+                                <option value="percent">% de descuento</option>
+                            </select>
+                        </div>
+
+                        @if (_lineMode == "special")
+                        {
+                            <MudNumericField @bind-Value="_lineSpecialPrice" T="decimal"
+                                             Label="Precio especial ($)" Min="0.01m"
+                                             Variant="Variant.Outlined"
+                                             Adornment="Adornment.Start" AdornmentText="$" />
+                        }
+                        else if (_lineMode == "percent")
+                        {
+                            <MudNumericField @bind-Value="_lineDiscountPct" T="decimal"
+                                             Label="Descuento (%)" Min="0.01m" Max="99.99m"
+                                             Variant="Variant.Outlined"
+                                             Adornment="Adornment.End" AdornmentText="%" />
+                        }
+
+                        <div class="text-success-custom">
+                            Ejemplo: el ron con cantidad 1 a precio normal y el jugo con cantidad 2 gratis.
                         </div>
                     }
 

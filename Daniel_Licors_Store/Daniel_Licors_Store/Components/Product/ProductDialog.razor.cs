@@ -96,6 +96,7 @@ public partial class ProductDialog
                 AgingYears = product.AgingYears,
                 Price = product.Price,
                 Stock = product.Stock,
+                OriginalStock = product.Stock,
                 IsPremium = product.IsPremium,
                 IsActive = product.IsActive,
                 ImageUrl = product.ImageUrl,

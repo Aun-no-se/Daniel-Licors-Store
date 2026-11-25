@@ -20,7 +20,7 @@ public class PromotionAdminDto
     public string ProductsSummary { get; set; } = string.Empty;
     public string? ImageUrl { get; set; }
 
-    public bool IsVigente => IsActive && StartDate <= DateTime.Now && EndDate >= DateTime.Now;
+    public bool IsVigente => IsActive && StartDate <= DateTime.Now && EndDate.Date >= DateTime.Today;
 
     public List<PromotionProductLine> PromotionProducts { get; set; } = new();
 }
@@ -57,6 +57,9 @@ public class PromotionProductLine
     public int ProductId { get; set; }
     public string ProductName { get; set; } = string.Empty;
     public decimal OriginalPrice { get; set; }
+
+    // Unidades de esta bebida dentro de cada unidad de la promoción (tipo "Bundle").
+    public int Quantity { get; set; } = 1;
 
     // Solo uno de los tres se usa según PromotionType
     public decimal? DiscountPercentage { get; set; }

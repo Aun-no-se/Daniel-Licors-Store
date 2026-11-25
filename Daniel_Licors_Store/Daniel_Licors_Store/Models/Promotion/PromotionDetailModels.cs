@@ -15,9 +15,9 @@ public class PromotionDetailDto
     public List<PromotionDetailLine> Lines { get; set; } = new();
 
     // Mismas reglas que usa el resto del sistema (tabla de admin, carrito y catálogo).
-    public bool IsVigente => IsActive && StartDate <= DateTime.Now && EndDate >= DateTime.Now;
+    public bool IsVigente => IsActive && StartDate <= DateTime.Now && EndDate.Date >= DateTime.Today;
     public bool IsUpcoming => IsActive && StartDate > DateTime.Now;
-    public bool IsExpired => IsActive && EndDate < DateTime.Now;
+    public bool IsExpired => IsActive && EndDate.Date < DateTime.Today;
 
     public string StatusLabel =>
         !IsActive ? "Inactiva" :
@@ -30,6 +30,7 @@ public class PromotionDetailDto
         "Discount" => "% Descuento",
         "SpecialPrice" => "Precio Especial",
         "PayXGetY" => "Lleva X Paga Y",
+        "Bundle" => "Compra y llévate",
         _ => PromotionType ?? "Promoción"
     };
 
@@ -55,6 +56,9 @@ public class PromotionDetailDto
 
                 case "SpecialPrice":
                     return Lines.Count == 1 ? "Precio especial" : "Precios especiales";
+
+                case "Bundle":
+                    return Lines.Any(l => l.IsFree) ? "Compra y llévate gratis" : "Paquete en promoción";
             }
 
             return TypeLabel;
@@ -75,6 +79,9 @@ public class PromotionDetailLine
 
     public decimal OriginalPrice { get; set; }
     public int Stock { get; set; }
+
+    // Unidades de esta bebida que trae cada unidad de la promoción (ej: 2 jugos).
+    public int Quantity { get; set; } = 1;
     public bool IsProductActive { get; set; } = true;
 
     // Solo uno de los tres se usa según el tipo de promoción.
@@ -82,6 +89,8 @@ public class PromotionDetailLine
     public decimal? SpecialPrice { get; set; }
     public int? RequiredQuantity { get; set; }
     public int? PayQuantity { get; set; }
+
+    public bool IsFree => SpecialPrice.HasValue && SpecialPrice.Value == 0;
 
     public bool IsPayXGetY => RequiredQuantity is > 0 && PayQuantity is > 0 && PayQuantity <= RequiredQuantity;
 
@@ -114,10 +123,11 @@ public class PromotionDetailLine
     {
         get
         {
-            if (SpecialPrice.HasValue) return "Precio especial";
-            if (DiscountPercentage.HasValue) return $"{DiscountPercentage.Value:0.##}% de descuento";
+            var qty = Quantity > 1 ? $"{Quantity} uds. · " : string.Empty;
+            if (SpecialPrice.HasValue) return qty + (SpecialPrice.Value == 0 ? "Gratis" : "Precio especial");
+            if (DiscountPercentage.HasValue) return qty + $"{DiscountPercentage.Value:0.##}% de descuento";
             if (IsPayXGetY) return $"Lleva {RequiredQuantity} · Paga {PayQuantity}";
-            return "Sin descuento";
+            return qty + "Sin descuento";
         }
     }
 }

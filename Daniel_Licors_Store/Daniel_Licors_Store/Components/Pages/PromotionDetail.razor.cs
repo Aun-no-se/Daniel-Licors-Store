@@ -83,17 +83,14 @@ public partial class PromotionDetail
                 return d <= 1 ? "Empieza mañana" : $"Empieza en {d} días";
             }
 
-            if (Promo.EndDate < now)
-            {
-                var d = (int)Math.Floor((now - Promo.EndDate).TotalDays);
-                return d < 1 ? "Terminó hoy" : d == 1 ? "Terminó ayer" : $"Terminó hace {d} días";
-            }
+            // La fecha fin cuenta completa: la promoción vale hasta el final de ese día.
+            var daysSinceEnd = (now.Date - Promo.EndDate.Date).Days;
+            if (daysSinceEnd > 0)
+                return daysSinceEnd == 1 ? "Terminó ayer" : $"Terminó hace {daysSinceEnd} días";
 
-            var left = Promo.EndDate - now;
-            if (left.TotalHours < 24) return "Termina hoy";
-
-            var days = (int)Math.Ceiling(left.TotalDays);
-            return days == 1 ? "Termina mañana" : $"Faltan {days} días";
+            var daysLeft = (Promo.EndDate.Date - now.Date).Days;
+            if (daysLeft == 0) return "Termina hoy";
+            return daysLeft == 1 ? "Termina mañana" : $"Faltan {daysLeft} días";
         }
     }
 
@@ -110,6 +107,12 @@ public partial class PromotionDetail
                 return pack > 0 ? $"Ahorras ${pack.ToString("N2", CultureInfo.InvariantCulture)} por paquete" : null;
             }
 
+            if (Promo.PromotionType == "Bundle")
+            {
+                var pack = Promo.Lines.Sum(l => l.Quantity * l.SavingPerUnit);
+                return pack > 0 ? $"Ahorras ${pack.ToString("N2", CultureInfo.InvariantCulture)} por paquete" : null;
+            }
+
             var total = Promo.Lines.Sum(l => l.SavingPerUnit);
             if (total <= 0) return null;
 
@@ -121,6 +124,8 @@ public partial class PromotionDetail
 
     private static string CardBadge(PromotionDetailLine line)
     {
+        if (line.IsFree) return "GRATIS";
+
         if (line.IsPayXGetY && !line.SpecialPrice.HasValue && !line.DiscountPercentage.HasValue)
             return $"Lleva {line.RequiredQuantity} · Paga {line.PayQuantity}";
 

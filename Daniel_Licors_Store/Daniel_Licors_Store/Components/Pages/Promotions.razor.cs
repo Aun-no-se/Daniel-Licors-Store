@@ -56,6 +56,8 @@ public partial class Promotions : AdminPageBase
     private decimal _lineSpecialPrice;
     private int _lineReqQty = 2;
     private int _linePayQty = 1;
+    private int _lineQty = 1;               // Bundle: unidades de esta bebida en la promoción
+    private string _lineMode = "normal";    // Bundle: normal | free | special | percent
 
     // ─── Referencia al ancla del formulario ─────────────────
     private ElementReference _formAnchor;
@@ -177,6 +179,12 @@ public partial class Promotions : AdminPageBase
     {
         if (!_promoBuilder.Any()) { Snackbar.Add("Agrega al menos un producto a la promoción", Severity.Warning); return; }
 
+        if (_form.PromotionType == "Bundle" && _promoBuilder.All(l => l.SpecialPrice == 0m))
+        {
+            Snackbar.Add("Al menos una bebida de la promoción debe tener costo: no pueden ser todas gratis.", Severity.Warning);
+            return;
+        }
+
         _form.StartDate = StartDate;
         _form.EndDate = EndDate;
         _form.Products = _promoBuilder;
@@ -229,6 +237,7 @@ public partial class Promotions : AdminPageBase
                 _promoBuilder.Add(new PromotionProductLine
                 {
                     ProductId = pp.ProductId,
+                    Quantity = Math.Max(pp.Quantity, 1),
                     ProductName = product?.DisplayName ?? $"Producto #{pp.ProductId}",
                     OriginalPrice = product?.Price ?? 0,
                     DiscountPercentage = pp.DiscountPercentage,
@@ -268,6 +277,8 @@ public partial class Promotions : AdminPageBase
         _lineSpecialPrice = product.Price;
         _lineReqQty = 3;
         _linePayQty = 2;
+        _lineQty = 1;
+        _lineMode = "normal";
         _showLineDialog = true;
     }
 
@@ -290,6 +301,15 @@ public partial class Promotions : AdminPageBase
             case "Discount": line.DiscountPercentage = _lineDiscountPct; break;
             case "SpecialPrice": line.SpecialPrice = _lineSpecialPrice; break;
             case "PayXGetY": line.RequiredQuantity = _lineReqQty; line.PayQuantity = _linePayQty; break;
+            case "Bundle":
+                line.Quantity = Math.Max(_lineQty, 1);
+                switch (_lineMode)
+                {
+                    case "free": line.SpecialPrice = 0m; break;
+                    case "special": line.SpecialPrice = _lineSpecialPrice; break;
+                    case "percent": line.DiscountPercentage = _lineDiscountPct; break;
+                }
+                break;
         }
         _promoBuilder.Add(line);
         CloseLineDialog();
@@ -305,6 +325,7 @@ public partial class Promotions : AdminPageBase
         "Discount" => Color.Error,
         "SpecialPrice" => Color.Warning,
         "PayXGetY" => Color.Success,
+        "Bundle" => Color.Secondary,
         _ => Color.Info
     };
 
@@ -313,6 +334,7 @@ public partial class Promotions : AdminPageBase
         "Discount" => "% Descuento",
         "SpecialPrice" => "Precio Especial",
         "PayXGetY" => "Lleva X Paga Y",
+        "Bundle" => "Compra y llévate",
         _ => type ?? "Promo"
     };
 
@@ -321,14 +343,23 @@ public partial class Promotions : AdminPageBase
         "Discount" => "pr-chip-discount",
         "SpecialPrice" => "pr-chip-specialprice",
         "PayXGetY" => "pr-chip-payxgety",
+        "Bundle" => "pr-chip-other",
         _ => "pr-chip-other"
     };
 
     private string GetLineLabel(PromotionProductLine line)
     {
-        if (line.DiscountPercentage.HasValue) return $"{line.ProductName} — {line.DiscountPercentage:0.##}% OFF";
-        if (line.SpecialPrice.HasValue) return $"{line.ProductName} — ${line.SpecialPrice:N2}";
+        var qty = line.Quantity > 1 ? $" ×{line.Quantity}" : string.Empty;
+
+        if (line.SpecialPrice.HasValue)
+            return line.SpecialPrice.Value == 0
+                ? $"{line.ProductName}{qty} — GRATIS"
+                : $"{line.ProductName}{qty} — ${line.SpecialPrice:N2}";
+        if (line.DiscountPercentage.HasValue) return $"{line.ProductName}{qty} — {line.DiscountPercentage:0.##}% OFF";
         if (line.RequiredQuantity.HasValue) return $"{line.ProductName} — Lleva {line.RequiredQuantity} Paga {line.PayQuantity}";
-        return line.ProductName;
+
+        return _form.PromotionType == "Bundle"
+            ? $"{line.ProductName}{qty} — precio normal"
+            : line.ProductName;
     }
 }

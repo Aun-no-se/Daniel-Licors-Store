@@ -76,6 +76,7 @@ public class PromotionService : IPromotionService
             PromotionProducts = p.PromotionProducts.Select(pp => new PromotionProductLine
             {
                 ProductId = pp.ProductId,
+                Quantity = Math.Max(pp.Quantity, 1),
                 ProductName = pp.Product?.DisplayName ?? $"Producto #{pp.ProductId}",
                 OriginalPrice = pp.Product?.ProductStores?.FirstOrDefault()?.Price ?? 0,
                 DiscountPercentage = pp.DiscountPercentage,
@@ -123,6 +124,7 @@ public class PromotionService : IPromotionService
                     return new PromotionDetailLine
                     {
                         ProductId = pp.ProductId,
+                        Quantity = Math.Max(pp.Quantity, 1),
                         Name = prod?.Name ?? $"Producto #{pp.ProductId}",
                         Brand = prod?.Brand?.Name,
                         Category = prod?.Category?.Name,
@@ -150,9 +152,13 @@ public class PromotionService : IPromotionService
     {
         foreach (var line in productos)
         {
-            if (!line.RequiredQuantity.HasValue || line.RequiredQuantity <= 0) continue;
+            var pideRequerido = line.RequiredQuantity.HasValue && line.RequiredQuantity > 0;
+            var pideCantidad = line.Quantity > 1;
+            if (!pideRequerido && !pideCantidad) continue;
 
+            // AsNoTracking: el stock cambia con las ventas por fuera de este contexto; hay que leer el real.
             var productStore = await _context.ProductStores
+                .AsNoTracking()
                 .Include(ps => ps.Product)
                 .FirstOrDefaultAsync(ps => ps.ProductId == line.ProductId && ps.StoreId == Components.Shared.AppStore.StoreId);
 
@@ -161,9 +167,13 @@ public class PromotionService : IPromotionService
             if (productStore == null)
                 throw new Exception($"'{nombre}' no está disponible en esta tienda");
 
-            if (line.RequiredQuantity > productStore.Stock)
+            if (pideRequerido && line.RequiredQuantity > productStore.Stock)
                 throw new Exception(
                     $"No puedes pedir 'Lleva {line.RequiredQuantity}' de '{nombre}' — solo hay {productStore.Stock} en stock.");
+
+            if (pideCantidad && line.Quantity > productStore.Stock)
+                throw new Exception(
+                    $"No puedes incluir {line.Quantity} de '{nombre}' en la promoción — solo hay {productStore.Stock} en stock.");
         }
     }
 
@@ -197,6 +207,7 @@ public class PromotionService : IPromotionService
                 {
                     PromotionId = promo.PromotionId,
                     ProductId = line.ProductId,
+                    Quantity = Math.Max(line.Quantity, 1),
                     SpecialPrice = line.SpecialPrice,
                     DiscountPercentage = line.DiscountPercentage,
                     RequiredQuantity = line.RequiredQuantity,
@@ -256,6 +267,7 @@ public class PromotionService : IPromotionService
                 {
                     PromotionId = promo.PromotionId,
                     ProductId = line.ProductId,
+                    Quantity = Math.Max(line.Quantity, 1),
                     SpecialPrice = line.SpecialPrice,
                     DiscountPercentage = line.DiscountPercentage,
                     RequiredQuantity = line.RequiredQuantity,

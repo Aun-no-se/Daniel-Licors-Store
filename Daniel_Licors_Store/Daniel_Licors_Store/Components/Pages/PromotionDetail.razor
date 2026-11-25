@@ -235,7 +235,7 @@
                                             </div>
                                             <div class="pm-right">
                                                 <div class="pm-price-label">En promoción</div>
-                                                <div class="pm-price-new">$@item.PromoUnitPrice.ToString("N2")</div>
+                                                <div class="pm-price-new">@(item.IsFree ? "GRATIS" : "$" + item.PromoUnitPrice.ToString("N2"))</div>
                                             </div>
                                         </div>
                                         @if (item.SavingPerUnit > 0)

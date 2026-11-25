@@ -150,13 +150,14 @@ namespace Daniel_Licors_Store.Data.Services
         public async Task<List<ComboDto>> GetCombosByProductAsync(int productId)
         {
             var now = DateTime.Now;
+            var today = now.Date; // la fecha fin cuenta completa (hasta las 23:59 de ese día)
             await using var ctx = await _factory.CreateDbContextAsync();
             return await ctx.ComboProducts
                 .Where(cp =>
                     cp.ProductId == productId &&
                     cp.Combo.IsActive &&
                     (cp.Combo.StartDate == null || cp.Combo.StartDate <= now) &&
-                    (cp.Combo.EndDate == null || cp.Combo.EndDate >= now))
+                    (cp.Combo.EndDate == null || cp.Combo.EndDate >= today))
                 .Include(cp => cp.Combo)
                 .Select(cp => new ComboDto
                 {
@@ -172,13 +173,14 @@ namespace Daniel_Licors_Store.Data.Services
         public async Task<List<PromotionDto>> GetPromotionsByProductAsync(int productId)
         {
             var now = DateTime.Now;
+            var today = now.Date; // la fecha fin cuenta completa (hasta las 23:59 de ese día)
             await using var ctx = await _factory.CreateDbContextAsync();
             return await ctx.PromotionProducts
                 .Where(pp =>
                     pp.ProductId == productId &&
                     pp.Promotion.IsActive &&
                     pp.Promotion.StartDate <= now &&
-                    pp.Promotion.EndDate >= now)
+                    pp.Promotion.EndDate >= today)
                 .Include(pp => pp.Promotion)
                 .Select(pp => new PromotionDto
                 {
@@ -192,7 +194,8 @@ namespace Daniel_Licors_Store.Data.Services
                     SpecialPrice = pp.SpecialPrice,
                     DiscountPercentage = pp.DiscountPercentage,
                     RequiredQuantity = pp.RequiredQuantity,
-                    PayQuantity = pp.PayQuantity
+                    PayQuantity = pp.PayQuantity,
+                    Quantity = pp.Quantity
                 })
                 .ToListAsync();
         }
