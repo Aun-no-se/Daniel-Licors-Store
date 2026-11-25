@@ -218,13 +218,15 @@ namespace Daniel_Licors_Store.Components.Pages
 
                 if (yaEstaEnCarrito)
                 {
-                    Snackbar.Add($"Ya tienes la promoción «{promo.Title}» en tu carrito", Severity.Info);
+                    Snackbar.Add($"Ya tienes la promoción «{promo.Title}» en tu carrito. Si quieres más, súbela con + en el carrito.", Severity.Info);
                     return;
                 }
 
-                var qty = promo.IsPayXGetY ? (promo.RequiredQuantity ?? 1) : 1;
-                await CartService.AddPromotionToCartAsync(userId, promo.PromotionId, qty, StoreId);
-                Snackbar.Add($"Promoción «{promo.Title}» agregada al carrito", Severity.Success);
+                // Cada unidad de promoción es un paquete completo (en "Lleva X Paga Y": X botellas).
+                await CartService.AddPromotionToCartAsync(userId, promo.PromotionId, 1, StoreId);
+                Snackbar.Add(promo.IsPayXGetY
+                    ? $"Promoción «{promo.Title}» agregada: {promo.RequiredQuantity} botellas, pagas {promo.PayQuantity}"
+                    : $"Promoción «{promo.Title}» agregada al carrito", Severity.Success);
             }
             catch (Exception ex)
             {

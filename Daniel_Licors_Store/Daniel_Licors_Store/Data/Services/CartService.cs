@@ -751,7 +751,7 @@ public class CartService : ICartService
                 {
                     ItemId = promo.CartPromotionId,
                     ItemType = "promotion",
-                    ItemName = promo.PromotionName,
+                    ItemName = string.IsNullOrEmpty(promo.Summary) ? promo.PromotionName : $"{promo.PromotionName} — {promo.Summary}",
                     Category = promo.Category,
                     Quantity = promo.Quantity,
                     UnitPrice = promo.UnitPrice,
@@ -1158,23 +1158,30 @@ public class CartService : ICartService
             .ToDictionary(g => g.Key, g => Math.Max(g.Sum(x => x.Quantity), 1));
 
     // Cada unidad de promoción consume, de cada bebida que incluye, la cantidad que
-    // trae la promoción (1 por defecto; ej: "llévate 2 jugos" consume 2).
+    // trae la promoción: 1 por defecto, la "cantidad" configurada ("llévate 2 jugos" consume 2)
+    // o, en "Lleva X Paga Y", las X botellas del paquete.
     private static Dictionary<int, int> PerUnitOfPromo(CartPromotion cp) =>
         (cp.Promotion?.PromotionProducts ?? Enumerable.Empty<PromotionProduct>())
             .GroupBy(pp => pp.ProductId)
-            .ToDictionary(g => g.Key, g => Math.Max(g.Sum(x => x.Quantity), 1));
+            .ToDictionary(g => g.Key, g => Math.Max(g.Sum(x => IsPayXLine(x) ? x.RequiredQuantity!.Value : x.Quantity), 1));
+
+    // ¿Esta línea es de tipo "Lleva X Paga Y"?
+    private static bool IsPayXLine(PromotionProduct pp) =>
+        !pp.SpecialPrice.HasValue && !pp.DiscountPercentage.HasValue
+        && pp.RequiredQuantity is > 0 && pp.PayQuantity is > 0 && pp.PayQuantity <= pp.RequiredQuantity;
 
     // Precio real de una línea de promoción para una cantidad dada.
     //
-    // · "Lleva X Paga Y": de cada X unidades se cobran Y; las que sobran (menos de X) se
-    //   cobran completas. Usa la bebida de la primera línea (promoción de una sola bebida).
+    // · "Lleva X Paga Y": cada unidad de la promoción es un PAQUETE de X botellas del que se
+    //   cobran Y. Subir la cantidad sube de paquete en paquete (2 = 2X botellas, se cobran 2Y).
+    //   Usa la bebida de la primera línea (promoción de una sola bebida).
     // · Precio especial / descuento % / normal: cada unidad de la promoción cuesta la SUMA de
     //   todas las bebidas que incluye (cantidad × precio de cada una). Una bebida con precio
     //   especial 0 va gratis; una sin regla va a precio normal. Así funciona "compra un Brugal
     //   y llévate 2 jugos gratis".
     //
-    // UnitPrice es el promedio real por unidad (SubTotal / Quantity) para que el carrito, el
-    // recibo y el correo muestren "cantidad × precio" cuadrando con el total.
+    // UnitPrice es lo que cuesta UNA unidad de promoción, así el carrito, el recibo y el correo
+    // muestran "cantidad × precio" cuadrando con el total.
     private static (decimal UnitPrice, decimal SubTotal) PriceOfPromo(Promotion promo, IReadOnlyDictionary<int, ProductStore> stock, int quantity)
     {
         var lines = promo.PromotionProducts.OrderBy(pp => pp.PromotionProductId).ToList();
@@ -1191,15 +1198,11 @@ public class CartService : ICartService
 
         var first = lines[0];
 
-        if (!first.SpecialPrice.HasValue && !first.DiscountPercentage.HasValue
-            && first.RequiredQuantity is > 0 && first.PayQuantity is > 0 && first.PayQuantity <= first.RequiredQuantity)
+        if (IsPayXLine(first))
         {
-            var x = first.RequiredQuantity!.Value;
-            var y = first.PayQuantity!.Value;
-            var paidUnits = (quantity / x) * y + (quantity % x);
-            var sub = Math.Round(paidUnits * BasePriceOf(first), 2, MidpointRounding.AwayFromZero);
-            var unit = Math.Round(sub / quantity, 2, MidpointRounding.AwayFromZero);
-            return (unit, sub);
+            // Un paquete trae X botellas y se pagan Y.
+            var unit = Math.Round(first.PayQuantity!.Value * BasePriceOf(first), 2, MidpointRounding.AwayFromZero);
+            return (unit, Math.Round(quantity * unit, 2, MidpointRounding.AwayFromZero));
         }
 
         decimal perPromoUnit = 0m;
@@ -1358,6 +1361,17 @@ public class CartService : ICartService
 
         foreach (var item in cart.CartPromotions)
         {
+            string? promoDetail = null, promoSummary = null;
+            var firstLine = item.Promotion.PromotionProducts.OrderBy(pp => pp.PromotionProductId).FirstOrDefault();
+            if (firstLine != null && IsPayXLine(firstLine))
+            {
+                var x = firstLine.RequiredQuantity!.Value;
+                var y = firstLine.PayQuantity!.Value;
+                var drink = firstLine.Product?.DisplayName ?? "bebida";
+                promoDetail = $"1 promoción = {x} × {drink} (pagas {y})";
+                promoSummary = $"Llevas {item.Quantity * x} botellas y pagas {item.Quantity * y}";
+            }
+
             result.Promotions.Add(new CartPromotionDisplayDto
             {
                 CartPromotionId = item.CartPromotionId,
@@ -1369,7 +1383,9 @@ public class CartService : ICartService
                 UnitPrice = item.UnitPrice,
                 SubTotal = item.SubTotal,
                 IsSelected = false,
-                AvailableStock = MaxUnits(PerUnitOfPromo(item))
+                AvailableStock = MaxUnits(PerUnitOfPromo(item)),
+                Detail = promoDetail,
+                Summary = promoSummary
             });
         }
 

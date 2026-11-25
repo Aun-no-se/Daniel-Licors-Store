@@ -158,15 +158,17 @@ public partial class PromotionDetail
             var carrito = await CartService.GetCartAsync(userId, AppStore.StoreId);
             if (carrito.Promotions.Any(p => p.PromotionId == Promo.PromotionId))
             {
-                Snackbar.Add($"Ya tienes la promoción «{Promo.Title}» en tu carrito", Severity.Info);
+                Snackbar.Add($"Ya tienes la promoción «{Promo.Title}» en tu carrito. Si quieres más, súbela con + en el carrito.", Severity.Info);
                 return;
             }
 
+            // Cada unidad de promoción es un paquete completo (en "Lleva X Paga Y": X botellas).
             var payLine = Promo.Lines.FirstOrDefault(l => l.IsPayXGetY);
-            var qty = payLine?.RequiredQuantity ?? 1;
 
-            await CartService.AddPromotionToCartAsync(userId, Promo.PromotionId, qty, AppStore.StoreId);
-            Snackbar.Add($"Promoción «{Promo.Title}» agregada al carrito", Severity.Success);
+            await CartService.AddPromotionToCartAsync(userId, Promo.PromotionId, 1, AppStore.StoreId);
+            Snackbar.Add(payLine != null
+                ? $"Promoción «{Promo.Title}» agregada: {payLine.RequiredQuantity} botellas, pagas {payLine.PayQuantity}"
+                : $"Promoción «{Promo.Title}» agregada al carrito", Severity.Success);
         }
         catch (Exception ex)
         {

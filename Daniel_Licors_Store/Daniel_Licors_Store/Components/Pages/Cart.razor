@@ -204,6 +204,14 @@
                                         <div class="pcard-body">
                                             <div class="pcard-name" title="@promo.PromotionName">@promo.PromotionName</div>
                                             <div class="pcard-cat">@promo.Category</div>
+                                            @if (!string.IsNullOrEmpty(promo.Detail))
+                                            {
+                                                <div class="pcard-cat" style="white-space:normal;line-height:1.3;">@promo.Detail</div>
+                                            }
+                                            @if (!string.IsNullOrEmpty(promo.Summary))
+                                            {
+                                                <div class="pcard-cat" style="white-space:normal;line-height:1.3;color:#e8c46a;">@promo.Summary</div>
+                                            }
                                             <div class="pcard-price">$@promo.UnitPrice.ToString("N2")</div>
                                             <div class="pcard-subtotal">Sub: $@promo.SubTotal.ToString("N2")</div>
                                             <div class="pcard-footer" @onclick:stopPropagation="true">

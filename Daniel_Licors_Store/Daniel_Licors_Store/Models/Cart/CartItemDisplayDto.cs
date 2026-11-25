@@ -55,6 +55,12 @@ public class CartPromotionDisplayDto
 
     /// <summary>Máximo de unidades de esta promoción que el stock real permite hoy.</summary>
     public int AvailableStock { get; set; }
+
+    /// <summary>Qué trae cada unidad de la promoción (ej: "1 promoción = 5 × Brugal Añejo, pagas 4").</summary>
+    public string? Detail { get; set; }
+
+    /// <summary>Lo que lleva el cliente en total con la cantidad elegida (ej: "Llevas 10 botellas y pagas 8").</summary>
+    public string? Summary { get; set; }
 }
 
 /// <summary>
