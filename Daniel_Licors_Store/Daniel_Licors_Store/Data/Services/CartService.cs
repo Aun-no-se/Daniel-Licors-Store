@@ -1174,7 +1174,7 @@ public class CartService : ICartService
     //
     // · "Lleva X Paga Y": cada unidad de la promoción es un PAQUETE de X botellas del que se
     //   cobran Y. Subir la cantidad sube de paquete en paquete (2 = 2X botellas, se cobran 2Y).
-    //   Usa la bebida de la primera línea (promoción de una sola bebida).
+    //   Si la promoción tiene varias bebidas, se cobra Y de cada una con su propio precio.
     // · Precio especial / descuento % / normal: cada unidad de la promoción cuesta la SUMA de
     //   todas las bebidas que incluye (cantidad × precio de cada una). Una bebida con precio
     //   especial 0 va gratis; una sin regla va a precio normal. Así funciona "compra un Brugal
@@ -1196,19 +1196,18 @@ public class CartService : ICartService
             return row.Price;
         }
 
-        var first = lines[0];
-
-        if (IsPayXLine(first))
-        {
-            // Un paquete trae X botellas y se pagan Y.
-            var unit = Math.Round(first.PayQuantity!.Value * BasePriceOf(first), 2, MidpointRounding.AwayFromZero);
-            return (unit, Math.Round(quantity * unit, 2, MidpointRounding.AwayFromZero));
-        }
-
         decimal perPromoUnit = 0m;
         foreach (var pp in lines)
         {
             var basePrice = BasePriceOf(pp);
+
+            // "Lleva X Paga Y": el paquete trae X de esta bebida y se pagan Y.
+            if (IsPayXLine(pp))
+            {
+                perPromoUnit += pp.PayQuantity!.Value * basePrice;
+                continue;
+            }
+
             decimal linePrice = pp.SpecialPrice.HasValue
                 ? pp.SpecialPrice.Value
                 : pp.DiscountPercentage.HasValue
@@ -1362,14 +1361,17 @@ public class CartService : ICartService
         foreach (var item in cart.CartPromotions)
         {
             string? promoDetail = null, promoSummary = null;
-            var firstLine = item.Promotion.PromotionProducts.OrderBy(pp => pp.PromotionProductId).FirstOrDefault();
-            if (firstLine != null && IsPayXLine(firstLine))
+            var payLines = item.Promotion.PromotionProducts
+                .Where(IsPayXLine)
+                .OrderBy(pp => pp.PromotionProductId)
+                .ToList();
+            if (payLines.Count > 0)
             {
-                var x = firstLine.RequiredQuantity!.Value;
-                var y = firstLine.PayQuantity!.Value;
-                var drink = firstLine.Product?.DisplayName ?? "bebida";
-                promoDetail = $"1 promoción = {x} × {drink} (pagas {y})";
-                promoSummary = $"Llevas {item.Quantity * x} botellas y pagas {item.Quantity * y}";
+                promoDetail = "1 promoción = " + string.Join(" + ", payLines.Select(pp =>
+                    $"{pp.RequiredQuantity} × {pp.Product?.DisplayName ?? "bebida"} (pagas {pp.PayQuantity})"));
+                var bottles = payLines.Sum(pp => pp.RequiredQuantity!.Value);
+                var paid = payLines.Sum(pp => pp.PayQuantity!.Value);
+                promoSummary = $"Llevas {item.Quantity * bottles} botellas y pagas {item.Quantity * paid}";
             }
 
             result.Promotions.Add(new CartPromotionDisplayDto

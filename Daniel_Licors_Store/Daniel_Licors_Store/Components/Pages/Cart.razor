@@ -32,7 +32,7 @@
                 <MudText Typo="Typo.body1" Class="mt-4 loading-text">Cargando carrito...</MudText>
             </div>
         }
-        else if (_cartView == null || (_cartView.Products.Count == 0 && _cartView.Combos.Count == 0))
+        else if (_cartView == null || (_cartView.Products.Count == 0 && _cartView.Combos.Count == 0 && _cartView.Promotions.Count == 0))
         {
             <div class="empty-cart-panel">
                 <div class="empty-icon-ring">
@@ -382,55 +382,56 @@
 @code {
     private RenderFragment CheckIcon =>
         @<svg viewBox="0 0 24 24" class="icon-check" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M4 12.5L9.5 18L20 6" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
-    </svg>;
+            <path d="M4 12.5L9.5 18L20 6" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>;
 
     private RenderFragment TrashIcon =>
         @<svg viewBox="0 0 24 24" class="icon-trash" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M4 7H20" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
-        <path d="M9 7V4.5C9 3.67 9.67 3 10.5 3H13.5C14.33 3 15 3.67 15 4.5V7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
-        <path d="M6.5 7L7.3 19.2C7.36 20.2 8.2 21 9.2 21H14.8C15.8 21 16.64 20.2 16.7 19.2L17.5 7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
-        <path d="M10.2 11V17" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
-        <path d="M13.8 11V17" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
-    </svg>;
+            <path d="M4 7H20" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+            <path d="M9 7V4.5C9 3.67 9.67 3 10.5 3H13.5C14.33 3 15 3.67 15 4.5V7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+            <path d="M6.5 7L7.3 19.2C7.36 20.2 8.2 21 9.2 21H14.8C15.8 21 16.64 20.2 16.7 19.2L17.5 7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
+            <path d="M10.2 11V17" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+            <path d="M13.8 11V17" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+        </svg>;
 
     private RenderFragment RenderComboCard(CartComboDisplayDto combo) =>
         @<div>
-    <div class="pcard-img-wrap">
-        <img src="@combo.ComboImage" alt="@combo.ComboName" onerror="this.style.display='none'" />
-        <div class="pcard-img-placeholder">
-            <MudIcon Icon="@Icons.Material.Filled.CardGiftcard" Class="placeholder-icon" />
-        </div>
-        <span class="item-badge @(combo.ComboName.Contains("Promo", StringComparison.OrdinalIgnoreCase) ? "badge-promo" : "badge-combo")">
-            @(combo.ComboName.Contains("Promo", StringComparison.OrdinalIgnoreCase) ? "Promo" : "Combo")
-        </span>
-        <div class="pcard-check @(combo.IsSelected ? "pcard-check-active" : "")">
-            @if (combo.IsSelected) {
-            @CheckIcon
-                        }
-        </div>
-    </div>
-    <div class="pcard-body">
-        <div class="pcard-name" title="@combo.ComboName">@combo.ComboName</div>
-        <div class="pcard-cat">@combo.Category</div>
-        <div class="pcard-price">$@combo.UnitPrice.ToString("N2")</div>
-        <div class="pcard-subtotal">Sub: $@combo.SubTotal.ToString("N2")</div>
-        <div class="pcard-footer" @onclick:stopPropagation="true">
-            <div class="qty-mini">
-                <button type="button" aria-label="Quitar uno" @onclick='() => StepQuantity("combo", combo.CartComboId, -1)'>−</button>
-                <input class="qty-input" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="4" aria-label="Cantidad"
-                       onfocus="this.select()" value="@combo.Quantity"
-                       @key='("q-combo-" + combo.CartComboId + "-" + _qtyVersion)'
-                       @onchange='e => OnQuantityTyped("combo", combo.CartComboId, e)' />
-                <button type="button" aria-label="Agregar uno" @onclick='() => StepQuantity("combo", combo.CartComboId, 1)'>+</button>
+            <div class="pcard-img-wrap">
+                <img src="@combo.ComboImage" alt="@combo.ComboName" onerror="this.style.display='none'" />
+                <div class="pcard-img-placeholder">
+                    <MudIcon Icon="@Icons.Material.Filled.CardGiftcard" Class="placeholder-icon" />
+                </div>
+                <span class="item-badge @(combo.ComboName.Contains("Promo", StringComparison.OrdinalIgnoreCase) ? "badge-promo" : "badge-combo")">
+                    @(combo.ComboName.Contains("Promo", StringComparison.OrdinalIgnoreCase) ? "Promo" : "Combo")
+                </span>
+                <div class="pcard-check @(combo.IsSelected ? "pcard-check-active" : "")">
+                    @if (combo.IsSelected)
+                    {
+                        @CheckIcon
+                    }
+                </div>
             </div>
-            <button class="del-mini"
-                    @onclick="@(() => RemoveItem(combo.CartComboId, "combo"))"
-                    @onclick:stopPropagation="true"
-                    title="Eliminar del carrito">
-                @TrashIcon
-            </button>
-        </div>
-    </div>
-</div>;
+            <div class="pcard-body">
+                <div class="pcard-name" title="@combo.ComboName">@combo.ComboName</div>
+                <div class="pcard-cat">@combo.Category</div>
+                <div class="pcard-price">$@combo.UnitPrice.ToString("N2")</div>
+                <div class="pcard-subtotal">Sub: $@combo.SubTotal.ToString("N2")</div>
+                <div class="pcard-footer" @onclick:stopPropagation="true">
+                    <div class="qty-mini">
+                        <button type="button" aria-label="Quitar uno" @onclick='() => StepQuantity("combo", combo.CartComboId, -1)'>−</button>
+                        <input class="qty-input" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="4" aria-label="Cantidad"
+                               onfocus="this.select()" value="@combo.Quantity"
+                               @key='("q-combo-" + combo.CartComboId + "-" + _qtyVersion)'
+                               @onchange='e => OnQuantityTyped("combo", combo.CartComboId, e)' />
+                        <button type="button" aria-label="Agregar uno" @onclick='() => StepQuantity("combo", combo.CartComboId, 1)'>+</button>
+                    </div>
+                    <button class="del-mini"
+                            @onclick="@(() => RemoveItem(combo.CartComboId, "combo"))"
+                            @onclick:stopPropagation="true"
+                            title="Eliminar del carrito">
+                        @TrashIcon
+                    </button>
+                </div>
+            </div>
+        </div>;
 }
